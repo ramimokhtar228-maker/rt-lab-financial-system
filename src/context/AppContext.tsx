@@ -608,6 +608,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return newExpense;
   };
 
+  const updateExpense = (id: string, updates: Partial<ExpenseRecord>) => {
+    setExpenses(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+    logAudit("UPDATE", "EXPENSES", "تعديل سند الصرف: " + id);
+  };
+
   const deleteExpense = (id: string) => {
     const target = expenses.find(e => e.id === id);
     if (target) {
@@ -694,6 +699,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return emp;
     }));
     logAudit('UPDATE', 'HR', `تعديل بيانات الموظف: ${id}`);
+  };
+
+  const deleteEmployee = (id: string) => {
+    const target = employees.find(e => e.id === id);
+    setEmployees(prev => prev.filter(e => e.id !== id));
+    logAudit('DELETE', 'HR', `حذف موظف: ${target?.fullName || id}`);
   };
 
   const recordAttendance = (
@@ -822,6 +833,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return order;
     }));
     logAudit('UPDATE', 'LAB_TO_LAB', `تحديث حالة عينة Lab-to-Lab: ${id}`);
+  };
+
+  const deleteLabToLabOrder = (id: string) => {
+    setLabToLabOrders(prev => prev.filter(o => o.id !== id));
+    logAudit('DELETE', 'LAB_TO_LAB', "حذف طلب تحويل: " + id);
   };
 
   // Daily Closeout

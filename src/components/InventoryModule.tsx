@@ -130,6 +130,30 @@ export const InventoryModule: React.FC = () => {
     });
   }, [inventory, categoryFilter, stockStatusFilter, searchTerm, now]);
 
+  const handleOpenEditItem = (item: InventoryItem) => {
+    setEditingItem(item);
+    setEditItemName(item.nameAr);
+    setEditItemQty(item.currentQuantity);
+    setEditItemThreshold(item.minThreshold);
+    setEditItemCost(item.unitCost);
+    setEditItemSupplier(item.supplierName || "");
+    setEditItemExpiry(item.expiryDate);
+  };
+
+  const handleSaveEditItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem) return;
+    updateInventoryItem(editingItem.id, {
+      nameAr: editItemName,
+      currentQuantity: editItemQty,
+      minThreshold: editItemThreshold,
+      unitCost: editItemCost,
+      supplierName: editItemSupplier,
+      expiryDate: editItemExpiry
+    });
+    setEditingItem(null);
+  };
+
   const handleSaveItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nameAr.trim()) {

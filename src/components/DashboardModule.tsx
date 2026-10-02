@@ -88,7 +88,7 @@ export const DashboardModule: React.FC = () => {
   }, [filteredIncome]);
 
   const totalInvoiced = useMemo(() => {
-    return filteredIncome.reduce((sum, r) => sum + r.totalAmount, 0);
+    return filteredIncome.reduce((sum, r) => sum + r.netAmount, 0);
   }, [filteredIncome]);
 
   const totalPendingDues = useMemo(() => {
@@ -108,7 +108,7 @@ export const DashboardModule: React.FC = () => {
   }, [filteredIncome]);
 
   const cardPayments = useMemo(() => {
-    return filteredIncome.filter(r => r.paymentMethod === 'visa' || r.paymentMethod === 'bank').reduce((sum, r) => sum + r.paidAmount, 0);
+    return filteredIncome.filter(r => r.paymentMethod === 'visa' || r.paymentMethod === 'bank_transfer').reduce((sum, r) => sum + r.paidAmount, 0);
   }, [filteredIncome]);
 
   // Lab to Lab receivables & payables

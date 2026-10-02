@@ -32,6 +32,13 @@ export const ExpenseAndProfitModule: React.FC = () => {
 
   const [activeSubTab, setActiveSubTab] = useState<'expenses' | 'profit_split'>('expenses');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editExpense, setEditExpense] = useState<ExpenseRecord | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editAmount, setEditAmount] = useState<number>(0);
+  const [editDept, setEditDept] = useState("");
+  const [editPaidTo, setEditPaidTo] = useState("");
+  const [editPaymentMethod, setEditPaymentMethod] = useState<PaymentMethod>("cash");
+  const [editNotes, setEditNotes] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<'all' | ExpenseCategory>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -347,7 +354,7 @@ export const ExpenseAndProfitModule: React.FC = () => {
                         </td>
                         <td className="py-3 px-4 text-slate-600">{exp.approvedBy}</td>
                         <td className="py-3 px-4 text-center">
-                          {currentUser.role === 'admin_ceo' && (
+                          <div className="flex items-center justify-center gap-1.5">
                             <button
                               type="button"
                               onClick={() => handleOpenEditExpense(exp)}
@@ -367,7 +374,7 @@ export const ExpenseAndProfitModule: React.FC = () => {
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -764,7 +771,7 @@ export const ExpenseAndProfitModule: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-900 text-sm">تعديل سند الصرف</h3>
-                  <p className="text-[11px] text-slate-500 font-mono">رقم السند: {editExpense.voucherNumber}</p>
+                  <p className="text-[11px] text-slate-500 font-mono">رقم السند: {editExpense.expenseNumber}</p>
                 </div>
               </div>
               <button type="button" onClick={() => setEditExpense(null)} className="text-slate-400 hover:text-slate-700 text-sm">✕</button>

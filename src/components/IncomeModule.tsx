@@ -255,6 +255,43 @@ export const IncomeModule: React.FC = () => {
     setPrintInvoice(newRecord);
   };
 
+    const handleOpenEdit = (rec: IncomeRecord) => {
+    setEditRecord(rec);
+    setEditPatientName(rec.patientName);
+    setEditPatientPhone(rec.patientPhone);
+    setEditDoctor(rec.referringDoctor || "");
+    setEditBranch(rec.branch);
+    setEditPaid(rec.paidAmount);
+    setEditDiscount(rec.discount || 0);
+    setEditMethod(rec.paymentMethod);
+    setEditNotes(rec.notes || "");
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editRecord) return;
+    const subtotal = editRecord.subtotal || editRecord.netAmount;
+    const finalNet = Math.max(0, subtotal - editDiscount);
+    const remaining = Math.max(0, finalNet - editPaid);
+    const status: PaymentStatus = remaining === 0 ? "paid" : editPaid > 0 ? "partial" : "unpaid";
+
+    updateIncomeRecord(editRecord.id, {
+      patientName: editPatientName,
+      patientPhone: editPatientPhone,
+      referringDoctor: editDoctor,
+      branch: editBranch,
+      discount: editDiscount,
+      netAmount: finalNet,
+      paidAmount: editPaid,
+      remainingAmount: remaining,
+      paymentMethod: editMethod,
+      paymentStatus: status,
+      notes: editNotes,
+      updatedAt: new Date().toISOString()
+    });
+    setEditRecord(null);
+  };
+
   const handleQuickPayRemainder = (record: IncomeRecord) => {
     if (record.remainingAmount <= 0) return;
     updateIncomeRecord(record.id, {
@@ -1032,7 +1069,7 @@ export const IncomeModule: React.FC = () => {
                   {editRecord.tests.map(t => t.nameAr).join(' · ')}
                 </div>
                 <div className="text-[11px] text-slate-500 font-mono">
-                  إجمالي قيمة الفحوصات: {editRecord.subtotal || editRecord.totalAmount} ج.م
+                  إجمالي قيمة الفحوصات: {editRecord.subtotal || editRecord.netAmount} ج.م
                 </div>
               </div>
 
