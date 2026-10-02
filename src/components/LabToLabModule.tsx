@@ -11,6 +11,8 @@ import {
   TrendingUp,
   DollarSign,
   FileCheck,
+  Edit2,
+  Trash2,
   Building2,
   Calendar
 } from 'lucide-react';
@@ -21,12 +23,20 @@ export const LabToLabModule: React.FC = () => {
     labToLabOrders,
     addLabToLabOrder,
     updateLabToLabOrder,
+    deleteLabToLabOrder,
     language
   } = useApp();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | LabToLabOrder['resultStatus']>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<LabToLabOrder | null>(null);
+  const [editPatient, setEditPatient] = useState('');
+  const [editLab, setEditLab] = useState('');
+  const [editTests, setEditTests] = useState('');
+  const [editOutsourcedCost, setEditOutsourcedCost] = useState<number>(0);
+  const [editPatientCharged, setEditPatientCharged] = useState<number>(0);
+  const [editSampleType, setEditSampleType] = useState('');
 
   // Form State
   const [patientName, setPatientName] = useState('');
@@ -68,6 +78,31 @@ export const LabToLabModule: React.FC = () => {
       return true;
     });
   }, [labToLabOrders, statusFilter, searchTerm]);
+
+    const handleOpenEditOrder = (o: LabToLabOrder) => {
+    setEditingOrder(o);
+    setEditPatient(o.patientName);
+    setEditLab(o.externalLabName);
+    setEditTests(o.testNames.join(', '));
+    setEditOutsourcedCost(o.outsourcedCost);
+    setEditPatientCharged(o.patientChargedPrice);
+    setEditSampleType(o.sampleType);
+  };
+
+  const handleSaveEditOrder = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingOrder) return;
+    const testList = editTests.split(',').map(s => s.trim()).filter(Boolean);
+    updateLabToLabOrder(editingOrder.id, {
+      patientName: editPatient,
+      externalLabName: editLab,
+      testNames: testList.length > 0 ? testList : editingOrder.testNames,
+      outsourcedCost: editOutsourcedCost,
+      patientChargedPrice: editPatientCharged,
+      sampleType: editSampleType
+    });
+    setEditingOrder(null);
+  };
 
   const handleSaveOrder = (e: React.FormEvent) => {
     e.preventDefault();
@@ -269,6 +304,26 @@ export const LabToLabModule: React.FC = () => {
                     </td>
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditOrder(order)}
+                          className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                          title="تعديل بيانات طلب التحويل"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm()) {
+                              deleteLabToLabOrder(order.id);
+                            }
+                          }}
+                          className="p-1 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded transition-colors"
+                          title="حذف الطلب"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                         {order.resultStatus === 'sent' && (
                           <button
                             onClick={() => handleStatusChange(order.id, 'processing')}
@@ -426,6 +481,101 @@ export const LabToLabModule: React.FC = () => {
                   className="px-5 py-2 bg-teal-800 text-white rounded font-bold shadow-sm"
                 >
                   تسجيل الإحالة
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT ORDER */}
+      {editingOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">تعديل طلب التحويل الخارجي</h3>
+                  <p className="text-[11px] text-slate-500 font-mono">{editingOrder.orderNumber}</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => setEditingOrder(null)} className="text-slate-400 hover:text-slate-700 text-sm">✕</button>
+            </div>
+
+            <form onSubmit={handleSaveEditOrder} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">اسم المريض *</label>
+                <input
+                  type="text"
+                  required
+                  value={editPatient}
+                  onChange={e => setEditPatient(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">المعمل الخارجي المحول إليه *</label>
+                <input
+                  type="text"
+                  required
+                  value={editLab}
+                  onChange={e => setEditLab(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">الفحوصات المحولة (مفصولة بفاصلة)</label>
+                <input
+                  type="text"
+                  value={editTests}
+                  onChange={e => setEditTests(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">تكلفة المعمل الخارجي (ج.م)</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={editOutsourcedCost}
+                    onChange={e => setEditOutsourcedCost(Number(e.target.value))}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-rose-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">سعر المريض المحصل (ج.م)</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={editPatientCharged}
+                    onChange={e => setEditPatientCharged(Number(e.target.value))}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-emerald-700"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingOrder(null)}
+                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-100 font-bold transition-all"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-xl font-bold shadow-md transition-all"
+                >
+                  حفظ التعديل
                 </button>
               </div>
             </form>

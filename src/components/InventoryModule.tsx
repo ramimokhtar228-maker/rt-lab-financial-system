@@ -9,6 +9,7 @@ import {
   Search,
   CheckCircle2,
   Trash2,
+  Edit2,
   ArrowUpRight,
   ArrowDownLeft,
   Printer,
@@ -39,6 +40,13 @@ export const InventoryModule: React.FC = () => {
 
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [editItemName, setEditItemName] = useState('');
+  const [editItemQty, setEditItemQty] = useState<number>(0);
+  const [editItemThreshold, setEditItemThreshold] = useState<number>(0);
+  const [editItemCost, setEditItemCost] = useState<number>(0);
+  const [editItemSupplier, setEditItemSupplier] = useState('');
+  const [editItemExpiry, setEditItemExpiry] = useState('');
   const [restockModalItem, setRestockModalItem] = useState<InventoryItem | null>(null);
   const [restockQty, setRestockQty] = useState<number>(5);
   const [restockCost, setRestockCost] = useState<number>(0);
@@ -428,6 +436,15 @@ export const InventoryModule: React.FC = () => {
                             <ArrowUpRight className="w-3.5 h-3.5" />
                           </button>
 
+                          {/* Edit Item Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditItem(item)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded border border-blue-200 transition-colors"
+                            title="تعديل بيانات الصنف والمخزون"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
                           {/* Barcode label print */}
                           <button
                             onClick={() => setBarcodePrintItem(item)}
@@ -732,6 +749,112 @@ export const InventoryModule: React.FC = () => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT INVENTORY ITEM */}
+      {editingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">تعديل بيانات المادة المخزنية</h3>
+                  <p className="text-[11px] text-slate-500 font-mono">{editingItem.itemCode}</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => setEditingItem(null)} className="text-slate-400 hover:text-slate-700 text-sm">✕</button>
+            </div>
+
+            <form onSubmit={handleSaveEditItem} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">اسم الكاشف / المستلزم *</label>
+                <input
+                  type="text"
+                  required
+                  value={editItemName}
+                  onChange={e => setEditItemName(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-semibold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">الرصيد الحالي ({editingItem.unit}) *</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={editItemQty}
+                    onChange={e => setEditItemQty(Number(e.target.value))}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-teal-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">حد الأمان الحرج</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={editItemThreshold}
+                    onChange={e => setEditItemThreshold(Number(e.target.value))}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">سعر الوحدة (ج.م)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editItemCost}
+                    onChange={e => setEditItemCost(Number(e.target.value))}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">تاريخ الصلاحية</label>
+                  <input
+                    type="date"
+                    value={editItemExpiry}
+                    onChange={e => setEditItemExpiry(e.target.value)}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">المورد / الشركة</label>
+                <input
+                  type="text"
+                  value={editItemSupplier}
+                  onChange={e => setEditItemSupplier(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingItem(null)}
+                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-100 font-bold transition-all"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-xl font-bold shadow-md transition-all"
+                >
+                  حفظ تعديل الصنف
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

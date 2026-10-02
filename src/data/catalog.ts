@@ -84,13 +84,25 @@ export const TEST_CATALOG: InvoiceTestItem[] = [
   { id: 't-2', code: 'GLU_PP', nameAr: 'سكر بعد الأكل بساعتين (2h PPBS)', nameEn: '2h Post-Prandial Glucose', price: 60, category: 'Clinical Chemistry' },
   { id: 't-3', code: 'GLU_R', nameAr: 'سكر عشوائي (RBS)', nameEn: 'Random Blood Sugar', price: 50, category: 'Clinical Chemistry' },
   { id: 't-4', code: 'HBA1C', nameAr: 'السكر التراكمي (HbA1c)', nameEn: 'Glycated Hemoglobin HbA1c', price: 160, category: 'Clinical Chemistry' },
+  { id: 't-4b', code: 'INSULIN_F', nameAr: 'إنسولين صائم (Fasting Insulin)', nameEn: 'Fasting Insulin Level', price: 220, category: 'Endocrinology' },
+  { id: 't-4c', code: 'C_PEPTIDE', nameAr: 'سي-ببتيد (C-Peptide)', nameEn: 'C-Peptide Fasting', price: 260, category: 'Endocrinology' },
+  { id: 't-4d', code: 'HOMA_IR', nameAr: 'مقاومة الإنسولين (HOMA-IR Index)', nameEn: 'Insulin Resistance HOMA-IR', price: 280, category: 'Clinical Chemistry' },
 
-  // Hematology
+  // Hematology & Complete Blood Picture
   { id: 't-5', code: 'CBC', nameAr: 'صورة دم كاملة (CBC with diff)', nameEn: 'Complete Blood Picture', price: 150, category: 'Hematology' },
   { id: 't-6', code: 'ESR', nameAr: 'سرعة الترسيب (ESR 1st & 2nd hr)', nameEn: 'Erythrocyte Sedimentation Rate', price: 50, category: 'Hematology' },
   { id: 't-7', code: 'PT_INR', nameAr: 'سيولة الدم والزمن القياسي (PT / INR)', nameEn: 'Prothrombin Time & INR', price: 90, category: 'Coagulation' },
   { id: 't-8', code: 'PTT', nameAr: 'زمن الثرومبوبلاستين الجزئي (APTT)', nameEn: 'Activated Partial Thromboplastin', price: 100, category: 'Coagulation' },
   { id: 't-9', code: 'BLOOD_GROUP', nameAr: 'فصيلة الدم وعامل ريسس (ABO & Rh)', nameEn: 'Blood Group & Rh Typing', price: 50, category: 'Hematology' },
+  { id: 't-9b', code: 'RETIC_COUNT', nameAr: 'عد الخلايا الشبكية (Reticulocytes Count)', nameEn: 'Reticulocyte Count', price: 80, category: 'Hematology' },
+  { id: 't-9c', code: 'BLOOD_FILM', nameAr: 'فيلم دم وفحص ميكروسكوبي (Peripheral Blood Film)', nameEn: 'Peripheral Blood Smear', price: 120, category: 'Hematology' },
+  { id: 't-9d', code: 'G6PD', nameAr: 'إنزيم أنيميا الفول (G6PD Quantitative)', nameEn: 'G6PD Enzyme Activity', price: 190, category: 'Hematology' },
+  { id: 't-9e', code: 'HB_ELECTRO', nameAr: 'فصل كهربائي للهيموجلوبين (Hb Electrophoresis)', nameEn: 'Hemoglobin Electrophoresis', price: 320, category: 'Hematology' },
+  { id: 't-9f', code: 'COOMBS_DIR', nameAr: 'كومبس مباشر (Direct Coombs DAT)', nameEn: 'Direct Antiglobulin Test', price: 110, category: 'Hematology' },
+  { id: 't-9g', code: 'COOMBS_INDIR', nameAr: 'كومبس غير مباشر (Indirect Coombs IAT)', nameEn: 'Indirect Antiglobulin Test', price: 130, category: 'Hematology' },
+  { id: 't-9h', code: 'BLEEDING_TIME', nameAr: 'زمن النزف وزمن التجلط (BT & CT)', nameEn: 'Bleeding & Clotting Time', price: 60, category: 'Coagulation' },
+  { id: 't-9i', code: 'D_DIMER', nameAr: 'تحليل د-دايمر للتجلط (D-Dimer Quantitative)', nameEn: 'D-Dimer Quantitative', price: 260, category: 'Coagulation' },
+  { id: 't-9j', code: 'FIBRINOGEN', nameAr: 'فيبرينوجين بالدم (Plasma Fibrinogen)', nameEn: 'Fibrinogen Activity', price: 180, category: 'Coagulation' },
 
   // Kidney Function Tests
   { id: 't-10', code: 'CREAT', nameAr: 'كرياتينين بالدم (Serum Creatinine)', nameEn: 'Serum Creatinine', price: 60, category: 'Kidney Function' },
@@ -98,6 +110,10 @@ export const TEST_CATALOG: InvoiceTestItem[] = [
   { id: 't-12', code: 'URIC', nameAr: 'حمض البوليك (Serum Uric Acid)', nameEn: 'Serum Uric Acid', price: 60, category: 'Kidney Function' },
   { id: 't-13', code: 'URINE_ROUTINE', nameAr: 'تحليل بول كامل (Complete Urine Routine)', nameEn: 'Routine Urine Analysis', price: 50, category: 'Urine & Clinical Micro' },
   { id: 't-14', code: 'MICROALBUMIN', nameAr: 'زلال دقيق في البول (Microalbumin / Creatinine Ratio)', nameEn: 'Microalbuminuria Ratio', price: 170, category: 'Kidney Function' },
+  { id: 't-14b', code: 'CREAT_CLEARANCE', nameAr: 'معدل تنقية الكرياتينين (24h Creatinine Clearance)', nameEn: 'Creatinine Clearance 24h', price: 180, category: 'Kidney Function' },
+  { id: 't-14c', code: 'URINE_PROTEIN_24', nameAr: 'بروتين البول في 24 ساعة (24h Urine Protein)', nameEn: 'Total Protein 24h Urine', price: 140, category: 'Kidney Function' },
+  { id: 't-14d', code: 'EGFR', nameAr: 'معدل الترشيح الكبيبي المقدر (eGFR CKD-EPI)', nameEn: 'Estimated GFR (eGFR)', price: 70, category: 'Kidney Function' },
+  { id: 't-14e', code: 'CYSTATIN_C', nameAr: 'سيستاتين سي لوظائف الكلى (Serum Cystatin C)', nameEn: 'Cystatin C Level', price: 420, category: 'Kidney Function' },
 
   // Liver Function Tests
   { id: 't-15', code: 'ALT', nameAr: 'إنزيم الكبد (SGPT / ALT)', nameEn: 'Alanine Aminotransferase', price: 60, category: 'Liver Function' },
@@ -105,6 +121,11 @@ export const TEST_CATALOG: InvoiceTestItem[] = [
   { id: 't-17', code: 'BILI_TOTAL_DIR', nameAr: 'الصفراء الكلية والمباشرة (Total & Direct Bilirubin)', nameEn: 'Bilirubin Total & Direct', price: 80, category: 'Liver Function' },
   { id: 't-18', code: 'ALBUMIN', nameAr: 'الألبومين بالدم (Serum Albumin)', nameEn: 'Serum Albumin', price: 60, category: 'Liver Function' },
   { id: 't-19', code: 'ALP', nameAr: 'إنزيم الفوسفاتاز القلوي (Alkaline Phosphatase)', nameEn: 'Alkaline Phosphatase', price: 70, category: 'Liver Function' },
+  { id: 't-19b', code: 'TOTAL_PROTEIN', nameAr: 'البروتين الكلي بالدم (Total Serum Protein)', nameEn: 'Total Protein Serum', price: 60, category: 'Liver Function' },
+  { id: 't-19c', code: 'GGT', nameAr: 'إنزيم جاما جي تي (Gamma-GT)', nameEn: 'Gamma Glutamyl Transferase', price: 90, category: 'Liver Function' },
+  { id: 't-19d', code: 'AMYLASE', nameAr: 'إنزيم الأميليز (Serum Amylase)', nameEn: 'Serum Amylase Enzyme', price: 120, category: 'Liver Function' },
+  { id: 't-19e', code: 'LIPASE', nameAr: 'إنزيم الليبيز للبنكرياس (Serum Lipase)', nameEn: 'Serum Lipase Enzyme', price: 140, category: 'Liver Function' },
+  { id: 't-19f', code: 'LDH', nameAr: 'إنزيم نازعة هيدروجين اللاكتات (LDH Total)', nameEn: 'Lactate Dehydrogenase LDH', price: 110, category: 'Clinical Chemistry' },
 
   // Lipid Profile
   { id: 't-20', code: 'LIPID_PANEL', nameAr: 'دهون الدم الكاملة (Lipid Profile Panel)', nameEn: 'Complete Lipid Profile', price: 220, category: 'Lipid Profile' },
@@ -112,24 +133,102 @@ export const TEST_CATALOG: InvoiceTestItem[] = [
   { id: 't-22', code: 'TRIG', nameAr: 'الدهون الثلاثية (Triglycerides)', nameEn: 'Serum Triglycerides', price: 60, category: 'Lipid Profile' },
   { id: 't-23', code: 'HDL', nameAr: 'الكولسترول عالي الكثافة (HDL-C Good)', nameEn: 'HDL Cholesterol', price: 70, category: 'Lipid Profile' },
   { id: 't-24', code: 'LDL', nameAr: 'الكولسترول منخفض الكثافة (LDL-C Bad)', nameEn: 'LDL Cholesterol', price: 70, category: 'Lipid Profile' },
+  { id: 't-24b', code: 'VLDL', nameAr: 'الكولسترول شديد انخفاض الكثافة (VLDL-C)', nameEn: 'VLDL Cholesterol', price: 60, category: 'Lipid Profile' },
+  { id: 't-24c', code: 'APO_A1', nameAr: 'أبوليبوبروتين أ-1 (Apolipoprotein A1)', nameEn: 'Apolipoprotein A1', price: 230, category: 'Lipid Profile' },
+  { id: 't-24d', code: 'APO_B', nameAr: 'أبوليبوبروتين ب (Apolipoprotein B)', nameEn: 'Apolipoprotein B', price: 230, category: 'Lipid Profile' },
+  { id: 't-24e', code: 'LIPOPROTEIN_A', nameAr: 'ليبوبروتين أ (Lipoprotein a Lp[a])', nameEn: 'Lipoprotein(a) Level', price: 340, category: 'Lipid Profile' },
 
   // Thyroid & Hormones
   { id: 't-25', code: 'TSH', nameAr: 'هرمون الغدة الدرقية (TSH Ultra-sensitive)', nameEn: 'Thyroid Stimulating Hormone', price: 160, category: 'Endocrinology' },
   { id: 't-26', code: 'FT3', nameAr: 'هرمون الغدة الدرقية الحر (Free T3)', nameEn: 'Free Triiodothyronine', price: 160, category: 'Endocrinology' },
   { id: 't-27', code: 'FT4', nameAr: 'هرمون الثيروكسين الحر (Free T4)', nameEn: 'Free Thyroxine', price: 160, category: 'Endocrinology' },
+  { id: 't-27b', code: 'TOTAL_T3', nameAr: 'هرمون الغدة الدرقية الكلي (Total T3)', nameEn: 'Total T3 Hormone', price: 150, category: 'Endocrinology' },
+  { id: 't-27c', code: 'TOTAL_T4', nameAr: 'هرمون الثيروكسين الكلي (Total T4)', nameEn: 'Total T4 Hormone', price: 150, category: 'Endocrinology' },
+  { id: 't-27d', code: 'ANTI_TPO', nameAr: 'أجسام مضادة للغدة الدرقية (Anti-TPO Ab)', nameEn: 'Anti-Thyroid Peroxidase Ab', price: 240, category: 'Endocrinology' },
+  { id: 't-27e', code: 'ANTI_TG', nameAr: 'أجسام مضادة للثيروجلوبيولين (Anti-TG Ab)', nameEn: 'Anti-Thyroglobulin Ab', price: 240, category: 'Endocrinology' },
+  { id: 't-27f', code: 'PTH_INTACT', nameAr: 'هرمون الغدد الجار درقية (Intact PTH)', nameEn: 'Parathyroid Hormone (PTH)', price: 320, category: 'Endocrinology' },
+
+  // Fertility & Reproductive Hormones
+  { id: 't-27g', code: 'FSH', nameAr: 'هرمون منبه للجريب (FSH Hormone)', nameEn: 'Follicle Stimulating Hormone', price: 170, category: 'Endocrinology' },
+  { id: 't-27h', code: 'LH', nameAr: 'هرمون اللوتيني (LH Hormone)', nameEn: 'Luteinizing Hormone', price: 170, category: 'Endocrinology' },
+  { id: 't-27i', code: 'PROLACTIN', nameAr: 'هرمون الحليب (Prolactin Serum)', nameEn: 'Serum Prolactin Level', price: 170, category: 'Endocrinology' },
+  { id: 't-27j', code: 'TESTO_TOTAL', nameAr: 'هرمون الذكورة الكلي (Total Testosterone)', nameEn: 'Total Testosterone', price: 210, category: 'Endocrinology' },
+  { id: 't-27k', code: 'TESTO_FREE', nameAr: 'هرمون الذكورة الحر (Free Testosterone)', nameEn: 'Free Testosterone', price: 260, category: 'Endocrinology' },
+  { id: 't-27l', code: 'ESTRADIOL_E2', nameAr: 'هرمون الإستروجين (Estradiol E2)', nameEn: 'Serum Estradiol (E2)', price: 180, category: 'Endocrinology' },
+  { id: 't-27m', code: 'PROGESTERONE', nameAr: 'هرمون البروجيستيرون (Progesterone PRG)', nameEn: 'Serum Progesterone', price: 180, category: 'Endocrinology' },
+  { id: 't-27n', code: 'AMH', nameAr: 'مخزون المبيض (Anti-Müllerian Hormone AMH)', nameEn: 'Anti-Müllerian Hormone (AMH)', price: 550, category: 'Endocrinology' },
+  { id: 't-27o', code: 'BETA_HCG', nameAr: 'هرمون الحمل الرقمي (Quantitative Beta-hCG)', nameEn: 'Beta hCG (Quantitative)', price: 190, category: 'Endocrinology' },
+  { id: 't-27p', code: 'DHEA_S', nameAr: 'هرمون الغدة الكظرية (DHEA-Sulfate)', nameEn: 'DHEA Sulfate (DHEA-S)', price: 240, category: 'Endocrinology' },
+  { id: 't-27q', code: 'CORTISOL_AM', nameAr: 'كورتيزول صباحي (Cortisol 8 AM)', nameEn: 'Morning Serum Cortisol', price: 190, category: 'Endocrinology' },
+  { id: 't-27r', code: 'CORTISOL_PM', nameAr: 'كورتيزول مسائي (Cortisol 8 PM)', nameEn: 'Evening Serum Cortisol', price: 190, category: 'Endocrinology' },
+
+  // Tumor Markers
   { id: 't-28', code: 'PSA_TOTAL', nameAr: 'دلالات أورام البروستاتا الكلية (Total PSA)', nameEn: 'Total PSA', price: 220, category: 'Tumor Markers' },
+  { id: 't-28b', code: 'PSA_FREE', nameAr: 'دلالات أورام البروستاتا الحرة (Free PSA)', nameEn: 'Free PSA', price: 240, category: 'Tumor Markers' },
+  { id: 't-28c', code: 'CEA', nameAr: 'دلالات أورام القولون والجهاز الهضمي (CEA)', nameEn: 'Carcinoembryonic Antigen (CEA)', price: 230, category: 'Tumor Markers' },
+  { id: 't-28d', code: 'AFP', nameAr: 'دلالات أورام الكبد والأجنة (AFP Alpha-Fetoprotein)', nameEn: 'Alpha-Fetoprotein (AFP)', price: 220, category: 'Tumor Markers' },
+  { id: 't-28e', code: 'CA_125', nameAr: 'دلالات أورام المبيض (CA 125 Ovarian)', nameEn: 'Cancer Antigen 125 (CA-125)', price: 280, category: 'Tumor Markers' },
+  { id: 't-28f', code: 'CA_15_3', nameAr: 'دلالات أورام الثدي (CA 15-3 Breast)', nameEn: 'Cancer Antigen 15-3 (CA-15-3)', price: 280, category: 'Tumor Markers' },
+  { id: 't-28g', code: 'CA_19_9', nameAr: 'دلالات أورام البنكرياس والمرارة (CA 19-9)', nameEn: 'Cancer Antigen 19-9 (CA-19-9)', price: 290, category: 'Tumor Markers' },
+  { id: 't-28h', code: 'CALCITONIN', nameAr: 'هرمون الكالسيتونين لأورام الدرقية (Calcitonin)', nameEn: 'Calcitonin Marker', price: 420, category: 'Tumor Markers' },
+
+  // Cardiac Markers
+  { id: 't-28i', code: 'TROPONIN_I', nameAr: 'تروبونين عالي الحساسية لعضلة القلب (hs-Troponin I)', nameEn: 'High Sensitivity Troponin I', price: 340, category: 'Clinical Chemistry' },
+  { id: 't-28j', code: 'CK_MB', nameAr: 'إنزيم القلب (CK-MB Mass / Activity)', nameEn: 'Creatine Kinase MB (CK-MB)', price: 160, category: 'Clinical Chemistry' },
+  { id: 't-28k', code: 'CK_TOTAL', nameAr: 'إنزيم العضلات والقلب الكلي (Total CPK)', nameEn: 'Creatine Kinase (Total CPK)', price: 110, category: 'Clinical Chemistry' },
+  { id: 't-28l', code: 'BNP', nameAr: 'ببتيد القلب لفشل عضلة القلب (NT-proBNP)', nameEn: 'NT-proBNP Cardiac Marker', price: 580, category: 'Clinical Chemistry' },
+
+  // Anemia & Iron Study
   { id: 't-29', code: 'FERRITIN', nameAr: 'مخزون الحديد (Serum Ferritin)', nameEn: 'Serum Ferritin', price: 180, category: 'Anemia & Iron' },
+  { id: 't-29b', code: 'IRON_SERUM', nameAr: 'الحديد في الدم (Serum Iron)', nameEn: 'Serum Iron (Fe)', price: 90, category: 'Anemia & Iron' },
+  { id: 't-29c', code: 'TIBC', nameAr: 'السعة الكلية لرابط الحديد (TIBC / Transferrin)', nameEn: 'Total Iron Binding Capacity', price: 110, category: 'Anemia & Iron' },
+  { id: 't-29d', code: 'FOLIC_ACID', nameAr: 'حمض الفوليك (Serum Folic Acid / Folate)', nameEn: 'Folate (Folic Acid)', price: 260, category: 'Anemia & Iron' },
+
+  // Vitamins & Minerals & Electrolytes
   { id: 't-30', code: 'VIT_D', nameAr: 'فيتامين د (25-OH Vitamin D Total)', nameEn: 'Vitamin D 25-Hydroxy', price: 380, category: 'Vitamins & Minerals' },
   { id: 't-31', code: 'VIT_B12', nameAr: 'فيتامين ب 12 (Vitamin B12)', nameEn: 'Cyanocobalamin B12', price: 260, category: 'Vitamins & Minerals' },
+  { id: 't-31b', code: 'CALCIUM_TOTAL', nameAr: 'الكالسيوم الكلي بالدم (Total Calcium)', nameEn: 'Total Serum Calcium', price: 60, category: 'Clinical Chemistry' },
+  { id: 't-31c', code: 'CALCIUM_IONIZED', nameAr: 'الكالسيوم المتأين الحر (Ionized Calcium Ca++)', nameEn: 'Ionized Free Calcium', price: 110, category: 'Clinical Chemistry' },
+  { id: 't-31d', code: 'PHOSPHORUS', nameAr: 'الفوسفور غير العضوي (Serum Phosphorus)', nameEn: 'Inorganic Phosphorus', price: 60, category: 'Clinical Chemistry' },
+  { id: 't-31e', code: 'MAGNESIUM', nameAr: 'الماغنسيوم بالدم (Serum Magnesium)', nameEn: 'Serum Magnesium (Mg)', price: 70, category: 'Clinical Chemistry' },
+  { id: 't-31f', code: 'SODIUM_NA', nameAr: 'الصوديوم بالدم (Serum Sodium Na+)', nameEn: 'Sodium (Na+) Electrolyte', price: 70, category: 'Clinical Chemistry' },
+  { id: 't-31g', code: 'POTASSIUM_K', nameAr: 'البوتاسيوم بالدم (Serum Potassium K+)', nameEn: 'Potassium (K+) Electrolyte', price: 70, category: 'Clinical Chemistry' },
+  { id: 't-31h', code: 'CHLORIDE_CL', nameAr: 'الكلوريد بالدم (Serum Chloride Cl-)', nameEn: 'Chloride (Cl-) Electrolyte', price: 70, category: 'Clinical Chemistry' },
 
-  // Serology & Immunology
+  // Serology, Immunology & Autoimmune
   { id: 't-32', code: 'CRP_TITRE', nameAr: 'بروتين الالتهاب التفاعلي (CRP Quantitative)', nameEn: 'C-Reactive Protein (Quant)', price: 100, category: 'Immunology' },
+  { id: 't-32b', code: 'HS_CRP', nameAr: 'بروتين سي التفاعلي عالي الحساسية (hs-CRP)', nameEn: 'High Sensitivity CRP', price: 160, category: 'Immunology' },
   { id: 't-33', code: 'ASOT', nameAr: 'مضاد الستربتوليزين (ASOT Titre)', nameEn: 'Antistreptolysin O Titre', price: 90, category: 'Immunology' },
   { id: 't-34', code: 'RF', nameAr: 'عامل الروماتويد (Rheumatoid Factor RF)', nameEn: 'Rheumatoid Factor', price: 90, category: 'Immunology' },
+  { id: 't-34b', code: 'ANTI_CCP', nameAr: 'الأجسام المضادة للروماتويد (Anti-CCP Antibodies)', nameEn: 'Anti-Cyclic Citrullinated Peptide', price: 340, category: 'Immunology' },
+  { id: 't-34c', code: 'ANA_TITRE', nameAr: 'الأجسام المضادة للنواة (ANA by IFA / ELISA)', nameEn: 'Antinuclear Antibodies (ANA)', price: 240, category: 'Immunology' },
+  { id: 't-34d', code: 'ANTI_DSDNA', nameAr: 'أجسام الذئبة الحمراء (Anti-dsDNA Titre)', nameEn: 'Anti-Double Stranded DNA', price: 290, category: 'Immunology' },
+  { id: 't-34e', code: 'TOTAL_IGE', nameAr: 'الأجسام المضادة للحساسية (Total IgE)', nameEn: 'Total Immunoglobulin E (IgE)', price: 210, category: 'Immunology' },
+  { id: 't-34f', code: 'WIDAL_TEST', nameAr: 'تفاعل فيدال للتيفود (Widal Agglutination Test)', nameEn: 'Widal Test for Typhoid', price: 80, category: 'Immunology' },
+  { id: 't-34g', code: 'BRUCELLA', nameAr: 'تفاعل بروسيلا للحمى المالطية (Brucella Titre)', nameEn: 'Brucella Serology Titre', price: 90, category: 'Immunology' },
+
+  // Virology & Infectious Diseases
   { id: 't-35', code: 'HBSAG', nameAr: 'فيروس بي الكبدي (HBsAg Rapid / ECLIA)', nameEn: 'Hepatitis B Surface Antigen', price: 110, category: 'Virology' },
+  { id: 't-35b', code: 'HBSAB', nameAr: 'أجسام مضادة لفيروس بي (HBsAb Quantitative)', nameEn: 'Hepatitis B Surface Antibody', price: 180, category: 'Virology' },
   { id: 't-36', code: 'HCV_AB', nameAr: 'أجسام فيروس سي الكبدي (HCV Ab)', nameEn: 'Hepatitis C Antibody', price: 110, category: 'Virology' },
   { id: 't-37', code: 'HIV_DUO', nameAr: 'فيروس نقص المناعة (HIV 1/2 Combo)', nameEn: 'HIV 1/2 Ab/Ag Combo', price: 210, category: 'Virology' },
-  { id: 't-38', code: 'STOOL_ANALYSIS', nameAr: 'تحليل براز كامل وميكروسكوبي (Stool Routine)', nameEn: 'Complete Stool Analysis', price: 50, category: 'Urine & Clinical Micro' }
+  { id: 't-37b', code: 'VDRL_RPR', nameAr: 'فحص مرض الزهري (VDRL / RPR Syphilis)', nameEn: 'Syphilis Serology (VDRL/RPR)', price: 90, category: 'Virology' },
+  { id: 't-37c', code: 'H_PYLORI_AG', nameAr: 'جرثومة المعدة بالبراز (H. Pylori Stool Antigen)', nameEn: 'H. Pylori Stool Antigen', price: 140, category: 'Urine & Clinical Micro' },
+  { id: 't-37d', code: 'H_PYLORI_AB', nameAr: 'أجسام مضادة لجرثومة المعدة بالدم (H. Pylori Ab)', nameEn: 'H. Pylori IgG Antibody', price: 120, category: 'Virology' },
+  { id: 't-37e', code: 'TOXO_IGG_IGM', nameAr: 'تحليل داء القطط للمناعة (Toxoplasma IgG & IgM)', nameEn: 'Toxoplasmosis IgG & IgM', price: 260, category: 'Virology' },
+  { id: 't-37f', code: 'RUBELLA_IGG', nameAr: 'الحصبة الألمانية (Rubella IgG & IgM)', nameEn: 'Rubella Antibodies', price: 260, category: 'Virology' },
+  { id: 't-37g', code: 'CMV_IGG_IGM', nameAr: 'الفيروس المضخم للخلايا (CMV IgG & IgM)', nameEn: 'Cytomegalovirus IgG & IgM', price: 280, category: 'Virology' },
+
+  // Clinical Microbiology, Stool & Cultures
+  { id: 't-38', code: 'STOOL_ANALYSIS', nameAr: 'تحليل براز كامل وميكروسكوبي (Stool Routine)', nameEn: 'Complete Stool Analysis', price: 50, category: 'Urine & Clinical Micro' },
+  { id: 't-38b', code: 'STOOL_OB', nameAr: 'الدم الخفي في البراز (Occult Blood in Stool)', nameEn: 'Fecal Occult Blood Test', price: 70, category: 'Urine & Clinical Micro' },
+  { id: 't-38c', code: 'URINE_CULTURE', nameAr: 'مزرعة بول وحساسية للمضادات (Urine Culture & Sensitivity)', nameEn: 'Urine Culture & Sensitivity', price: 190, category: 'Urine & Clinical Micro' },
+  { id: 't-38d', code: 'STOOL_CULTURE', nameAr: 'مزرعة براز وحساسية (Stool Culture & Sensitivity)', nameEn: 'Stool Culture & Sensitivity', price: 210, category: 'Urine & Clinical Micro' },
+  { id: 't-38e', code: 'THROAT_CULTURE', nameAr: 'مزرعة مسحة حلق (Throat Swab Culture)', nameEn: 'Throat Swab Culture & Sens', price: 190, category: 'Urine & Clinical Micro' },
+  { id: 't-38f', code: 'WOUND_CULTURE', nameAr: 'مزرعة صديد أو جرح (Wound / Pus Culture)', nameEn: 'Wound Pus Culture & Sensitivity', price: 220, category: 'Urine & Clinical Micro' },
+  { id: 't-38g', code: 'BLOOD_CULTURE', nameAr: 'مزرعة دم هوائية ولاهوائية (Blood Culture Bottles)', nameEn: 'Automated Blood Culture', price: 340, category: 'Urine & Clinical Micro' },
+  { id: 't-38h', code: 'SPUTUM_CULTURE', nameAr: 'مزرعة بصاق وحساسية (Sputum Culture)', nameEn: 'Sputum Culture & Sensitivity', price: 210, category: 'Urine & Clinical Micro' },
+  { id: 't-38i', code: 'SEMEN_ANALYSIS', nameAr: 'تحليل السائل المنوي الشامل WHO (Complete Semen Analysis)', nameEn: 'Complete Semen Analysis WHO 6th', price: 150, category: 'Urine & Clinical Micro' }
 ];
 
 export const INITIAL_INCOME: IncomeRecord[] = [

@@ -5,6 +5,7 @@ import {
   PieChart,
   Plus,
   Trash2,
+  Edit2,
   DollarSign,
   TrendingDown,
   Percent,
@@ -20,6 +21,7 @@ export const ExpenseAndProfitModule: React.FC = () => {
   const {
     expenses,
     addExpense,
+    updateExpense,
     deleteExpense,
     profitConfig,
     updateProfitConfig,
@@ -85,6 +87,30 @@ export const ExpenseAndProfitModule: React.FC = () => {
 
     return map;
   }, [expenses]);
+
+    const handleOpenEditExpense = (exp: ExpenseRecord) => {
+    setEditExpense(exp);
+    setEditTitle(exp.title);
+    setEditAmount(exp.amount);
+    setEditDept(exp.department);
+    setEditPaidTo(exp.paidTo);
+    setEditPaymentMethod(exp.paymentMethod);
+    setEditNotes(exp.notes || '');
+  };
+
+  const handleSaveEditExpense = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editExpense) return;
+    updateExpense(editExpense.id, {
+      title: editTitle,
+      amount: editAmount,
+      department: editDept,
+      paidTo: editPaidTo,
+      paymentMethod: editPaymentMethod,
+      notes: editNotes
+    });
+    setEditExpense(null);
+  };
 
   const handleSaveExpense = (e: React.FormEvent) => {
     e.preventDefault();
@@ -322,6 +348,14 @@ export const ExpenseAndProfitModule: React.FC = () => {
                         <td className="py-3 px-4 text-slate-600">{exp.approvedBy}</td>
                         <td className="py-3 px-4 text-center">
                           {currentUser.role === 'admin_ceo' && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditExpense(exp)}
+                              className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors ml-1"
+                              title="تعديل سند الصرف"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
                             <button
                               onClick={() => {
                                 if (confirm(`هل تريد بالتأكيد حذف سند الصرف: ${exp.title}؟`)) {
@@ -712,6 +746,113 @@ export const ExpenseAndProfitModule: React.FC = () => {
                   className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg shadow-sm"
                 >
                   حفظ إذن الصرف
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT EXPENSE */}
+      {editExpense && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">تعديل سند الصرف</h3>
+                  <p className="text-[11px] text-slate-500 font-mono">رقم السند: {editExpense.voucherNumber}</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => setEditExpense(null)} className="text-slate-400 hover:text-slate-700 text-sm">✕</button>
+            </div>
+
+            <form onSubmit={handleSaveEditExpense} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">بيان المصروف *</label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={e => setEditTitle(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-semibold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">المبلغ (ج.م) *</label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={editAmount}
+                    onChange={e => setEditAmount(Number(e.target.value))}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-rose-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">طريقة السداد</label>
+                  <select
+                    value={editPaymentMethod}
+                    onChange={e => setEditPaymentMethod(e.target.value as any)}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg"
+                  >
+                    <option value="cash">خزينة نقدي</option>
+                    <option value="bank_transfer">تحويل بنكي</option>
+                    <option value="visa">فيزا / بطاقة</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">القسم / البند</label>
+                  <input
+                    type="text"
+                    value={editDept}
+                    onChange={e => setEditDept(e.target.value)}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">الجهة المستلمة</label>
+                  <input
+                    type="text"
+                    value={editPaidTo}
+                    onChange={e => setEditPaidTo(e.target.value)}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">ملاحظات إضافية</label>
+                <input
+                  type="text"
+                  value={editNotes}
+                  onChange={e => setEditNotes(e.target.value)}
+                  placeholder="ملاحظات الفاتورة أو الإذن..."
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditExpense(null)}
+                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-100 font-bold transition-all"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-xl font-bold shadow-md transition-all"
+                >
+                  حفظ تعديل المصروف
                 </button>
               </div>
             </form>

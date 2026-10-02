@@ -1,6 +1,7 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import {
+  LayoutDashboard,
   Receipt,
   PieChart,
   FlaskConical,
@@ -28,6 +29,13 @@ export const Navigation: React.FC = () => {
   const pendingBillsCount = incomeRecords.filter(r => r.paymentStatus !== 'paid').length;
 
   const navItems = [
+    {
+      id: 'dashboard',
+      labelAr: 'الرئيسية (لوحة القيادة)',
+      labelEn: 'Executive Dashboard',
+      icon: LayoutDashboard,
+      permission: 'income'
+    },
     {
       id: 'income',
       labelAr: 'سجل الدخل والفواتير',

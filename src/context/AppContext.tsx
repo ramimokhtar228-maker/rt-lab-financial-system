@@ -60,6 +60,7 @@ interface AppContextType {
   // Expenses & Profit
   expenses: ExpenseRecord[];
   addExpense: (expense: Omit<ExpenseRecord, 'id' | 'createdAt'>) => ExpenseRecord;
+  updateExpense: (id: string, updates: Partial<ExpenseRecord>) => void;
   deleteExpense: (id: string) => void;
   profitConfig: ProfitShareConfig;
   updateProfitConfig: (config: ProfitShareConfig) => void;
@@ -78,6 +79,7 @@ interface AppContextType {
   payroll: PayrollRecord[];
   addEmployee: (emp: Omit<Employee, 'id'>) => void;
   updateEmployee: (id: string, emp: Partial<Employee>) => void;
+  deleteEmployee: (id: string) => void;
   recordAttendance: (employeeId: string, status: AttendanceRecord['status'], checkIn?: string, checkOut?: string, notes?: string) => void;
   generatePayrollForMonth: (monthYear: string) => void;
   updatePayrollRecord: (id: string, updates: Partial<PayrollRecord>) => void;
@@ -86,6 +88,7 @@ interface AppContextType {
   labToLabOrders: LabToLabOrder[];
   addLabToLabOrder: (order: Omit<LabToLabOrder, 'id'>) => void;
   updateLabToLabOrder: (id: string, updates: Partial<LabToLabOrder>) => void;
+  deleteLabToLabOrder: (id: string) => void;
 
   // Closeouts & Cash Drawer
   closeouts: DailyCloseout[];
@@ -183,7 +186,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [loginModalOpen, setLoginModalOpen] = useState(false);
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<string>('income');
+  const [activeTab, setActiveTab] = useState<string>('dashboard');
 
   // Scanner modal state
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -1049,6 +1052,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteIncomeRecord,
         expenses,
         addExpense,
+        updateExpense,
         deleteExpense,
         profitConfig,
         updateProfitConfig,
@@ -1063,12 +1067,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         payroll,
         addEmployee,
         updateEmployee,
+        deleteEmployee,
         recordAttendance,
         generatePayrollForMonth,
         updatePayrollRecord,
         labToLabOrders,
         addLabToLabOrder,
         updateLabToLabOrder,
+        deleteLabToLabOrder,
         closeouts,
         saveCloseout,
         auditLogs,

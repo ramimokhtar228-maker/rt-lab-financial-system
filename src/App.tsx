@@ -2,6 +2,7 @@ import React from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
+import { DashboardModule } from './components/DashboardModule';
 import { IncomeModule } from './components/IncomeModule';
 import { ExpenseAndProfitModule } from './components/ExpenseAndProfitModule';
 import { InventoryModule } from './components/InventoryModule';
@@ -27,6 +28,7 @@ const AppContent: React.FC = () => {
 
       {/* Main Module Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {activeTab === 'dashboard' && <DashboardModule />}
         {activeTab === 'income' && <IncomeModule />}
         {activeTab === 'expenses' && <ExpenseAndProfitModule />}
         {activeTab === 'inventory' && <InventoryModule />}

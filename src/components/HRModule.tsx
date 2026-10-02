@@ -12,6 +12,7 @@ import {
   Phone,
   Printer,
   Edit2,
+  Trash2,
   FileSpreadsheet,
   Award,
   MinusCircle
@@ -23,6 +24,7 @@ export const HRModule: React.FC = () => {
     employees,
     addEmployee,
     updateEmployee,
+    deleteEmployee,
     attendance,
     recordAttendance,
     payroll,
@@ -49,6 +51,14 @@ export const HRModule: React.FC = () => {
 
   // Edit Payroll Modal
   const [editingPayroll, setEditingPayroll] = useState<PayrollRecord | null>(null);
+  const [editingStaff, setEditingStaff] = useState<Employee | null>(null);
+  const [editStaffName, setEditStaffName] = useState('');
+  const [editStaffTitle, setEditStaffTitle] = useState('');
+  const [editStaffDept, setEditStaffDept] = useState('');
+  const [editStaffSalary, setEditStaffSalary] = useState<number>(0);
+  const [editStaffPhone, setEditStaffPhone] = useState('');
+  const [editStaffBranch, setEditStaffBranch] = useState('');
+  const [editStaffShift, setEditStaffShift] = useState<number>(8);
   const [bonusInput, setBonusInput] = useState<number>(0);
   const [deductionInput, setDeductionInput] = useState<number>(0);
   const [advanceInput, setAdvanceInput] = useState<number>(0);
@@ -77,6 +87,32 @@ export const HRModule: React.FC = () => {
   const totalPayrollBudget = useMemo(() => {
     return monthPayroll.reduce((sum, p) => sum + p.netSalary, 0);
   }, [monthPayroll]);
+
+    const handleOpenEditStaff = (emp: Employee) => {
+    setEditingStaff(emp);
+    setEditStaffName(emp.fullName);
+    setEditStaffTitle(emp.jobTitleAr);
+    setEditStaffDept(emp.department);
+    setEditStaffSalary(emp.basicSalary);
+    setEditStaffPhone(emp.phone);
+    setEditStaffBranch(emp.branch);
+    setEditStaffShift(emp.shiftHours);
+  };
+
+  const handleSaveEditStaff = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStaff) return;
+    updateEmployee(editingStaff.id, {
+      fullName: editStaffName,
+      jobTitleAr: editStaffTitle,
+      department: editStaffDept,
+      basicSalary: editStaffSalary,
+      phone: editStaffPhone,
+      branch: editStaffBranch,
+      shiftHours: editStaffShift
+    });
+    setEditingStaff(null);
+  };
 
   const handleSaveStaff = (e: React.FormEvent) => {
     e.preventDefault();
@@ -517,6 +553,30 @@ export const HRModule: React.FC = () => {
                   <span className="font-mono">{emp.phone}</span>
                 </div>
               </div>
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleOpenEditStaff(emp)}
+                  className="px-2.5 py-1 text-xs font-bold text-blue-700 hover:bg-blue-50 rounded-lg border border-blue-200 flex items-center gap-1 transition-colors"
+                  title="تعديل بيانات الموظف والراتب"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  <span>تعديل</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm()) {
+                      deleteEmployee(emp.id);
+                    }
+                  }}
+                  className="px-2.5 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-lg border border-rose-200 flex items-center gap-1 transition-colors"
+                  title="حذف الموظف"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>حذف</span>
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -766,6 +826,122 @@ export const HRModule: React.FC = () => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT EMPLOYEE */}
+      {editingStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">تعديل بيانات الكادر الطبي / الإداري</h3>
+                  <p className="text-[11px] text-slate-500 font-mono">الكود: {editingStaff.code}</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => setEditingStaff(null)} className="text-slate-400 hover:text-slate-700 text-sm">✕</button>
+            </div>
+
+            <form onSubmit={handleSaveEditStaff} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">الاسم بالكامل *</label>
+                <input
+                  type="text"
+                  required
+                  value={editStaffName}
+                  onChange={e => setEditStaffName(e.target.value)}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-semibold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">المسمى الوظيفي</label>
+                  <input
+                    type="text"
+                    value={editStaffTitle}
+                    onChange={e => setEditStaffTitle(e.target.value)}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">القسم</label>
+                  <input
+                    type="text"
+                    value={editStaffDept}
+                    onChange={e => setEditStaffDept(e.target.value)}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">الراتب الأساسي (ج.م) *</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={editStaffSalary}
+                    onChange={e => setEditStaffSalary(Number(e.target.value))}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-teal-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">ساعات الوردية</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="24"
+                    value={editStaffShift}
+                    onChange={e => setEditStaffShift(Number(e.target.value))}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">الفرع</label>
+                  <input
+                    type="text"
+                    value={editStaffBranch}
+                    onChange={e => setEditStaffBranch(e.target.value)}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">رقم الهاتف</label>
+                  <input
+                    type="text"
+                    value={editStaffPhone}
+                    onChange={e => setEditStaffPhone(e.target.value)}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingStaff(null)}
+                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-100 font-bold transition-all"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-xl font-bold shadow-md transition-all"
+                >
+                  حفظ تعديل الموظف
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

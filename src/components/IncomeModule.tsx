@@ -46,6 +46,15 @@ export const IncomeModule: React.FC = () => {
 
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editRecord, setEditRecord] = useState<IncomeRecord | null>(null);
+  const [editPatientName, setEditPatientName] = useState('');
+  const [editPatientPhone, setEditPatientPhone] = useState('');
+  const [editDoctor, setEditDoctor] = useState('');
+  const [editBranch, setEditBranch] = useState('');
+  const [editPaid, setEditPaid] = useState<number>(0);
+  const [editDiscount, setEditDiscount] = useState<number>(0);
+  const [editMethod, setEditMethod] = useState<PaymentMethod>('cash');
+  const [editNotes, setEditNotes] = useState('');
   const [printInvoice, setPrintInvoice] = useState<IncomeRecord | null>(null);
 
   // New Invoice Form State
@@ -591,6 +600,15 @@ export const IncomeModule: React.FC = () => {
                             </button>
                           )}
 
+                          {/* Edit Invoice Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(record)}
+                            className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                            title="تعديل بيانات الفاتورة والحالة"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
                           {/* Print Invoice */}
                           <button
                             onClick={() => setPrintInvoice(record)}
@@ -945,6 +963,144 @@ export const IncomeModule: React.FC = () => {
           invoice={printInvoice}
           onClose={() => setPrintInvoice(null)}
         />
+      )}
+
+      {/* MODAL: EDIT INVOICE */}
+      {editRecord && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">تعديل بيانات الفاتورة</h3>
+                  <p className="text-[11px] text-slate-500 font-mono">{editRecord.invoiceNumber} | {editRecord.labNumber}</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => setEditRecord(null)} className="text-slate-400 hover:text-slate-700 text-sm">✕</button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">اسم المريض *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editPatientName}
+                    onChange={e => setEditPatientName(e.target.value)}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">رقم الهاتف</label>
+                  <input
+                    type="text"
+                    value={editPatientPhone}
+                    onChange={e => setEditPatientPhone(e.target.value)}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">الطبيب المعالج</label>
+                  <input
+                    type="text"
+                    value={editDoctor}
+                    onChange={e => setEditDoctor(e.target.value)}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">الفرع</label>
+                  <input
+                    type="text"
+                    value={editBranch}
+                    onChange={e => setEditBranch(e.target.value)}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                <div className="text-[11px] font-bold text-slate-700">الفحوصات المقيدة:</div>
+                <div className="text-slate-600 font-medium truncate">
+                  {editRecord.tests.map(t => t.nameAr).join(' · ')}
+                </div>
+                <div className="text-[11px] text-slate-500 font-mono">
+                  إجمالي قيمة الفحوصات: {editRecord.subtotal || editRecord.totalAmount} ج.م
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">قيمة الخصم (ج.م)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editDiscount}
+                    onChange={e => setEditDiscount(Number(e.target.value))}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-rose-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">المسدد نقداً (ج.م) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={editPaid}
+                    onChange={e => setEditPaid(Number(e.target.value))}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-emerald-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">طريقة الدفع</label>
+                  <select
+                    value={editMethod}
+                    onChange={e => setEditMethod(e.target.value as PaymentMethod)}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-semibold"
+                  >
+                    <option value="cash">خزينة نقدي</option>
+                    <option value="visa">فيزا / بطاقة</option>
+                    <option value="bank">تحويل بنكي</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">ملاحظات إضافية</label>
+                <input
+                  type="text"
+                  value={editNotes}
+                  onChange={e => setEditNotes(e.target.value)}
+                  placeholder="أي ملاحظات على الدفع أو العينة..."
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditRecord(null)}
+                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-100 font-bold transition-all"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-xl font-bold shadow-md transition-all"
+                >
+                  حفظ تعديل الفاتورة
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
     </div>
