@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgMaskGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f766e" />
+      <stop offset="50%" stop-color="#115e59" />
+      <stop offset="100%" stop-color="#042f2e" />
+    </linearGradient>
+  </defs>
+
+  <!-- Full-bleed background for maskable -->
+  <rect width="512" height="512" fill="url(#bgMaskGrad)" />
+
+  <!-- Center contents scaled to fit 80% safe zone (center at 256,256, scaled 0.8) -->
+  <g transform="translate(51.2, 51.2) scale(0.8)">
+    <!-- Pulse EKG wave line behind letters -->
+    <path d="M 60 350 L 170 350 L 195 315 L 220 395 L 245 285 L 270 370 L 290 350 L 452 350" 
+          fill="none" stroke="#2dd4bf" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.4" />
+
+    <!-- Center RT Monogram -->
+    <g fill="#ffffff">
+      <path d="M 120 160 L 195 160 C 235 160 258 178 258 208 C 258 232 240 248 214 253 L 264 340 L 218 340 L 174 260 L 162 260 L 162 340 L 120 340 Z M 162 225 L 192 225 C 208 225 216 218 216 208 C 216 197 208 192 192 192 L 162 192 Z" />
+      <path d="M 280 160 L 400 160 L 400 195 L 362 195 L 362 340 L 318 340 L 318 195 L 280 195 Z" />
+    </g>
+
+    <!-- Tagline text DIAGNOSTICS -->
+    <text x="256" y="420" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="34" font-weight="900" fill="#2dd4bf" letter-spacing="12" text-anchor="middle">
+      DIAGNOSTICS
+    </text>
+  </g>
+</svg>
