@@ -39,6 +39,7 @@ import {
   fetchDiagnosticCases,
   pushFinancialDataToRepo,
   testGitHubConnection,
+  syncInvoiceToDiagnostic,
   DiagnosticPatientCase
 } from '../utils/githubSync';
 import { createEncryptedBackup, restoreEncryptedBackup } from '../utils/cryptoBackup';
@@ -134,6 +135,7 @@ interface AppContextType {
   isSyncing: boolean;
   pullCasesFromDiagnostic: () => Promise<{ success: boolean; message: string }>;
   pushCasesToDiagnostic: () => Promise<{ success: boolean; message: string }>;
+  syncSingleInvoice: (record: IncomeRecord) => Promise<{ success: boolean; message: string }>;
   testGitHub: () => Promise<{ success: boolean; message: string }>;
 
   // Barcode Scanner Modal State
@@ -753,10 +755,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    if (githubConfig.autoSync && githubConfig.token) {
+    // Instant Multi-layer Sync to Diagnostic System (localStorage, BroadcastChannel, and GitHub)
+    syncInvoiceToDiagnostic(newRecord, githubConfig).catch(err => {
+      console.warn('Sync to diagnostic error:', err);
+    });
+
+    if (githubConfig.autoSync) {
       setTimeout(() => {
         pushCasesToDiagnostic().catch(() => {});
-      }, 500);
+      }, 300);
     }
 
     return newRecord;
@@ -767,6 +774,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (rec.id === id) {
         const updated = { ...rec, ...updates, updatedAt: new Date().toISOString() };
         logAudit('UPDATE', 'INCOME', `تعديل بيانات الفاتورة: ${updated.invoiceNumber} للمريض ${updated.patientName}`);
+        syncInvoiceToDiagnostic(updated, githubConfig).catch(() => {});
         return updated;
       }
       return rec;
@@ -1033,20 +1041,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const pullCasesFromDiagnostic = async () => {
     setIsSyncing(true);
     try {
-      const result = await fetchDiagnosticCases(githubConfig);
-      if (result.success && result.cases) {
-        setDiagnosticCases(result.cases);
+      const result = await fetchDiagnosticCases(githubConfig.token, githubConfig.repoOwner, githubConfig.repoName);
+      if (result.success && result.casesFound) {
+        setDiagnosticCases(result.casesFound);
         setGithubConfigState(prev => ({
           ...prev,
           lastSyncAt: new Date().toISOString(),
           status: 'connected',
           errorMessage: undefined
         }));
-        logAudit('SYNC', 'INCOME', `تمت المزامنة بنجاح مع منظومة النتائج: استلام ${result.cases.length} حالة فحص`);
-        return { success: true, message: `تم جلب ${result.cases.length} حالة بنجاح من منظومة النتائج` };
+        logAudit('SYNC', 'INCOME', `تمت المزامنة بنجاح مع منظومة النتائج: استلام ${result.casesFound.length} حالة فحص`);
+        return { success: true, message: `تم جلب ${result.casesFound.length} حالة بنجاح من منظومة النتائج` };
       } else {
-        setGithubConfigState(prev => ({ ...prev, status: 'error', errorMessage: result.error }));
-        return { success: false, message: result.error || 'فشل الاتصال بمنظومة النتائج' };
+        setGithubConfigState(prev => ({ ...prev, status: 'error', errorMessage: result.message }));
+        return { success: false, message: result.message || 'فشل الاتصال بمنظومة النتائج' };
       }
     } finally {
       setIsSyncing(false);
@@ -1056,7 +1064,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const pushCasesToDiagnostic = async () => {
     setIsSyncing(true);
     try {
-      const result = await pushFinancialDataToRepo(githubConfig, incomeRecords);
+      const result = await pushFinancialDataToRepo(
+        githubConfig.token,
+        githubConfig.repoOwner,
+        githubConfig.repoName,
+        incomeRecords,
+        {
+          totalRevenue: financialMetrics.totalPaidIncome,
+          totalExpenses: financialMetrics.totalExpenses,
+          netProfit: financialMetrics.netProfit,
+          ceoShare: financialMetrics.ceoShare,
+          labShare: financialMetrics.labShare,
+          casesCount: incomeRecords.length
+        }
+      );
       if (result.success) {
         setGithubConfigState(prev => ({
           ...prev,
@@ -1067,9 +1088,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         logAudit('SYNC', 'INCOME', `تم إرسال وتسميع بيانات السداد المالي بنجاح إلى منظومة النتائج`);
         return { success: true, message: 'تم إرسال الفواتير والمقبوضات بنجاح إلى منظومة النتائج' };
       } else {
-        setGithubConfigState(prev => ({ ...prev, status: 'error', errorMessage: result.error }));
-        return { success: false, message: result.error || 'تعذر الإرسال إلى مستودع GitHub' };
+        setGithubConfigState(prev => ({ ...prev, status: 'error', errorMessage: result.message }));
+        return { success: false, message: result.message || 'تعذر الإرسال إلى مستودع GitHub' };
       }
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const syncSingleInvoice = async (record: IncomeRecord) => {
+    setIsSyncing(true);
+    try {
+      const res = await syncInvoiceToDiagnostic(record, githubConfig);
+      if (res.success) {
+        logAudit('SYNC', 'INCOME', `تم تسميع طلب الفاتورة ${record.invoiceNumber} للمريض ${record.patientName} في منظومة النتائج بنجاح`);
+      }
+      return res;
     } finally {
       setIsSyncing(false);
     }
@@ -1078,13 +1112,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const testGitHub = async () => {
     setIsSyncing(true);
     try {
-      const res = await testGitHubConnection(githubConfig);
+      const res = await testGitHubConnection(githubConfig.token, githubConfig.repoOwner, githubConfig.repoName);
       if (res.success) {
         setGithubConfigState(prev => ({ ...prev, status: 'connected', errorMessage: undefined }));
         return { success: true, message: 'تم التحقق بنجاح من صحة الاتصال بـ GitHub' };
       } else {
-        setGithubConfigState(prev => ({ ...prev, status: 'error', errorMessage: res.error }));
-        return { success: false, message: res.error || 'فشل الاتصال بـ GitHub' };
+        setGithubConfigState(prev => ({ ...prev, status: 'error', errorMessage: res.message }));
+        return { success: false, message: res.message || 'فشل الاتصال بـ GitHub' };
       }
     } finally {
       setIsSyncing(false);
@@ -1112,16 +1146,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       loyaltyProfiles,
       loyaltyConfig
     };
-    const backupStr = JSON.stringify(backupData);
-    const result = await createEncryptedBackup(backupStr, password);
+    const result = await createEncryptedBackup(backupData, password);
     logAudit('BACKUP', 'SETTINGS', `تصدير نسخة احتياطية مشفرة من قاعدة البيانات`);
     return result;
   };
 
   const importBackup = async (encryptedStr: string, password?: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const decrypted = await restoreEncryptedBackup(encryptedStr, password);
-      const parsed = JSON.parse(decrypted);
+      const res = await restoreEncryptedBackup(encryptedStr, password);
+      if (!res.success || !res.data) {
+        return { success: false, message: res.message || 'فشل استرجاع النسخة الاحتياطية' };
+      }
+      const parsed = res.data as Record<string, any>;
 
       if (parsed.incomeRecords) setIncomeRecords(parsed.incomeRecords);
       if (parsed.expenses) setExpenses(parsed.expenses);
@@ -1229,6 +1265,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isSyncing,
         pullCasesFromDiagnostic,
         pushCasesToDiagnostic,
+        syncSingleInvoice,
         testGitHub,
         scannerOpen,
         setScannerOpen,

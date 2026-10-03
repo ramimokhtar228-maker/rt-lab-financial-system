@@ -13,7 +13,8 @@ import {
   FolderGit2,
   ArrowRightLeft,
   FileCheck2,
-  Receipt
+  Receipt,
+  Zap
 } from 'lucide-react';
 import { DiagnosticPatientCase } from '../utils/githubSync';
 
@@ -24,6 +25,7 @@ export const DiagnosticSyncHub: React.FC = () => {
     testGitHub,
     pullCasesFromDiagnostic,
     pushCasesToDiagnostic,
+    syncSingleInvoice,
     diagnosticCases,
     isSyncing,
     incomeRecords,
@@ -52,6 +54,17 @@ export const DiagnosticSyncHub: React.FC = () => {
     setActionNotice(null);
     const res = await pushCasesToDiagnostic();
     setActionNotice(res.message);
+  };
+
+  const handleSyncAllInvoices = async () => {
+    setActionNotice(null);
+    let count = 0;
+    for (const inv of incomeRecords) {
+      await syncSingleInvoice(inv);
+      count++;
+    }
+    await pushCasesToDiagnostic();
+    setActionNotice(`تم بنجاح تسميع وتحديث كافة فواتير المرضى (${count} فاتورة) إلى منظومة النتائج!`);
   };
 
   const handleSaveToken = () => {
@@ -238,6 +251,25 @@ export const DiagnosticSyncHub: React.FC = () => {
             >
               <FileCheck2 className="w-4 h-4 text-rose-400" />
               <span>تسميع وإرسال إشعارات السداد إلى GitHub</span>
+            </button>
+          </div>
+
+          {/* Action 3: Push All Patient Invoices to Diagnostic System */}
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2.5 sm:col-span-2">
+            <div className="flex items-center gap-2 text-emerald-950 font-bold text-sm">
+              <Zap className="w-5 h-5 text-emerald-700" />
+              <span>تسميع وإرسال كافة الفواتير والحالات فوراً إلى منظومة النتائج (Full Sync to Diagnostics)</span>
+            </div>
+            <p className="text-xs text-emerald-900 leading-relaxed">
+              يقوم بإرسال وتسميع جميع الفواتير المسجلة ({incomeRecords.length} مريض) إلى منظومة النتائج مباشرة (محلياً وفي السحابة على GitHub)، لتظهر فوراً لطبيب المعمل ومسؤول إدخال النتائج مع كافة بيانات الفحوصات والباركود.
+            </p>
+            <button
+              onClick={handleSyncAllInvoices}
+              disabled={isSyncing}
+              className="w-full py-2.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm"
+            >
+              <Zap className={`w-4 h-4 ${isSyncing ? 'animate-bounce' : ''}`} />
+              <span>تسميع كافة فواتير المرضى ({incomeRecords.length}) إلى منظومة النتائج الآن ⚡</span>
             </button>
           </div>
         </div>

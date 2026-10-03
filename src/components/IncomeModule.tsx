@@ -20,7 +20,9 @@ import {
   Phone,
   Tag,
   Trash2,
-  Edit2
+  Edit2,
+  RefreshCw,
+  Zap
 } from 'lucide-react';
 import { InvoicePrintModal } from './InvoicePrintModal';
 import { generateBarcodeSVG, playScanSuccessSound } from '../utils/barcode';
@@ -42,7 +44,8 @@ export const IncomeModule: React.FC = () => {
     loyaltyConfig,
     redeemLoyaltyPoints,
     calculatePointsForAmount,
-    calculateCashForPoints
+    calculateCashForPoints,
+    syncSingleInvoice
   } = useApp();
   const [catalogModalOpen, setCatalogModalOpen] = useState(false);
 
@@ -659,6 +662,19 @@ export const IncomeModule: React.FC = () => {
                               سداد
                             </button>
                           )}
+
+                          {/* Sync to Diagnostic Button */}
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const res = await syncSingleInvoice(record);
+                              alert(res.message);
+                            }}
+                            className="p-1.5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded transition-colors"
+                            title="تسميع فوري لطلب الفحص إلى منظومة النتائج والتشخيص"
+                          >
+                            <Zap className="w-4 h-4 text-emerald-600" />
+                          </button>
 
                           {/* Edit Invoice Button */}
                           <button
