@@ -22,6 +22,7 @@ export const SettingsBackupModule: React.FC = () => {
     exportBackup,
     importBackup,
     resetToDefaultData,
+    clearPatientRecordsOnly,
     currentUser,
     language
   } = useApp();
@@ -299,7 +300,28 @@ export const SettingsBackupModule: React.FC = () => {
           </div>
         </div>
 
-        {/* Danger Zone: Reset Default Data */}
+        {/* Clean Patient Records Only (Production Readiness) */}
+        {currentUser.role === 'admin_ceo' && (
+          <div className="pt-4 border-t flex items-center justify-between">
+            <div>
+              <div className="text-xs font-bold text-amber-800">تصفير سجلات المرضى والفواتير (تجهيز للتشغيل الفعلي)</div>
+              <div className="text-[11px] text-slate-500">حذف جميع فواتير وحالات المرضى والبدء بسجل نظيف على بياض مع الحفاظ التام على كتالوج التحاليل، الأسعار، الفروع، وبيانات الإدارة.</div>
+            </div>
+            <button
+              onClick={() => {
+                if (confirm('هل أنت متأكد من تصفير وحذف جميع سجلات وفواتير المرضى الحالية للبدء بسجل عمل فعلي؟ سيتم الاحتفاظ بالكتالوج والأسعار والفروع والإدارة بالكامل.')) {
+                  clearPatientRecordsOnly();
+                  alert('تم تصفير سجلات المرضى بنجاح! المنظومة جاهزة للعمل الفعلي الآن.');
+                }
+              }}
+              className="px-3.5 py-1.5 bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300 text-xs font-bold rounded-lg transition-colors"
+            >
+              تصفير سجل المرضى
+            </button>
+          </div>
+        )}
+
+                {/* Danger Zone: Reset Default Data */}
         {currentUser.role === 'admin_ceo' && (
           <div className="pt-4 border-t flex items-center justify-between">
             <div>

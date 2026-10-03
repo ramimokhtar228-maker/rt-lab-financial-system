@@ -167,6 +167,7 @@ interface AppContextType {
   exportBackup: (password?: string) => Promise<string>;
   importBackup: (jsonStr: string, password?: string) => Promise<{ success: boolean; message: string }>;
   resetToDefaultData: () => void;
+  clearPatientRecordsOnly: () => void;
 
   // Financial Computations
   financialMetrics: {
@@ -209,14 +210,15 @@ const STORAGE_KEYS = {
 };
 
 // Clean old demo patients/branches/chemists on first load of this clean version
-if (typeof window !== "undefined" && !localStorage.getItem("rt_fin_clean_v3_oct")) {
+if (typeof window !== "undefined" && !localStorage.getItem("rt_fin_clean_v5_prod")) {
   try {
     localStorage.removeItem("rt_lab_income_v2");
     localStorage.removeItem("rt_lab_diag_cases_v2");
     localStorage.removeItem("rt_lab_attendance_v2");
     localStorage.removeItem("rt_lab_payroll_v2");
     localStorage.removeItem("rt_lab_closeouts");
-    localStorage.setItem("rt_fin_clean_v3_oct", "true");
+    localStorage.removeItem("rt_lab_loyalty_profiles_v2");
+    localStorage.setItem("rt_fin_clean_v5_prod", "true");
   } catch {}
 }
 
@@ -1327,6 +1329,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const clearPatientRecordsOnly = () => {
+    setIncomeRecords([]);
+    setDiagnosticCases([]);
+    setCloseouts([]);
+    setLoyaltyProfiles([]);
+    localStorage.removeItem(STORAGE_KEYS.INCOME);
+    localStorage.removeItem(STORAGE_KEYS.DIAG_CASES);
+    localStorage.removeItem(STORAGE_KEYS.CLOSEOUTS);
+    localStorage.removeItem(STORAGE_KEYS.LOYALTY_PROFILES);
+    logAudit('DELETE', 'SECURITY', 'تصفير جميع سجلات وفواتير المرضى لتجهيز المنظومة للعمل الفعلي على بياض');
+  };
+
   const resetToDefaultData = () => {
     setIncomeRecords(INITIAL_INCOME);
     setExpenses(INITIAL_EXPENSES);
@@ -1434,6 +1448,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         exportBackup,
         importBackup,
         resetToDefaultData,
+        clearPatientRecordsOnly,
         financialMetrics
       }}
     >
