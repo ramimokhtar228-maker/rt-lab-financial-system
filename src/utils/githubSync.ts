@@ -503,6 +503,26 @@ export async function syncInvoiceToDiagnostic(
         localStorage.setItem(STORAGE_KEY_V1, JSON.stringify(reportsList));
         localStorage.setItem('rt_lab_sync_trigger', Date.now().toString());
 
+        // Dedicated incoming orders queue for immediate instant sync
+        try {
+          const incomingQueueStr = localStorage.getItem('rt_lab_incoming_orders_queue');
+          let incomingQueue = [];
+          if (incomingQueueStr) {
+            try { incomingQueue = JSON.parse(incomingQueueStr); } catch {}
+          }
+          if (Array.isArray(incomingQueue)) {
+            const inIdx = incomingQueue.findIndex(q => (q.barcode && q.barcode === record.barcode) || (q.reportNumber && q.reportNumber === record.labNumber));
+            if (inIdx >= 0) {
+              incomingQueue[inIdx] = newReport;
+            } else {
+              incomingQueue.unshift(newReport);
+            }
+            localStorage.setItem('rt_lab_incoming_orders_queue', JSON.stringify(incomingQueue));
+          }
+        } catch (inboxErr) {
+          console.warn('Incoming orders queue error:', inboxErr);
+        }
+
         // Also save to pending sync queue
         const syncQueueStr = localStorage.getItem('rt_lab_cases_sync_v1');
         let syncQueue: unknown[] = [];
