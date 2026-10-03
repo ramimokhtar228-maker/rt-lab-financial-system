@@ -86,7 +86,8 @@ export const InventoryModule: React.FC = () => {
     let totalStockValue = 0;
 
     inventory.forEach(item => {
-      totalStockValue += item.currentQuantity * item.unitCost;
+      const cost = item.unitCost ?? item.costPerUnit ?? 0;
+      totalStockValue += item.currentQuantity * cost;
       if (item.currentQuantity <= item.minThreshold) {
         lowCount++;
       }
@@ -118,8 +119,8 @@ export const InventoryModule: React.FC = () => {
         const term = searchTerm.toLowerCase();
         const matchesNameAr = item.nameAr.toLowerCase().includes(term);
         const matchesNameEn = item.nameEn.toLowerCase().includes(term);
-        const matchesCode = item.itemCode.toLowerCase().includes(term);
-        const matchesBarcode = item.barcode.includes(term);
+        const matchesCode = (item.itemCode || item.code || '').toLowerCase().includes(term);
+        const matchesBarcode = (item.barcode || '').includes(term);
         const matchesLot = item.lotNumber.toLowerCase().includes(term);
         if (!matchesNameAr && !matchesNameEn && !matchesCode && !matchesBarcode && !matchesLot) {
           return false;
@@ -135,8 +136,8 @@ export const InventoryModule: React.FC = () => {
     setEditItemName(item.nameAr);
     setEditItemQty(item.currentQuantity);
     setEditItemThreshold(item.minThreshold);
-    setEditItemCost(item.unitCost);
-    setEditItemSupplier(item.supplierName || "");
+    setEditItemCost(item.unitCost ?? item.costPerUnit ?? 0);
+    setEditItemSupplier(item.supplierName || item.supplier || "");
     setEditItemExpiry(item.expiryDate);
   };
 
@@ -196,14 +197,19 @@ export const InventoryModule: React.FC = () => {
     setRestockModalItem(null);
   };
 
-  const categoryNames: Record<InventoryCategory, string> = {
+  const categoryNames: Record<string, string> = {
     chemistry_reagents: 'كواشف كيمياء الدم',
     elisa_clia_kits: 'كيتات مناعة وهرمونات (CLIA/ELISA)',
     hematology_diluents: 'محاليل ومخففات صورة الدم (CBC)',
     tubes_vacutainers: 'أنابيب سحب العينات (Vacutainer)',
     tips_consumables: 'تيبس وسرنجات ومستهلكات',
     rapid_tests: 'كواشف الاختبارات السريعة (Rapid Tests)',
-    controls_calibrators: 'عينات تحكم ومعايرة (Controls/Calibrators)'
+    control_calibrator: 'عينات تحكم ومعايرة (Controls/Calibrators)',
+    controls_calibrators: 'عينات تحكم ومعايرة (Controls/Calibrators)',
+    reagent: 'كواشف ومحاليل عامة',
+    consumable: 'مستهلكات عامة',
+    tube: 'أنابيب',
+    ppe: 'مهمات وقاية شخصية'
   };
 
   return (
@@ -437,7 +443,7 @@ export const InventoryModule: React.FC = () => {
                             onClick={() => {
                               setRestockModalItem(item);
                               setRestockQty(5);
-                              setRestockCost(item.unitCost);
+                              setRestockCost(item.unitCost ?? item.costPerUnit ?? 0);
                             }}
                             className="p-1.5 text-emerald-700 hover:bg-emerald-50 rounded border border-emerald-200 transition-colors"
                             title="توريد وإضافة كمية"
@@ -753,7 +759,7 @@ export const InventoryModule: React.FC = () => {
               <div className="border border-slate-300 p-3 rounded-lg bg-slate-50 space-y-1">
                 <div className="text-xs font-bold text-slate-900">{barcodePrintItem.nameAr}</div>
                 <div className="text-[10px] text-slate-500 font-mono">{barcodePrintItem.itemCode} · LOT: {barcodePrintItem.lotNumber}</div>
-                <div className="py-2" dangerouslySetInnerHTML={{ __html: generateBarcodeSVG(barcodePrintItem.barcode, 220, 50, true) }} />
+                <div className="py-2" dangerouslySetInnerHTML={{ __html: generateBarcodeSVG(barcodePrintItem.barcode || barcodePrintItem.itemCode || barcodePrintItem.id, 220, 50, true) }} />
                 <div className="text-[10px] text-slate-500">Exp: {barcodePrintItem.expiryDate} | {barcodePrintItem.storageTemp}</div>
               </div>
 

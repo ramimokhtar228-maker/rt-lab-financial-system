@@ -94,20 +94,38 @@ export interface ProfitShareConfig {
   ceoNameEn: string;
 }
 
+export type InventoryCategory =
+  | 'chemistry_reagents'
+  | 'hematology_diluents'
+  | 'tubes_vacutainers'
+  | 'elisa_clia_kits'
+  | 'rapid_tests'
+  | 'tips_consumables'
+  | 'reagent'
+  | 'consumable'
+  | 'control_calibrator'
+  | 'tube'
+  | 'ppe';
+
 export interface InventoryItem {
   id: string;
-  code: string;
+  code?: string;
+  itemCode?: string;
+  barcode?: string;
   nameAr: string;
   nameEn: string;
-  category: 'reagent' | 'consumable' | 'control_calibrator' | 'tube' | 'ppe';
-  supplier: string;
+  category: InventoryCategory;
+  supplier?: string;
+  supplierName?: string;
+  supplierPhone?: string;
   currentQuantity: number;
   unit: string;
   minThreshold: number;
-  costPerUnit: number;
+  costPerUnit?: number;
+  unitCost?: number;
   lotNumber: string;
   expiryDate: string;
-  storageTemp: '2-8°C' | '15-25°C' | '-20°C';
+  storageTemp: string;
   testsPerKit?: number;
   lastRestockedDate: string;
   notes?: string;
