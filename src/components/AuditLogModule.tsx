@@ -30,7 +30,9 @@ export const AuditLogModule: React.FC = () => {
     HR: 'الموارد البشرية والرواتب',
     LAB_TO_LAB: 'اللاب تو لاب',
     SETTINGS: 'الإعدادات والربط',
-    SECURITY: 'الأمان والدخول'
+    SECURITY: 'الأمان والدخول',
+    CATALOG: 'الكتالوج والأسعار',
+    LOYALTY: 'كروت الولاء'
   };
 
   return (
