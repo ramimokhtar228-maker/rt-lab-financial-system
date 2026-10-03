@@ -16,16 +16,127 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ invoice, o
 
   if (!invoice) return null;
 
-  const handlePrint = () => {
-    window.print();
+  
+  const handlePrintClean = () => {
+    const printableEl = document.querySelector(".printable-content");
+    if (!printableEl) {
+      window.print();
+      return;
+    }
+
+    const printWin = window.open("", "_blank");
+    if (!printWin) {
+      window.print();
+      return;
+    }
+
+    const isThermal = printLayout === "thermal";
+    const isSticker = printLayout === "tube_sticker";
+    const paperWidth = isThermal ? "80mm" : isSticker ? "65mm" : "210mm";
+    const paperPadding = isThermal ? "4mm" : isSticker ? "2mm" : "12mm 16mm";
+
+    const fullDoc = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>فاتورة فحص - ${invoice.patientName} - ${invoice.invoiceNumber}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff !important;
+      background-color: #ffffff !important;
+      font-family: "Cairo", system-ui, -apple-system, sans-serif;
+      color: #0f172a;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .print-bar {
+      position: sticky;
+      top: 0;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 9999;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+    .btn-act {
+      background: #800000;
+      color: #ffffff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-weight: 800;
+      cursor: pointer;
+      font-family: "Cairo", sans-serif;
+      font-size: 13px;
+    }
+    .btn-cls {
+      background: #334155;
+      color: #ffffff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: "Cairo", sans-serif;
+      font-size: 12px;
+    }
+    .sheet-wrapper {
+      width: ${paperWidth};
+      min-height: ${isThermal || isSticker ? "auto" : "297mm"};
+      margin: 0 auto;
+      padding: ${paperPadding};
+      background: #ffffff;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    @media print {
+      .print-bar { display: none !important; }
+      html, body { background: #ffffff !important; margin: 0 !important; padding: 0 !important; }
+      .sheet-wrapper { width: 100% !important; margin: 0 !important; padding: ${isThermal ? "2mm" : isSticker ? "1mm" : "6mm 10mm"} !important; }
+      @page { size: ${isThermal || isSticker ? "auto" : "A4 portrait"}; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-bar">
+    <div style="font-weight:bold; font-size:13px;">معامل RT - طباعة وحفظ الفاتورة (خلفية بيضاء نقية)</div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn-act" onclick="window.print()">🖨️ طباعة الآن أو حفظ كـ PDF</button>
+      <button class="btn-cls" onclick="window.close()">إغلاق ✕</button>
+    </div>
+  </div>
+  <div class="sheet-wrapper">
+    ${printableEl.outerHTML}
+  </div>
+  <script>
+    window.addEventListener("load", () => {
+      setTimeout(() => { window.print(); }, 400);
+    });
+  </script>
+</body>
+</html>`;
+
+    printWin.document.open();
+    printWin.document.write(fullDoc);
+    printWin.document.close();
   };
+
+  const handlePrint = () => {
+    handlePrintClean();
+  };
+
 
   const barcodeSvgHtml = generateBarcodeSVG(invoice.barcode, 260, 55, true);
   const stickerSvgHtml = generateBarcodeSVG(invoice.barcode, 180, 40, true);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-2xl w-full my-auto overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto print:static print:bg-white print:p-0 print:m-0 print:overflow-visible print:block print:w-full print:h-auto">
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-2xl w-full my-auto overflow-hidden print:border-none print:shadow-none print:rounded-none print:m-0 print:p-0 print:w-full print:max-w-none print:bg-white">
         
         {/* Modal Controls Bar (Hidden during print) */}
         <div className="px-6 py-3.5 bg-slate-900 text-white flex items-center justify-between print:hidden">
