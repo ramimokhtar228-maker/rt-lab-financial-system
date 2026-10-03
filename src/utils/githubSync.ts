@@ -453,7 +453,7 @@ export async function syncInvoiceToDiagnostic(
       repoOwner: DEFAULT_REPO_OWNER,
       repoName: DEFAULT_REPO_NAME,
       branch: 'main',
-      token: DEFAULT_GITHUB_TOKEN,
+      token: getDefaultSyncToken(),
       autoSync: true,
       lastSyncAt: null,
       status: 'connected'
