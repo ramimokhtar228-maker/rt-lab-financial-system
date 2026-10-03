@@ -46,7 +46,9 @@ export const IncomeModule: React.FC = () => {
     redeemLoyaltyPoints,
     calculatePointsForAmount,
     calculateCashForPoints,
-    syncSingleInvoice
+    syncSingleInvoice,
+    facilities,
+    staffMembers
   } = useApp();
   const [catalogModalOpen, setCatalogModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
@@ -593,7 +595,7 @@ export const IncomeModule: React.FC = () => {
                       <td className="py-3 px-4">
                         <div className="font-mono font-bold text-slate-800">{record.barcode}</div>
                         <div className="text-[10px] text-slate-500">
-     {record.branch.replace('فرع ', '')}
+     {(record.branch || 'الفرع الرئيسي').replace('فرع ', '')}
      {record.isHomeVisit && (
        <span className="inline-block bg-indigo-100 text-indigo-800 text-[9px] font-bold px-1.5 py-0.2 rounded mr-1">
          🏠 زيارة (+{record.visitFee || 0}ج)

@@ -23,7 +23,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Percent,
-  Edit2
+  Edit2,
+  Phone
 } from 'lucide-react';
 import { InvoiceTestItem, PaymentMethod } from '../types';
 import { 
@@ -94,27 +95,29 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
     return testCatalog.filter(t => t.nameAr.toLowerCase().includes(q) || t.nameEn.toLowerCase().includes(q) || t.code.toLowerCase().includes(q));
   }, [testCatalog, searchQuery]);
 
-  const subtotal = useMemo(() => {
-    const testsSum = selectedTests.reduce((sum, t) => {
+  const testsSubtotal = useMemo(() => {
+    return selectedTests.reduce((sum, t) => {
       const p = customTestPrices[t.id] !== undefined ? customTestPrices[t.id] : t.price;
       return sum + p;
     }, 0);
-    return testsSum + effectiveHomeFee;
-  }, [selectedTests, customTestPrices, effectiveHomeFee]);
+  }, [selectedTests, customTestPrices]);
+
+  const subtotal = useMemo(() => {
+    return testsSubtotal + effectiveHomeFee;
+  }, [testsSubtotal, effectiveHomeFee]);
 
   const discountAmount = useMemo(() => {
-    if (appliedCoupon === 'RTLAB10') return Math.round(subtotal * 0.1);
-    if (appliedCoupon === 'BEHTEEM25') return Math.min(subtotal, 50);
-    if (appliedCoupon === 'HEALTH20') return Math.round(subtotal * 0.2);
-    if (appliedCoupon === 'VIP2026') return Math.round(subtotal * 0.25);
-
-    if (discountMode === 'percent') return Math.round((subtotal * customPercent) / 100);
-    if (discountMode === 'daily_fixed') return Math.min(subtotal, customFlatDiscount > 0 ? customFlatDiscount : 60);
-    if (discountMode === 'package') return Math.min(subtotal, customFlatDiscount > 0 ? customFlatDiscount : 100);
-    if (discountMode === 'dynamic') return Math.round((subtotal * (customPercent || 18)) / 100);
+    // Discount applies strictly to tests only, never to home visit fee!
+    if (appliedCoupon === 'RTLAB10') return Math.round(testsSubtotal * 0.1);
+    if (appliedCoupon === 'BEHTEEM25') return Math.min(testsSubtotal, 50);
+    if (appliedCoupon === 'HEALTH20') return Math.round(testsSubtotal * 0.2);
+    if (appliedCoupon === 'VIP2026') return Math.round(testsSubtotal * 0.25);
+    if (discountMode === 'percent') return Math.round((testsSubtotal * customPercent) / 100);
+    if (discountMode === 'daily_fixed') return Math.min(testsSubtotal, customFlatDiscount > 0 ? customFlatDiscount : 60);
+    if (discountMode === 'package') return Math.min(testsSubtotal, customFlatDiscount > 0 ? customFlatDiscount : 100);
+    if (discountMode === 'dynamic') return Math.round((testsSubtotal * (customPercent || 18)) / 100);
     return 0;
-  }, [subtotal, discountMode, customPercent, customFlatDiscount, appliedCoupon]);
-
+  }, [testsSubtotal, discountMode, customPercent, customFlatDiscount, appliedCoupon]);
   const discountLabel = useMemo(() => {
     if (appliedCoupon) return `كوبون (${appliedCoupon})`;
     if (discountMode === 'percent') return `خصم مئوي ${customPercent}%`;
