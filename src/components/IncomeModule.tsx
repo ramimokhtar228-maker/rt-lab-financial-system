@@ -1,3 +1,4 @@
+import { BookingAppointmentsModal } from './BookingAppointmentsModal';
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { IncomeRecord, InvoiceTestItem, PaymentMethod, PaymentStatus } from '../types';
@@ -48,6 +49,7 @@ export const IncomeModule: React.FC = () => {
     syncSingleInvoice
   } = useApp();
   const [catalogModalOpen, setCatalogModalOpen] = useState(false);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -375,6 +377,10 @@ export const IncomeModule: React.FC = () => {
             >
               <Plus className="w-4 h-4" />
               <span>{language === 'ar' ? 'تسجيل كشف / فاتورة جديدة' : 'New Invoice'}</span>
+            </button>
+            <button type="button" onClick={() => setIsBookingModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg transition-colors shadow-sm cursor-pointer">
+              <Calendar className="w-4 h-4 text-emerald-200" />
+              <span>{language === 'ar' ? 'حجز مريض ومواعيد (الفرع والزيارات)' : 'Patient Booking & Visits'}</span>
             </button>
           </div>
         </div>
@@ -1185,6 +1191,7 @@ export const IncomeModule: React.FC = () => {
       )}
 
       <TestCatalogManagerModal isOpen={catalogModalOpen} onClose={() => setCatalogModalOpen(false)} />
+      <BookingAppointmentsModal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} />
     </div>
   );
 };
