@@ -214,7 +214,7 @@ export const InventoryModule: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <FlaskConical className="w-5 h-5 text-teal-700" />
+              <FlaskConical className="w-5 h-5 text-rose-800" />
               <span>{language === 'ar' ? 'مخزن المستلزمات والكيماويات والكواشف المخبرية' : 'Reagents & Chemicals Inventory'}</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -231,7 +231,7 @@ export const InventoryModule: React.FC = () => {
                 setBarcode(`622300188${(209 + inventory.length).toString()}`);
                 setIsAddModalOpen(true);
               }}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-teal-800 hover:bg-teal-900 rounded-lg transition-colors shadow-sm"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-900 hover:bg-rose-950 rounded-lg transition-colors shadow-sm"
             >
               <Plus className="w-4 h-4" />
               <span>{language === 'ar' ? 'إضافة مادة / كاشف جديد' : 'Add Item'}</span>
@@ -251,7 +251,7 @@ export const InventoryModule: React.FC = () => {
 
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
             <span className="text-[11px] text-slate-500 block">قيمة المخزون الإجمالية:</span>
-            <span className="text-lg font-black font-mono text-teal-800 mt-0.5 block">
+            <span className="text-lg font-black font-mono text-rose-900 mt-0.5 block">
               {metrics.totalStockValue.toLocaleString()} ج.م
             </span>
             <span className="text-[10px] text-slate-400">سعر التكلفة التقديري</span>
@@ -282,7 +282,7 @@ export const InventoryModule: React.FC = () => {
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder="ابحث باسم الكاشف، الكود، الباركود، رقم التشغيلة LOT..."
-              className="w-full text-xs pr-8 pl-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700"
+              className="w-full text-xs pr-8 pl-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-800"
             />
             <Search className="w-4 h-4 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" />
           </div>
@@ -359,7 +359,7 @@ export const InventoryModule: React.FC = () => {
                         <div className="font-bold text-slate-900">{item.nameAr}</div>
                         <div className="text-[10px] text-slate-500 font-mono mt-0.5">{item.nameEn}</div>
                         {item.testsPerKit && (
-                          <div className="text-[10px] text-teal-700 mt-0.5">
+                          <div className="text-[10px] text-rose-800 mt-0.5">
                             سعة الكيت: {item.testsPerKit} اختبار
                           </div>
                         )}
@@ -418,7 +418,7 @@ export const InventoryModule: React.FC = () => {
                       {/* Storage Temp */}
                       <td className="py-3 px-4">
                         <span className="inline-flex items-center gap-1 text-[11px] font-mono text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
-                          <Thermometer className="w-3 h-3 text-teal-700" />
+                          <Thermometer className="w-3 h-3 text-rose-800" />
                           <span>{item.storageTemp}</span>
                         </span>
                       </td>
@@ -509,7 +509,7 @@ export const InventoryModule: React.FC = () => {
           <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-2xl w-full my-auto overflow-hidden">
             <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
               <h3 className="font-bold text-sm flex items-center gap-2">
-                <Plus className="w-4 h-4 text-teal-400" />
+                <Plus className="w-4 h-4 text-rose-400" />
                 <span>إضافة كاشف / مستلزم جديد إلى مخزن المعمل</span>
               </h3>
               <button
@@ -672,7 +672,7 @@ export const InventoryModule: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-teal-800 hover:bg-teal-900 text-white font-bold rounded-lg shadow-sm"
+                  className="px-5 py-2 bg-rose-900 hover:bg-rose-950 text-white font-bold rounded-lg shadow-sm"
                 >
                   إضافة للمستودع
                 </button>
@@ -760,7 +760,7 @@ export const InventoryModule: React.FC = () => {
               <div className="flex justify-center gap-2">
                 <button
                   onClick={() => window.print()}
-                  className="px-4 py-2 bg-teal-800 text-white text-xs font-bold rounded-lg flex items-center gap-1.5"
+                  className="px-4 py-2 bg-rose-900 text-white text-xs font-bold rounded-lg flex items-center gap-1.5"
                 >
                   <Printer className="w-4 h-4" />
                   <span>طباعة الملصق الحراري</span>
@@ -815,7 +815,7 @@ export const InventoryModule: React.FC = () => {
                     min="0"
                     value={editItemQty}
                     onChange={e => setEditItemQty(Number(e.target.value))}
-                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-teal-800"
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-rose-900"
                   />
                 </div>
                 <div>

@@ -174,7 +174,7 @@ export const HRModule: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <Users className="w-5 h-5 text-teal-700" />
+              <Users className="w-5 h-5 text-rose-800" />
               <span>{language === 'ar' ? 'الموارد البشرية وشؤون الموظفين والمرتبات' : 'HR, Attendance & Payroll Management'}</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -199,7 +199,7 @@ export const HRModule: React.FC = () => {
                 type="button"
                 onClick={() => setActiveSubTab('payroll')}
                 className={`px-3 py-1.5 rounded-md transition-colors ${
-                  activeSubTab === 'payroll' ? 'bg-white text-teal-900 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
+                  activeSubTab === 'payroll' ? 'bg-white text-rose-950 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 {language === 'ar' ? 'الرواتب والمرتبات' : 'Payroll'}
@@ -218,7 +218,7 @@ export const HRModule: React.FC = () => {
             {activeSubTab === 'staff' && (
               <button
                 onClick={() => setIsAddStaffOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-teal-800 hover:bg-teal-900 rounded-lg transition-colors shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-rose-900 hover:bg-rose-950 rounded-lg transition-colors shadow-sm"
               >
                 <Plus className="w-4 h-4" />
                 <span>إضافة موظف</span>
@@ -314,7 +314,7 @@ export const HRModule: React.FC = () => {
                         </td>
 
                         {/* Overtime */}
-                        <td className="py-3 px-4 font-mono text-teal-800 font-bold">
+                        <td className="py-3 px-4 font-mono text-rose-900 font-bold">
                           {rec && rec.overtimeHours > 0 ? `+${rec.overtimeHours} س` : '0'}
                         </td>
 
@@ -394,7 +394,7 @@ export const HRModule: React.FC = () => {
               />
               <button
                 onClick={() => generatePayrollForMonth(selectedMonth)}
-                className="px-4 py-2 bg-teal-800 hover:bg-teal-900 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
+                className="px-4 py-2 bg-rose-900 hover:bg-rose-950 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
               >
                 توليد / تحديث مسير الشهر
               </button>
@@ -437,7 +437,7 @@ export const HRModule: React.FC = () => {
                       <tr key={p.id} className="hover:bg-slate-50 transition-colors">
                         <td className="py-3 px-4 font-bold text-slate-900">{p.employeeName}</td>
                         <td className="py-3 px-4 font-mono">{p.basicSalary.toLocaleString()} ج</td>
-                        <td className="py-3 px-4 font-mono text-teal-800 font-bold">
+                        <td className="py-3 px-4 font-mono text-rose-900 font-bold">
                           {p.overtimePay > 0 ? `+${p.overtimePay} ج` : '0'}
                         </td>
                         <td className="py-3 px-4 font-mono text-emerald-700 font-bold">
@@ -472,7 +472,7 @@ export const HRModule: React.FC = () => {
                                 setDeductionInput(p.deductionAmount || 0);
                                 setAdvanceInput(p.advancePayment || 0);
                               }}
-                              className="p-1.5 text-slate-600 hover:text-teal-800 hover:bg-slate-100 rounded"
+                              className="p-1.5 text-slate-600 hover:text-rose-900 hover:bg-slate-100 rounded"
                               title="تعديل الحوافز والخصومات"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -523,7 +523,7 @@ export const HRModule: React.FC = () => {
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="font-bold text-slate-900 text-sm">{emp.fullName}</h3>
-                  <div className="text-xs text-teal-800 font-semibold">{emp.jobTitleAr}</div>
+                  <div className="text-xs text-rose-900 font-semibold">{emp.jobTitleAr}</div>
                   <div className="text-[10px] text-slate-400 font-mono">{emp.code}</div>
                 </div>
                 <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
@@ -680,7 +680,7 @@ export const HRModule: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-teal-800 text-white rounded font-bold shadow-sm"
+                  className="px-5 py-2 bg-rose-900 text-white rounded font-bold shadow-sm"
                 >
                   حفظ الموظف
                 </button>
@@ -742,7 +742,7 @@ export const HRModule: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-teal-800 text-white rounded font-bold"
+                  className="px-4 py-1.5 bg-rose-900 text-white rounded font-bold"
                 >
                   حفظ التعديل
                 </button>
@@ -776,7 +776,7 @@ export const HRModule: React.FC = () => {
                   <span className="font-mono font-bold">{payslipPrint.basicSalary.toLocaleString()} ج.م</span>
                 </div>
                 {payslipPrint.overtimePay > 0 && (
-                  <div className="flex justify-between text-teal-800 font-semibold">
+                  <div className="flex justify-between text-rose-900 font-semibold">
                     <span>بدل ساعات إضافية:</span>
                     <span className="font-mono">+{payslipPrint.overtimePay} ج.م</span>
                   </div>
@@ -813,7 +813,7 @@ export const HRModule: React.FC = () => {
               <div className="flex justify-center gap-2 pt-2 print:hidden">
                 <button
                   onClick={() => window.print()}
-                  className="px-4 py-2 bg-teal-800 text-white rounded font-bold flex items-center gap-1.5"
+                  className="px-4 py-2 bg-rose-900 text-white rounded font-bold flex items-center gap-1.5"
                 >
                   <Printer className="w-4 h-4" />
                   <span>طباعة القسيمة</span>
@@ -889,7 +889,7 @@ export const HRModule: React.FC = () => {
                     min="0"
                     value={editStaffSalary}
                     onChange={e => setEditStaffSalary(Number(e.target.value))}
-                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-teal-800"
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-rose-900"
                   />
                 </div>
                 <div>

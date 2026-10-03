@@ -139,7 +139,7 @@ export const BarcodeScannerModal: React.FC = () => {
         {/* Header */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <ScanLine className="w-5 h-5 text-teal-400" />
+            <ScanLine className="w-5 h-5 text-rose-400" />
             <h3 className="font-bold text-sm">
               {language === 'ar' ? 'قارئ الباركود للعينة والمستلزمات' : 'Barcode & Sample Reader'}
             </h3>
@@ -158,8 +158,8 @@ export const BarcodeScannerModal: React.FC = () => {
         {/* Content */}
         <div className="p-6 space-y-5">
           {/* Laser Hardware Scanner Notice */}
-          <div className="p-3 bg-teal-50 border border-teal-200 rounded-lg text-xs text-teal-900 flex items-start gap-2">
-            <ScanLine className="w-4 h-4 text-teal-700 shrink-0 mt-0.5" />
+          <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-950 flex items-start gap-2">
+            <ScanLine className="w-4 h-4 text-rose-800 shrink-0 mt-0.5" />
             <div>
               <span className="font-bold">
                 {language === 'ar' ? 'دعم القارئ الليزري (USB / Bluetooth): ' : 'Laser Barcode Gun Ready: '}
@@ -178,9 +178,9 @@ export const BarcodeScannerModal: React.FC = () => {
               <button
                 type="button"
                 onClick={startCamera}
-                className="w-full h-44 rounded-lg border-2 border-dashed border-slate-300 hover:border-teal-700 bg-slate-50 flex flex-col items-center justify-center gap-2 text-slate-600 hover:text-teal-800 transition-colors"
+                className="w-full h-44 rounded-lg border-2 border-dashed border-slate-300 hover:border-rose-800 bg-slate-50 flex flex-col items-center justify-center gap-2 text-slate-600 hover:text-rose-900 transition-colors"
               >
-                <Camera className="w-8 h-8 text-teal-600" />
+                <Camera className="w-8 h-8 text-rose-700" />
                 <span className="text-xs font-bold">
                   {language === 'ar' ? 'تشغيل كاميرا الجهاز لقراءة الباركود' : 'Activate Device Camera'}
                 </span>
@@ -191,7 +191,7 @@ export const BarcodeScannerModal: React.FC = () => {
             ) : (
               <div className="relative rounded-lg overflow-hidden bg-black h-48 flex items-center justify-center">
                 <video ref={videoRef} className="w-full h-full object-cover" playsInline />
-                <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 h-20 border-2 border-teal-400 rounded bg-teal-400/10 pointer-events-none flex items-center justify-center">
+                <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 h-20 border-2 border-rose-400 rounded bg-rose-400/10 pointer-events-none flex items-center justify-center">
                   <div className="w-full h-0.5 bg-rose-500 animate-pulse shadow-sm" />
                 </div>
                 <button
@@ -229,13 +229,13 @@ export const BarcodeScannerModal: React.FC = () => {
                   value={manualCode}
                   onChange={e => setManualCode(e.target.value)}
                   placeholder="e.g. 9827361829 or 622300188201"
-                  className="w-full px-3 py-2 text-xs font-mono rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700"
+                  className="w-full px-3 py-2 text-xs font-mono rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-800"
                 />
                 <Keyboard className="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
               </div>
               <button
                 type="submit"
-                className="px-4 py-2 bg-teal-800 hover:bg-teal-900 text-white text-xs font-bold rounded-lg transition-colors"
+                className="px-4 py-2 bg-rose-900 hover:bg-rose-950 text-white text-xs font-bold rounded-lg transition-colors"
               >
                 {language === 'ar' ? 'بحث وقراءة' : 'Scan'}
               </button>
@@ -251,14 +251,14 @@ export const BarcodeScannerModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => processCode('9827361829')}
-                className="text-[11px] px-2 py-1 bg-slate-100 hover:bg-teal-100 text-slate-700 hover:text-teal-900 rounded font-mono border border-slate-200"
+                className="text-[11px] px-2 py-1 bg-slate-100 hover:bg-rose-100 text-slate-700 hover:text-rose-950 rounded font-mono border border-slate-200"
               >
                 9827361829 (عينة محمود)
               </button>
               <button
                 type="button"
                 onClick={() => processCode('9827361830')}
-                className="text-[11px] px-2 py-1 bg-slate-100 hover:bg-teal-100 text-slate-700 hover:text-teal-900 rounded font-mono border border-slate-200"
+                className="text-[11px] px-2 py-1 bg-slate-100 hover:bg-rose-100 text-slate-700 hover:text-rose-950 rounded font-mono border border-slate-200"
               >
                 9827361830 (عينة سارة)
               </button>

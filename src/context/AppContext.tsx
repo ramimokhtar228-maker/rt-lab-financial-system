@@ -13,7 +13,12 @@ import {
   GitHubSyncConfig,
   AuditLog,
   AppNotification,
-  DailyCloseout
+  DailyCloseout,
+  InvoiceTestItem,
+  LoyaltyConfig,
+  PatientLoyaltyProfile,
+  LoyaltyTransaction,
+  LoyaltyTier
 } from '../types';
 import {
   INITIAL_USERS,
@@ -25,7 +30,10 @@ import {
   INITIAL_PAYROLL,
   INITIAL_LAB_TO_LAB,
   INITIAL_PROFIT_CONFIG,
-  INITIAL_GITHUB_CONFIG
+  INITIAL_GITHUB_CONFIG,
+  TEST_CATALOG,
+  DEFAULT_LOYALTY_CONFIG,
+  INITIAL_LOYALTY_PROFILES
 } from '../data/catalog';
 import {
   fetchDiagnosticCases,
@@ -56,6 +64,24 @@ interface AppContextType {
   addIncomeRecord: (record: Omit<IncomeRecord, 'id' | 'createdAt' | 'updatedAt'>) => IncomeRecord;
   updateIncomeRecord: (id: string, updates: Partial<IncomeRecord>) => void;
   deleteIncomeRecord: (id: string) => void;
+
+  // Test Catalog Management
+  testCatalog: InvoiceTestItem[];
+  addCatalogTest: (test: InvoiceTestItem) => void;
+  updateCatalogTest: (code: string, updates: Partial<InvoiceTestItem>) => void;
+  deleteCatalogTest: (code: string) => void;
+  resetCatalog: () => void;
+
+  // Loyalty Club & Patient Cards
+  loyaltyProfiles: PatientLoyaltyProfile[];
+  loyaltyConfig: LoyaltyConfig;
+  updateLoyaltyConfig: (config: LoyaltyConfig) => void;
+  addLoyaltyProfile: (profile: PatientLoyaltyProfile) => void;
+  updateLoyaltyProfile: (patientId: string, updates: Partial<PatientLoyaltyProfile>) => void;
+  addLoyaltyPoints: (patientId: string, points: number, description: string, invoiceNumber?: string, amountEGP?: number) => void;
+  redeemLoyaltyPoints: (patientId: string, points: number, invoiceNumber?: string) => { success: boolean; cashValue: number };
+  calculatePointsForAmount: (amountEGP: number) => number;
+  calculateCashForPoints: (points: number) => number;
 
   // Expenses & Profit
   expenses: ExpenseRecord[];
@@ -153,7 +179,10 @@ const STORAGE_KEYS = {
   CLOSEOUTS: 'rt_lab_closeouts',
   AUDIT_LOGS: 'rt_lab_audit',
   GITHUB_CONFIG: 'rt_lab_github',
-  DIAG_CASES: 'rt_lab_diag_cases'
+  DIAG_CASES: 'rt_lab_diag_cases',
+  CATALOG: 'rt_lab_test_catalog',
+  LOYALTY_PROFILES: 'rt_lab_loyalty_profiles',
+  LOYALTY_CONFIG: 'rt_lab_loyalty_settings'
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -182,6 +211,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return INITIAL_USERS[0]; // Default: Prof. Dr. Rami Mokhtar (CEO)
   });
+
   const [users] = useState<UserProfile[]>(INITIAL_USERS);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
 
@@ -272,14 +302,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return [
       {
-        id: 'aud-1',
+        id: 'aud-init-1',
         timestamp: new Date().toISOString(),
-        userId: INITIAL_USERS[0].id,
-        userName: INITIAL_USERS[0].nameAr,
+        userId: 'user-ceo',
+        userName: 'أ.د. رامي مختار',
         userRole: 'admin_ceo',
         action: 'LOGIN',
         module: 'SECURITY',
-        description: 'تسجيل دخول ناجح إلى منظومة الإدارة المالية لمعامل RT'
+        description: 'تسجيل دخول ناجح إلى منظومة الإدارة المالية والفوترة لمعامل RT'
       }
     ];
   });
@@ -302,6 +332,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+
+  // Catalog State
+  const [testCatalog, setTestCatalog] = useState<InvoiceTestItem[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.CATALOG);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch { /* ignore */ }
+    }
+    return TEST_CATALOG;
+  });
+
+  // Loyalty Club States
+  const [loyaltyProfiles, setLoyaltyProfiles] = useState<PatientLoyaltyProfile[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.LOYALTY_PROFILES);
+    if (saved) {
+      try { return JSON.parse(saved); } catch { /* ignore */ }
+    }
+    return INITIAL_LOYALTY_PROFILES;
+  });
+
+  const [loyaltyConfig, setLoyaltyConfigState] = useState<LoyaltyConfig>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.LOYALTY_CONFIG);
+    if (saved) {
+      try { return JSON.parse(saved); } catch { /* ignore */ }
+    }
+    return DEFAULT_LOYALTY_CONFIG;
+  });
 
   // LocalStorage Persisters
   useEffect(() => {
@@ -352,6 +411,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(STORAGE_KEYS.DIAG_CASES, JSON.stringify(diagnosticCases));
   }, [diagnosticCases]);
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.CATALOG, JSON.stringify(testCatalog));
+  }, [testCatalog]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.LOYALTY_PROFILES, JSON.stringify(loyaltyProfiles));
+  }, [loyaltyProfiles]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.LOYALTY_CONFIG, JSON.stringify(loyaltyConfig));
+  }, [loyaltyConfig]);
+
   // Audit Logging
   const logAudit = useCallback((action: AuditLog['action'], module: AuditLog['module'], description: string) => {
     const newLog: AuditLog = {
@@ -391,13 +462,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const hasPermission = (module: string): boolean => {
     if (currentUser.role === 'admin_ceo') return true; // CEO has all permissions
     switch (module) {
+      case 'dashboard':
+      case 'loyalty':
+      case 'catalog':
+        return true;
       case 'income':
       case 'billing':
         return currentUser.role === 'accountant';
       case 'expenses':
         return currentUser.role === 'accountant';
       case 'profit_share':
-        return false; // Profit share and CEO % is CEO only
+        return false;
       case 'inventory':
       case 'reagents':
         return currentUser.role === 'lab_tech' || currentUser.role === 'accountant';
@@ -410,21 +485,140 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       case 'reports':
         return currentUser.role === 'accountant';
       case 'settings':
-      case 'security':
-        return false;
-      case 'sync':
-        return true;
+        return currentUser.role === 'accountant';
       default:
-        return true;
+        return false;
     }
   };
 
-  // Dynamic Alerts & Notifications generation
+  // Catalog methods
+  const addCatalogTest = useCallback((test: InvoiceTestItem) => {
+    setTestCatalog(prev => {
+      const exists = prev.some(t => t.code.toLowerCase() === test.code.toLowerCase());
+      if (exists) {
+        return prev.map(t => t.code.toLowerCase() === test.code.toLowerCase() ? test : t);
+      }
+      return [test, ...prev];
+    });
+    logAudit('CATALOG_UPDATE', 'CATALOG', `إضافة/تحديث فحص بالكتالوج: ${test.nameAr} (${test.code}) بسعر ${test.price} ج.م`);
+  }, [logAudit]);
+
+  const updateCatalogTest = useCallback((code: string, updates: Partial<InvoiceTestItem>) => {
+    setTestCatalog(prev => prev.map(t => t.code === code ? { ...t, ...updates } : t));
+    logAudit('CATALOG_UPDATE', 'CATALOG', `تعديل بيانات فحص: كود (${code})`);
+  }, [logAudit]);
+
+  const deleteCatalogTest = useCallback((code: string) => {
+    setTestCatalog(prev => prev.filter(t => t.code !== code));
+    logAudit('DELETE', 'CATALOG', `حذف فحص من الكتالوج: كود (${code})`);
+  }, [logAudit]);
+
+  const resetCatalog = useCallback(() => {
+    setTestCatalog(TEST_CATALOG);
+    localStorage.setItem(STORAGE_KEYS.CATALOG, JSON.stringify(TEST_CATALOG));
+    logAudit('CATALOG_UPDATE', 'CATALOG', `إعادة ضبط الكتالوج إلى القائمة الشاملة (165 فحص طبي)`);
+  }, [logAudit]);
+
+  // Loyalty calculations & methods
+  const calculatePointsForAmount = useCallback((amountEGP: number) => {
+    return Math.round(amountEGP * loyaltyConfig.pointsPerEGP);
+  }, [loyaltyConfig]);
+
+  const calculateCashForPoints = useCallback((points: number) => {
+    return Math.round((points * (loyaltyConfig.egpPer100Points / 100)) * 100) / 100;
+  }, [loyaltyConfig]);
+
+  const getDynamicTier = useCallback((points: number): LoyaltyTier => {
+    if (points >= loyaltyConfig.tiers.VIP.minPoints) return 'VIP';
+    if (points >= loyaltyConfig.tiers.Platinum.minPoints) return 'Platinum';
+    if (points >= loyaltyConfig.tiers.Gold.minPoints) return 'Gold';
+    return 'Silver';
+  }, [loyaltyConfig]);
+
+  const updateLoyaltyConfig = useCallback((newConfig: LoyaltyConfig) => {
+    setLoyaltyConfigState(newConfig);
+    logAudit('UPDATE', 'LOYALTY', `تحديث إعدادات كروت الولاء وقيمة استبدال النقود ونسب الخصم`);
+  }, [logAudit]);
+
+  const addLoyaltyProfile = useCallback((profile: PatientLoyaltyProfile) => {
+    setLoyaltyProfiles(prev => [profile, ...prev]);
+    logAudit('CREATE', 'LOYALTY', `إصدار كرت مريض ذكي جديد للمريض: ${profile.patientName}`);
+  }, [logAudit]);
+
+  const updateLoyaltyProfile = useCallback((patientId: string, updates: Partial<PatientLoyaltyProfile>) => {
+    setLoyaltyProfiles(prev => prev.map(p => {
+      if (p.patientId === patientId) {
+        const updated = { ...p, ...updates };
+        updated.tier = getDynamicTier(updated.totalPoints);
+        return updated;
+      }
+      return p;
+    }));
+  }, [getDynamicTier]);
+
+  const addLoyaltyPoints = useCallback((patientId: string, points: number, description: string, invoiceNumber?: string, amountEGP?: number) => {
+    if (points <= 0) return;
+    setLoyaltyProfiles(prev => prev.map(p => {
+      if (p.patientId === patientId) {
+        const newTotal = p.totalPoints + points;
+        const newSpent = amountEGP ? p.lifetimeSpent + amountEGP : p.lifetimeSpent;
+        const newTx: LoyaltyTransaction = {
+          id: `tx-${Date.now()}`,
+          date: new Date().toISOString().substring(0, 10),
+          type: 'earn',
+          points,
+          description,
+          invoiceNumber,
+          amountEGP
+        };
+        return {
+          ...p,
+          totalPoints: newTotal,
+          tier: getDynamicTier(newTotal),
+          lifetimeSpent: newSpent,
+          transactions: [newTx, ...p.transactions]
+        };
+      }
+      return p;
+    }));
+    logAudit('UPDATE', 'LOYALTY', `إضافة ${points} نقطة للمريض ${patientId}`);
+  }, [getDynamicTier, logAudit]);
+
+  const redeemLoyaltyPoints = useCallback((patientId: string, points: number, invoiceNumber?: string) => {
+    const profile = loyaltyProfiles.find(p => p.patientId === patientId);
+    if (!profile || points <= 0 || points > profile.totalPoints) {
+      return { success: false, cashValue: 0 };
+    }
+    const cashValue = calculateCashForPoints(points);
+    setLoyaltyProfiles(prev => prev.map(p => {
+      if (p.patientId === patientId) {
+        const newTotal = p.totalPoints - points;
+        const newTx: LoyaltyTransaction = {
+          id: `tx-${Date.now()}`,
+          date: new Date().toISOString().substring(0, 10),
+          type: 'redeem',
+          points: -points,
+          description: `استبدال ${points} نقطة بخصم نقدي بقيمة ${cashValue} ج.م للفاتورة ${invoiceNumber || ''}`,
+          invoiceNumber
+        };
+        return {
+          ...p,
+          totalPoints: newTotal,
+          tier: getDynamicTier(newTotal),
+          transactions: [newTx, ...p.transactions]
+        };
+      }
+      return p;
+    }));
+    logAudit('UPDATE', 'LOYALTY', `استبدال ${points} نقطة بخصم نقدي بقيمة ${cashValue} ج.م`);
+    return { success: true, cashValue };
+  }, [calculateCashForPoints, getDynamicTier, logAudit, loyaltyProfiles]);
+
+  // Notifications
   useEffect(() => {
     const list: AppNotification[] = [];
     const now = new Date();
 
-    // 1. Inventory low stock and expiry check
     inventory.forEach(item => {
       if (item.currentQuantity <= item.minThreshold) {
         list.push({
@@ -469,7 +663,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     });
 
-    // 2. Unpaid patient balances check
     const unpaidSum = incomeRecords
       .filter(r => r.paymentStatus !== 'paid' && r.remainingAmount > 0)
       .reduce((sum, r) => sum + r.remainingAmount, 0);
@@ -488,24 +681,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     }
 
-    // 3. Lab-to-Lab pending samples
-    const pendingL2L = labToLabOrders.filter(o => o.resultStatus === 'sent' || o.resultStatus === 'processing');
-    if (pendingL2L.length > 0) {
-      list.push({
-        id: 'notif-l2l-pending',
-        title: language === 'ar' ? 'عينات محولة لمعامل خارجية' : 'External Lab Pending Samples',
-        message: language === 'ar'
-          ? `يوجد ${pendingL2L.length} عينة بانتظار استلام النتائج من المعامل المحال إليها.`
-          : `${pendingL2L.length} samples awaiting results from referral labs.`,
-        type: 'info',
-        timestamp: new Date().toISOString(),
-        read: false,
-        targetTab: 'lab_to_lab'
-      });
-    }
-
     setNotifications(list);
-  }, [inventory, incomeRecords, labToLabOrders, language]);
+  }, [inventory, incomeRecords, language]);
 
   const markNotificationRead = (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
@@ -515,7 +692,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications([]);
   };
 
-  // Financial Computations
+  // Financial Metrics
   const financialMetrics = useMemo(() => {
     const totalGrossIncome = incomeRecords.reduce((acc, r) => acc + r.subtotal, 0);
     const totalPaidIncome = incomeRecords.reduce((acc, r) => acc + r.paidAmount, 0);
@@ -534,6 +711,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const todayIncome = incomeRecords
       .filter(r => r.createdAt.startsWith(todayStr))
       .reduce((acc, r) => acc + r.paidAmount, 0);
+
     const todayExpenses = expenses
       .filter(e => e.date === todayStr)
       .reduce((acc, e) => acc + e.amount, 0);
@@ -566,10 +744,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIncomeRecords(prev => [newRecord, ...prev]);
     logAudit('CREATE', 'INCOME', `تسجيل إيراد وفاتورة مريض جديدة: ${newRecord.patientName} (${newRecord.invoiceNumber}) بمبلغ ${newRecord.netAmount} ج.م`);
 
-    // Auto-sync to GitHub Diagnostic system if enabled
+    // Auto-award points if patient phone matches loyalty profile
+    if (newRecord.paidAmount > 0 && newRecord.patientPhone) {
+      const match = loyaltyProfiles.find(p => p.phone === newRecord.patientPhone || (p.patientName && p.patientName === newRecord.patientName));
+      if (match) {
+        const pts = calculatePointsForAmount(newRecord.paidAmount);
+        addLoyaltyPoints(match.patientId, pts, `نقاط فاتورة التحاليل ${newRecord.invoiceNumber}`, newRecord.invoiceNumber, newRecord.paidAmount);
+      }
+    }
+
     if (githubConfig.autoSync && githubConfig.token) {
       setTimeout(() => {
-        pushCasesToDiagnostic().catch(() => {/* background attempt */});
+        pushCasesToDiagnostic().catch(() => {});
       }, 500);
     }
 
@@ -589,10 +775,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteIncomeRecord = (id: string) => {
     const target = incomeRecords.find(r => r.id === id);
-    if (target) {
-      setIncomeRecords(prev => prev.filter(r => r.id !== id));
-      logAudit('DELETE', 'INCOME', `حذف الفاتورة رقم ${target.invoiceNumber} للمريض ${target.patientName}`);
-    }
+    if (!target) return;
+    setIncomeRecords(prev => prev.filter(r => r.id !== id));
+    logAudit('DELETE', 'INCOME', `حذف فاتورة المريض: ${target.patientName} (${target.invoiceNumber}) بمبلغ ${target.netAmount} ج.م`);
   };
 
   // Expenses Operations
@@ -604,59 +789,65 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString()
     };
     setExpenses(prev => [newExpense, ...prev]);
-    logAudit('CREATE', 'EXPENSES', `تسجيل مصروف جديد: ${newExpense.title} بقيمة ${newExpense.amount} ج.م (${newExpense.paidTo})`);
+    logAudit('CREATE', 'EXPENSES', `تسجيل بند مصروف جديد: ${newExpense.title} بمبلغ ${newExpense.amount} ج.م (${newExpense.category})`);
     return newExpense;
   };
 
   const updateExpense = (id: string, updates: Partial<ExpenseRecord>) => {
-    setExpenses(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
-    logAudit("UPDATE", "EXPENSES", "تعديل سند الصرف: " + id);
+    setExpenses(prev => prev.map(exp => {
+      if (exp.id === id) {
+        const updated = { ...exp, ...updates };
+        logAudit('UPDATE', 'EXPENSES', `تعديل سند الصرف: ${updated.expenseNumber} - ${updated.title}`);
+        return updated;
+      }
+      return exp;
+    }));
   };
 
   const deleteExpense = (id: string) => {
     const target = expenses.find(e => e.id === id);
-    if (target) {
-      setExpenses(prev => prev.filter(e => e.id !== id));
-      logAudit('DELETE', 'EXPENSES', `حذف مصروف: ${target.title} بقيمة ${target.amount} ج.م`);
-    }
+    if (!target) return;
+    setExpenses(prev => prev.filter(e => e.id !== id));
+    logAudit('DELETE', 'EXPENSES', `حذف سند الصرف: ${target.expenseNumber} - ${target.title} بقيمة ${target.amount} ج.م`);
   };
 
   const updateProfitConfig = (config: ProfitShareConfig) => {
     setProfitConfigState(config);
-    logAudit('UPDATE', 'SETTINGS', `تعديل نسب توزيع الأرباح: نسبة CEO ${config.ceoPercentage}% - نسبة المعمل ${config.labPercentage}%`);
+    logAudit('UPDATE', 'SETTINGS', `تعديل نسب توزيع الأرباح: المعمل ${config.labPercentage}% - الإدارة ${config.ceoPercentage}%`);
   };
 
   // Inventory Operations
   const addInventoryItem = (itemData: Omit<InventoryItem, 'id' | 'lastRestockedDate'>) => {
-    const id = `inv-${Date.now()}`;
     const newItem: InventoryItem = {
       ...itemData,
-      id,
+      id: `inv-${Date.now()}`,
       lastRestockedDate: new Date().toISOString().split('T')[0]
     };
     setInventory(prev => [newItem, ...prev]);
-    logAudit('CREATE', 'INVENTORY', `إضافة كاشف/مستلزم جديد: ${newItem.nameAr} كود ${newItem.itemCode}`);
+    logAudit('CREATE', 'INVENTORY', `إضافة صنف جديد للمخزن: ${newItem.nameAr} (${newItem.code})`);
   };
 
   const updateInventoryItem = (id: string, updates: Partial<InventoryItem>) => {
-    setInventory(prev => prev.map(item => {
-      if (item.id === id) {
-        return { ...item, ...updates };
+    setInventory(prev => prev.map(i => {
+      if (i.id === id) {
+        const updated = { ...i, ...updates };
+        logAudit('UPDATE', 'INVENTORY', `تعديل بيانات الصنف المخزني: ${updated.nameAr}`);
+        return updated;
       }
-      return item;
+      return i;
     }));
-    logAudit('UPDATE', 'INVENTORY', `تحديث بيانات المادة المخزنية: ${id}`);
   };
 
   const restockItem = (id: string, addedQty: number, newCost?: number) => {
     setInventory(prev => prev.map(item => {
       if (item.id === id) {
-        const newQty = item.currentQuantity + addedQty;
-        logAudit('UPDATE', 'INVENTORY', `توريد مخزني للمادة "${item.nameAr}": إضافة ${addedQty} ${item.unit} (الرصيد الجديد: ${newQty})`);
+        const updatedQty = item.currentQuantity + addedQty;
+        const updatedCost = newCost !== undefined ? newCost : item.costPerUnit;
+        logAudit('UPDATE', 'INVENTORY', `توريد واستلام كمية ${addedQty} ${item.unit} من صنف "${item.nameAr}"`);
         return {
           ...item,
-          currentQuantity: newQty,
-          unitCost: newCost !== undefined ? newCost : item.unitCost,
+          currentQuantity: updatedQty,
+          costPerUnit: updatedCost,
           lastRestockedDate: new Date().toISOString().split('T')[0]
         };
       }
@@ -667,9 +858,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const consumeReagent = (id: string, qty: number) => {
     setInventory(prev => prev.map(item => {
       if (item.id === id) {
-        const newQty = Math.max(0, item.currentQuantity - qty);
-        logAudit('UPDATE', 'INVENTORY', `صرف واستهلاك مخبري للمادة "${item.nameAr}": ${qty} ${item.unit}`);
-        return { ...item, currentQuantity: newQty };
+        const updatedQty = Math.max(0, item.currentQuantity - qty);
+        logAudit('UPDATE', 'INVENTORY', `صرف واستهلاك ${qty} ${item.unit} من كاشف "${item.nameAr}" للتشغيل المعملي`);
+        return {
+          ...item,
+          currentQuantity: updatedQty
+        };
       }
       return item;
     }));
@@ -677,40 +871,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteInventoryItem = (id: string) => {
     const target = inventory.find(i => i.id === id);
-    if (target) {
-      setInventory(prev => prev.filter(i => i.id !== id));
-      logAudit('DELETE', 'INVENTORY', `حذف مادة من المخزن: ${target.nameAr}`);
-    }
+    if (!target) return;
+    setInventory(prev => prev.filter(i => i.id !== id));
+    logAudit('DELETE', 'INVENTORY', `حذف صنف من المخزن: ${target.nameAr} (${target.code})`);
   };
 
-  // HR & Payroll Operations
+  // HR Operations
   const addEmployee = (empData: Omit<Employee, 'id'>) => {
-    const id = `emp-${Date.now()}`;
-    const newEmp: Employee = { ...empData, id };
+    const newEmp: Employee = {
+      ...empData,
+      id: `emp-${Date.now()}`
+    };
     setEmployees(prev => [...prev, newEmp]);
     logAudit('CREATE', 'HR', `إضافة موظف جديد: ${newEmp.fullName} (${newEmp.jobTitleAr})`);
   };
 
   const updateEmployee = (id: string, updates: Partial<Employee>) => {
-    setEmployees(prev => prev.map(emp => {
-      if (emp.id === id) {
-        return { ...emp, ...updates };
-      }
-      return emp;
-    }));
-    logAudit('UPDATE', 'HR', `تعديل بيانات الموظف: ${id}`);
+    setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+    logAudit('UPDATE', 'HR', `تعديل بيانات الموظف: ${updates.fullName || id}`);
   };
 
   const deleteEmployee = (id: string) => {
-    const target = employees.find(e => e.id === id);
     setEmployees(prev => prev.filter(e => e.id !== id));
-    logAudit('DELETE', 'HR', `حذف موظف: ${target?.fullName || id}`);
+    logAudit('DELETE', 'HR', `حذف ملف الموظف كود: ${id}`);
   };
 
   const recordAttendance = (
     employeeId: string,
     status: AttendanceRecord['status'],
-    checkIn = '08:00',
+    checkIn?: string,
     checkOut?: string,
     notes?: string
   ) => {
@@ -718,283 +907,197 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!emp) return;
 
     const today = new Date().toISOString().split('T')[0];
-    const existingIndex = attendance.findIndex(a => a.employeeId === employeeId && a.date === today);
+    const newRecord: AttendanceRecord = {
+      id: `att-${Date.now()}`,
+      employeeId,
+      employeeName: emp.fullName,
+      date: today,
+      checkInTime: checkIn || '09:00',
+      checkOutTime: checkOut || '17:00',
+      status,
+      hoursWorked: status === 'present' ? emp.shiftHours : 0,
+      overtimeHours: 0,
+      notes
+    };
 
-    let hoursWorked = 8;
-    let overtimeHours = 0;
-    if (checkOut) {
-      const [inH, inM] = checkIn.split(':').map(Number);
-      const [outH, outM] = checkOut.split(':').map(Number);
-      const diffM = (outH * 60 + outM) - (inH * 60 + inM);
-      hoursWorked = Math.max(0, Math.round((diffM / 60) * 10) / 10);
-      overtimeHours = Math.max(0, hoursWorked - emp.shiftHours);
-    }
+    setAttendance(prev => {
+      const filtered = prev.filter(a => !(a.employeeId === employeeId && a.date === today));
+      return [newRecord, ...filtered];
+    });
 
-    if (existingIndex >= 0) {
-      setAttendance(prev => {
-        const copy = [...prev];
-        copy[existingIndex] = {
-          ...copy[existingIndex],
-          status,
-          checkInTime: checkIn,
-          checkOutTime: checkOut,
-          hoursWorked,
-          overtimeHours,
-          notes
-        };
-        return copy;
-      });
-      logAudit('UPDATE', 'HR', `تحديث حضور الموظف: ${emp.fullName} - الحالة: ${status}`);
-    } else {
-      const newRec: AttendanceRecord = {
-        id: `att-${Date.now()}`,
-        employeeId,
-        employeeName: emp.fullName,
-        date: today,
-        checkInTime: checkIn,
-        checkOutTime: checkOut,
-        status,
-        hoursWorked,
-        overtimeHours,
-        notes
-      };
-      setAttendance(prev => [newRec, ...prev]);
-      logAudit('CREATE', 'HR', `تسجيل حضور الموظف: ${emp.fullName} - ${checkIn} (${status})`);
-    }
+    logAudit('CREATE', 'HR', `تسجيل حضور/انصراف للموظف: ${emp.fullName} بتاريخ ${today} - الحالة: ${status}`);
   };
 
   const generatePayrollForMonth = (monthYear: string) => {
-    const newRecords: PayrollRecord[] = employees.filter(e => e.isActive).map(emp => {
-      // Find any existing record for this month
-      const existing = payroll.find(p => p.employeeId === emp.id && p.monthYear === monthYear);
-      if (existing) return existing;
-
-      // Calculate overtime bonus from attendance
-      const monthAttendance = attendance.filter(a => a.employeeId === emp.id && a.date.startsWith(monthYear));
-      const totalOvertimeHours = monthAttendance.reduce((sum, a) => sum + (a.overtimeHours || 0), 0);
-      const hourlyRate = (emp.basicSalary / 30) / emp.shiftHours;
-      const overtimePay = Math.round(totalOvertimeHours * hourlyRate * 1.5);
-
-      const bonusAmount = 0;
-      const deductionAmount = 0;
-      const advancePayment = 0;
-      const netSalary = emp.basicSalary + overtimePay + bonusAmount - deductionAmount - advancePayment;
-
+    const newPayrollList: PayrollRecord[] = employees.filter(e => e.isActive).map(emp => {
       return {
-        id: `pay-${monthYear}-${emp.id}`,
+        id: `pay-${emp.id}-${monthYear}`,
         monthYear,
         employeeId: emp.id,
         employeeName: emp.fullName,
         basicSalary: emp.basicSalary,
-        bonusAmount,
-        deductionAmount,
-        advancePayment,
-        overtimePay,
-        netSalary,
+        bonusAmount: 0,
+        deductionAmount: 0,
+        advancePayment: 0,
+        overtimePay: 0,
+        netSalary: emp.basicSalary,
         paymentStatus: 'draft'
       };
     });
 
     setPayroll(prev => {
-      const filtered = prev.filter(p => p.monthYear !== monthYear);
-      return [...newRecords, ...filtered];
+      const existingOtherMonths = prev.filter(p => p.monthYear !== monthYear);
+      return [...newPayrollList, ...existingOtherMonths];
     });
 
-    logAudit('CREATE', 'HR', `إنشاء مسير رواتب موظفي المعمل لشهر ${monthYear}`);
+    logAudit('CREATE', 'HR', `إعداد مسودة كشف المرتبات لشهر ${monthYear}`);
   };
 
   const updatePayrollRecord = (id: string, updates: Partial<PayrollRecord>) => {
-    setPayroll(prev => prev.map(rec => {
-      if (rec.id === id) {
-        const merged = { ...rec, ...updates };
-        merged.netSalary = merged.basicSalary + (merged.bonusAmount || 0) + (merged.overtimePay || 0) - (merged.deductionAmount || 0) - (merged.advancePayment || 0);
+    setPayroll(prev => prev.map(p => {
+      if (p.id === id) {
+        const merged = { ...p, ...updates };
+        merged.netSalary = merged.basicSalary + merged.bonusAmount + merged.overtimePay - merged.deductionAmount - merged.advancePayment;
         return merged;
       }
-      return rec;
+      return p;
     }));
-    logAudit('UPDATE', 'HR', `تعديل مفردات راتب: ${id}`);
   };
 
   // Lab to Lab Operations
   const addLabToLabOrder = (orderData: Omit<LabToLabOrder, 'id'>) => {
-    const id = `l2l-${Date.now()}`;
-    const newOrder: LabToLabOrder = { ...orderData, id };
+    const newOrder: LabToLabOrder = {
+      ...orderData,
+      id: `l2l-${Date.now()}`
+    };
     setLabToLabOrders(prev => [newOrder, ...prev]);
-    logAudit('CREATE', 'LAB_TO_LAB', `إرسال عينة إلى معمل خارجي (${newOrder.externalLabName}): مريض ${newOrder.patientName}`);
+    logAudit('CREATE', 'LAB_TO_LAB', `إرسال عينات لمعمل خارجي: ${newOrder.externalLabName} للمريض ${newOrder.patientName} (${newOrder.orderNumber})`);
   };
 
   const updateLabToLabOrder = (id: string, updates: Partial<LabToLabOrder>) => {
-    setLabToLabOrders(prev => prev.map(order => {
-      if (order.id === id) {
-        const updated = { ...order, ...updates };
-        updated.profitMargin = updated.patientChargedPrice - updated.outsourcedCost;
-        return updated;
-      }
-      return order;
-    }));
-    logAudit('UPDATE', 'LAB_TO_LAB', `تحديث حالة عينة Lab-to-Lab: ${id}`);
+    setLabToLabOrders(prev => prev.map(o => o.id === id ? { ...o, ...updates } : o));
+    logAudit('UPDATE', 'LAB_TO_LAB', `تحديث حالة طلب المعامل الخارجية: ${id}`);
   };
 
   const deleteLabToLabOrder = (id: string) => {
     setLabToLabOrders(prev => prev.filter(o => o.id !== id));
-    logAudit('DELETE', 'LAB_TO_LAB', "حذف طلب تحويل: " + id);
+    logAudit('DELETE', 'LAB_TO_LAB', `حذف طلب معمل خارجي: ${id}`);
   };
 
-  // Daily Closeout
+  // Closeouts
   const saveCloseout = (data: Omit<DailyCloseout, 'id' | 'timestamp'>) => {
-    const id = `close-${Date.now()}`;
     const newCloseout: DailyCloseout = {
       ...data,
-      id,
+      id: `cls-${Date.now()}`,
       timestamp: new Date().toISOString()
     };
     setCloseouts(prev => [newCloseout, ...prev]);
-    logAudit('CLOSEOUT', 'EXPENSES', `تقفيل الوردية والخزينة اليومية لتاريخ ${newCloseout.date} بواسطة ${newCloseout.closedBy} - العجز/الزيادة: ${newCloseout.discrepancy} ج.م`);
+    logAudit('CLOSEOUT', 'INCOME', `تقفيل الخزينة اليومية بتاريخ ${newCloseout.date} بواسطة ${newCloseout.closedBy} - الفارق: ${newCloseout.discrepancy} ج.م`);
   };
 
-  // GitHub Diagnostic System Sync
-  const updateGitHubConfig = (cfg: Partial<GitHubSyncConfig>) => {
-    setGithubConfigState(prev => ({ ...prev, ...cfg }));
-  };
+  // Barcode Handler
+  const handleBarcodeScanned = (code: string) => {
+    setScannedBarcode(code);
+    setScannerOpen(false);
 
-  const testGitHub = async (): Promise<{ success: boolean; message: string }> => {
-    const result = await testGitHubConnection(
-      githubConfig.token,
-      githubConfig.repoOwner,
-      githubConfig.repoName
-    );
-    setGithubConfigState(prev => ({
-      ...prev,
-      status: result.success ? 'connected' : 'error',
-      errorMessage: result.success ? undefined : result.message
-    }));
-    return result;
-  };
-
-  const pullCasesFromDiagnostic = async (): Promise<{ success: boolean; message: string }> => {
-    setIsSyncing(true);
-    try {
-      const res = await fetchDiagnosticCases(
-        githubConfig.token,
-        githubConfig.repoOwner,
-        githubConfig.repoName
-      );
-      if (res.success && res.casesFound) {
-        // Mark which cases are already in our income records
-        const enriched = res.casesFound.map(c => ({
-          ...c,
-          alreadyInAccounts: incomeRecords.some(r => r.barcode === c.barcode || r.labNumber === c.labNumber)
-        }));
-        setDiagnosticCases(enriched);
-        setGithubConfigState(prev => ({
-          ...prev,
-          lastSyncAt: new Date().toISOString(),
-          status: 'connected'
-        }));
-        logAudit('SYNC', 'SETTINGS', `جلب ومزامنة ${res.casesFound.length} حالة من نظام التحاليل التشخيصي عبر GitHub`);
-        return { success: true, message: res.message };
-      } else {
-        setGithubConfigState(prev => ({ ...prev, status: 'error', errorMessage: res.message }));
-        return { success: false, message: res.message };
-      }
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  const pushCasesToDiagnostic = async (): Promise<{ success: boolean; message: string }> => {
-    setIsSyncing(true);
-    try {
-      const summary = {
-        totalRevenue: financialMetrics.totalPaidIncome,
-        totalExpenses: financialMetrics.totalExpenses,
-        netProfit: financialMetrics.netProfit,
-        ceoShare: financialMetrics.ceoShare,
-        labShare: financialMetrics.labShare,
-        casesCount: incomeRecords.length
-      };
-      const res = await pushFinancialDataToRepo(
-        githubConfig.token,
-        githubConfig.repoOwner,
-        githubConfig.repoName,
-        incomeRecords,
-        summary
-      );
-      if (res.success) {
-        setGithubConfigState(prev => ({
-          ...prev,
-          lastSyncAt: new Date().toISOString(),
-          status: 'connected'
-        }));
-        logAudit('SYNC', 'SETTINGS', `تسميع وتصدير الحالات المسددة على مستودع نظام النتائج بنجاح`);
-        return { success: true, message: res.message };
-      } else {
-        setGithubConfigState(prev => ({ ...prev, status: 'error', errorMessage: res.message }));
-        return { success: false, message: res.message };
-      }
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  // Barcode Handler (Global)
-  const handleBarcodeScanned = useCallback((code: string) => {
-    const trimmed = code.trim();
-    setScannedBarcode(trimmed);
-
-    // 1. Check if it matches an inventory item barcode or code
-    const foundInv = inventory.find(i => i.barcode === trimmed || i.itemCode === trimmed);
-    if (foundInv) {
-      setActiveTab('inventory');
-      return;
-    }
-
-    // 2. Check if it matches an existing patient invoice or labNumber
-    const foundIncome = incomeRecords.find(r => r.barcode === trimmed || r.labNumber === trimmed);
+    // Look for matching invoice
+    const foundIncome = incomeRecords.find(r => r.barcode === code || r.labNumber === code);
     if (foundIncome) {
       setActiveTab('income');
       return;
     }
 
-    // 3. Otherwise, set activeTab to income so reception can bill it
-    setActiveTab('income');
-  }, [inventory, incomeRecords]);
+    // Look for matching inventory reagent
+    const foundItem = inventory.find(i => i.code === code || i.lotNumber === code);
+    if (foundItem) {
+      setActiveTab('inventory');
+      return;
+    }
 
-  // Hardware barcode scanner listener (rapid keystrokes followed by Enter)
-  useEffect(() => {
-    let buffer = '';
-    let lastKeyTime = Date.now();
+    // Look for loyalty card
+    const foundLoyalty = loyaltyProfiles.find(p => p.barcode === code);
+    if (foundLoyalty) {
+      setActiveTab('loyalty');
+      return;
+    }
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept if user is typing in an input or textarea
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
-        return;
+    alert(language === 'ar' ? `الباركود المقروء: ${code} - لم يتم العثور على سجل مطابق` : `Scanned Barcode: ${code} - No matching record`);
+  };
+
+  // GitHub & Diagnostic Sync Handlers
+  const updateGitHubConfig = (cfg: Partial<GitHubSyncConfig>) => {
+    setGithubConfigState(prev => ({ ...prev, ...cfg }));
+    logAudit('UPDATE', 'SETTINGS', `تحديث إعدادات ربط GitHub والمزامنة`);
+  };
+
+  const pullCasesFromDiagnostic = async () => {
+    setIsSyncing(true);
+    try {
+      const result = await fetchDiagnosticCases(githubConfig);
+      if (result.success && result.cases) {
+        setDiagnosticCases(result.cases);
+        setGithubConfigState(prev => ({
+          ...prev,
+          lastSyncAt: new Date().toISOString(),
+          status: 'connected',
+          errorMessage: undefined
+        }));
+        logAudit('SYNC', 'INCOME', `تمت المزامنة بنجاح مع منظومة النتائج: استلام ${result.cases.length} حالة فحص`);
+        return { success: true, message: `تم جلب ${result.cases.length} حالة بنجاح من منظومة النتائج` };
+      } else {
+        setGithubConfigState(prev => ({ ...prev, status: 'error', errorMessage: result.error }));
+        return { success: false, message: result.error || 'فشل الاتصال بمنظومة النتائج' };
       }
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
-      const currentTime = Date.now();
-      if (currentTime - lastKeyTime > 100) {
-        buffer = ''; // reset buffer if typing was slow (manual typing)
+  const pushCasesToDiagnostic = async () => {
+    setIsSyncing(true);
+    try {
+      const result = await pushFinancialDataToRepo(githubConfig, incomeRecords);
+      if (result.success) {
+        setGithubConfigState(prev => ({
+          ...prev,
+          lastSyncAt: new Date().toISOString(),
+          status: 'connected',
+          errorMessage: undefined
+        }));
+        logAudit('SYNC', 'INCOME', `تم إرسال وتسميع بيانات السداد المالي بنجاح إلى منظومة النتائج`);
+        return { success: true, message: 'تم إرسال الفواتير والمقبوضات بنجاح إلى منظومة النتائج' };
+      } else {
+        setGithubConfigState(prev => ({ ...prev, status: 'error', errorMessage: result.error }));
+        return { success: false, message: result.error || 'تعذر الإرسال إلى مستودع GitHub' };
       }
-      lastKeyTime = currentTime;
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
-      if (e.key === 'Enter') {
-        if (buffer.length >= 3) {
-          handleBarcodeScanned(buffer);
-          buffer = '';
-        }
-      } else if (e.key.length === 1) {
-        buffer += e.key;
+  const testGitHub = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await testGitHubConnection(githubConfig);
+      if (res.success) {
+        setGithubConfigState(prev => ({ ...prev, status: 'connected', errorMessage: undefined }));
+        return { success: true, message: 'تم التحقق بنجاح من صحة الاتصال بـ GitHub' };
+      } else {
+        setGithubConfigState(prev => ({ ...prev, status: 'error', errorMessage: res.error }));
+        return { success: false, message: res.error || 'فشل الاتصال بـ GitHub' };
       }
-    };
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleBarcodeScanned]);
-
-  // Backup & Restore
+  // Backups
   const exportBackup = async (password?: string): Promise<string> => {
-    const fullState = {
+    const backupData = {
+      app: 'RT_LAB_FINANCIAL_ERP',
+      version: '2.5.0',
+      exportedAt: new Date().toISOString(),
+      exportedBy: currentUser.nameAr,
       incomeRecords,
       expenses,
       profitConfig,
@@ -1005,33 +1108,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       labToLabOrders,
       closeouts,
       auditLogs,
-      githubConfig
+      testCatalog,
+      loyaltyProfiles,
+      loyaltyConfig
     };
-    const backupStr = await createEncryptedBackup(fullState, password);
-    logAudit('BACKUP', 'SECURITY', password ? 'تصدير نسخة احتياطية مشفرة بكلمة مرور' : 'تصدير نسخة احتياطية عامة');
-    return backupStr;
+    const backupStr = JSON.stringify(backupData);
+    const result = await createEncryptedBackup(backupStr, password);
+    logAudit('BACKUP', 'SETTINGS', `تصدير نسخة احتياطية مشفرة من قاعدة البيانات`);
+    return result;
   };
 
-  const importBackup = async (jsonStr: string, password?: string): Promise<{ success: boolean; message: string }> => {
-    const res = await restoreEncryptedBackup(jsonStr, password);
-    if (!res.success || !res.data) {
-      return { success: false, message: res.message };
+  const importBackup = async (encryptedStr: string, password?: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const decrypted = await restoreEncryptedBackup(encryptedStr, password);
+      const parsed = JSON.parse(decrypted);
+
+      if (parsed.incomeRecords) setIncomeRecords(parsed.incomeRecords);
+      if (parsed.expenses) setExpenses(parsed.expenses);
+      if (parsed.profitConfig) setProfitConfigState(parsed.profitConfig);
+      if (parsed.inventory) setInventory(parsed.inventory);
+      if (parsed.employees) setEmployees(parsed.employees);
+      if (parsed.attendance) setAttendance(parsed.attendance);
+      if (parsed.payroll) setPayroll(parsed.payroll);
+      if (parsed.labToLabOrders) setLabToLabOrders(parsed.labToLabOrders);
+      if (parsed.closeouts) setCloseouts(parsed.closeouts);
+      if (parsed.testCatalog) setTestCatalog(parsed.testCatalog);
+      if (parsed.loyaltyProfiles) setLoyaltyProfiles(parsed.loyaltyProfiles);
+      if (parsed.loyaltyConfig) setLoyaltyConfigState(parsed.loyaltyConfig);
+
+      logAudit('BACKUP', 'SETTINGS', `استرجاع ناجح لقاعدة البيانات من نسخة احتياطية`);
+      return { success: true, message: 'تم استرجاع كافة البيانات بنجاح' };
+    } catch {
+      return { success: false, message: 'فشل استرجاع النسخة الاحتياطية (تأكد من كلمة المرور وصحة الملف)' };
     }
-
-    const d = res.data as Record<string, unknown>;
-    if (d.incomeRecords) setIncomeRecords(d.incomeRecords as IncomeRecord[]);
-    if (d.expenses) setExpenses(d.expenses as ExpenseRecord[]);
-    if (d.profitConfig) setProfitConfigState(d.profitConfig as ProfitShareConfig);
-    if (d.inventory) setInventory(d.inventory as InventoryItem[]);
-    if (d.employees) setEmployees(d.employees as Employee[]);
-    if (d.attendance) setAttendance(d.attendance as AttendanceRecord[]);
-    if (d.payroll) setPayroll(d.payroll as PayrollRecord[]);
-    if (d.labToLabOrders) setLabToLabOrders(d.labToLabOrders as LabToLabOrder[]);
-    if (d.closeouts) setCloseouts(d.closeouts as DailyCloseout[]);
-    if (d.githubConfig) setGithubConfigState(d.githubConfig as GitHubSyncConfig);
-
-    logAudit('BACKUP', 'SECURITY', 'استعادة قاعدة البيانات بالكامل من ملف النسخة الاحتياطية');
-    return { success: true, message: res.message };
   };
 
   const resetToDefaultData = () => {
@@ -1044,8 +1153,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPayroll(INITIAL_PAYROLL);
     setLabToLabOrders(INITIAL_LAB_TO_LAB);
     setCloseouts([]);
-    setGithubConfigState(INITIAL_GITHUB_CONFIG);
-    logAudit('UPDATE', 'SETTINGS', 'إعادة ضبط المنظومة للبيانات الافتراضية الأولية');
+    setTestCatalog(TEST_CATALOG);
+    setLoyaltyProfiles(INITIAL_LOYALTY_PROFILES);
+    setLoyaltyConfigState(DEFAULT_LOYALTY_CONFIG);
+    logAudit('BACKUP', 'SETTINGS', `إعادة ضبط النظام كاملاً للبيانات الافتراضية`);
   };
 
   return (
@@ -1066,6 +1177,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addIncomeRecord,
         updateIncomeRecord,
         deleteIncomeRecord,
+        testCatalog,
+        addCatalogTest,
+        updateCatalogTest,
+        deleteCatalogTest,
+        resetCatalog,
+        loyaltyProfiles,
+        loyaltyConfig,
+        updateLoyaltyConfig,
+        addLoyaltyProfile,
+        updateLoyaltyProfile,
+        addLoyaltyPoints,
+        redeemLoyaltyPoints,
+        calculatePointsForAmount,
+        calculateCashForPoints,
         expenses,
         addExpense,
         updateExpense,
@@ -1123,6 +1248,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
 export const useApp = () => {
   const context = useContext(AppContext);
-  if (!context) throw new Error('useApp must be used within AppProvider');
+  if (!context) {
+    throw new Error('useApp must be used within an AppProvider');
+  }
   return context;
 };

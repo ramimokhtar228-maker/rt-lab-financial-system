@@ -12,9 +12,13 @@ import {
   AlertTriangle,
   Lock,
   ChevronDown,
-  Download
+  Download,
+  CreditCard,
+  FlaskConical
 } from 'lucide-react';
+import { RTLogo } from './RTLogo';
 import { PWAInstallModal } from './PWAInstallModal';
+import { TestCatalogManagerModal } from './TestCatalogManagerModal';
 
 export const Header: React.FC = () => {
   const {
@@ -37,6 +41,7 @@ export const Header: React.FC = () => {
   const [notifOpen, setNotifOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [installModalOpen, setInstallModalOpen] = useState(false);
+  const [catalogModalOpen, setCatalogModalOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState<string>('');
 
   useEffect(() => {
@@ -59,93 +64,88 @@ export const Header: React.FC = () => {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
+    <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          
-          {/* Lab Branding */}
+        <div className="flex items-center justify-between h-18">
+          {/* RT Lab Branding with Official RTLogo */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-teal-800 flex items-center justify-center text-white shadow-sm font-bold text-xl tracking-wider">
-              RT
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-lg text-slate-900 tracking-tight">
-                  {language === 'ar' ? 'معامل RT للتشخيص والتحاليل الطبية' : 'RT Diagnostic Laboratories'}
-                </span>
-                <span className="hidden sm:inline-block text-xs font-semibold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
-                  {language === 'ar' ? 'المنظومة المالية والإدارية ERP' : 'Financial & ERP'}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-slate-500">
-                <span>{language === 'ar' ? 'تحت إشراف: أ.د. رامي مختار' : 'Director: Prof. Dr. Rami Mokhtar'}</span>
-                <span aria-hidden="true">·</span>
-                <span className="font-mono text-slate-600">{currentTime}</span>
-              </div>
+            <RTLogo size="sm" showSlogan={false} theme="light" />
+            <div className="hidden md:block">
+              <span className="text-[10px] font-extrabold text-rose-900 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                المنظومة المالية والفوترة ERP
+              </span>
+              <div className="text-[11px] text-slate-500 font-mono mt-0.5">{currentTime}</div>
             </div>
           </div>
 
           {/* Quick Metrics Bar (Desktop) */}
-          <div className="hidden lg:flex items-center gap-6 text-xs text-slate-600 border-x border-slate-200 px-6">
+          <div className="hidden xl:flex items-center gap-6 text-xs text-slate-600 border-x border-slate-200 px-6">
             <div>
               <div className="text-slate-500 font-medium">{language === 'ar' ? 'تحصيل اليوم' : "Today's Income"}</div>
-              <div className="text-sm font-bold text-emerald-700">
+              <div className="text-sm font-black text-rose-900 font-mono">
                 {financialMetrics.todayIncome.toLocaleString()} {language === 'ar' ? 'ج.م' : 'EGP'}
               </div>
             </div>
             <div className="h-7 w-px bg-slate-200" />
             <div>
               <div className="text-slate-500 font-medium">{language === 'ar' ? 'صافي أرباح الشهر' : 'Net Profit'}</div>
-              <div className="text-sm font-bold text-slate-900">
+              <div className="text-sm font-black text-blue-900 font-mono">
                 {financialMetrics.netProfit.toLocaleString()} {language === 'ar' ? 'ج.م' : 'EGP'}
               </div>
             </div>
             <div className="h-7 w-px bg-slate-200" />
             <div>
               <div className="text-slate-500 font-medium">{language === 'ar' ? 'حصة المعمل / CEO' : 'Lab / CEO Split'}</div>
-              <div className="text-xs font-semibold text-teal-800">
+              <div className="text-xs font-black text-slate-900 font-mono">
                 {financialMetrics.labShare.toLocaleString()} / {financialMetrics.ceoShare.toLocaleString()}
               </div>
             </div>
           </div>
 
           {/* Action Tools & User Profile */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* Catalog Manager Quick Trigger */}
+            <button
+              onClick={() => setCatalogModalOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg transition-colors border border-slate-200"
+              title="كتالوج الفحوصات والأسعار"
+            >
+              <FlaskConical className="w-3.5 h-3.5 text-rose-700" />
+              <span className="hidden lg:inline">الكتالوج (165+)</span>
+            </button>
+
             {/* Install PWA App Button */}
             <button
               onClick={() => setInstallModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-teal-800 hover:bg-teal-900 text-white rounded-md transition-colors shadow-xs"
-              title={language === 'ar' ? 'تنزيل وتثبيت البرنامج على الموبايل واللاب توب' : 'Install App on Mobile & Laptop'}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-extrabold bg-gradient-to-r from-rose-900 to-rose-800 hover:from-rose-800 hover:to-rose-700 text-white rounded-lg transition-all shadow-sm active:scale-95"
+              title={language === 'ar' ? 'تنزيل وتثبيت منظومة RT Financial على جهازك' : 'Install RT Financial App'}
             >
-              <Download className="w-4 h-4 text-teal-300" />
-              <span className="hidden sm:inline">{language === 'ar' ? 'تثبيت التطبيق' : 'Install App'}</span>
+              <Download className="w-3.5 h-3.5 text-amber-300" />
+              <span className="hidden sm:inline">{language === 'ar' ? 'تثبيت البرنامج' : 'Install App'}</span>
             </button>
 
             {/* Quick Barcode Scanner Trigger */}
             <button
               onClick={() => setScannerOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 rounded-md transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 rounded-lg transition-colors"
               title={language === 'ar' ? 'فتح قارئ الباركود (كاميرا / ليزر)' : 'Open Barcode Scanner'}
             >
-              <ScanLine className="w-4 h-4 text-teal-400" />
-              <span className="hidden md:inline">{language === 'ar' ? 'قارئ الباركود' : 'Scan Barcode'}</span>
+              <ScanLine className="w-3.5 h-3.5 text-rose-400" />
+              <span className="hidden sm:inline">{language === 'ar' ? 'الباركود' : 'Scan'}</span>
             </button>
 
-            {/* Diagnostic System Live Sync Button */}
+            {/* GitHub Sync Quick Button */}
             <button
-              onClick={async () => {
-                await pullCasesFromDiagnostic();
-              }}
+              onClick={() => pullCasesFromDiagnostic()}
               disabled={isSyncing}
-              className={`p-2 rounded-md border text-xs font-medium flex items-center gap-1.5 transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
                 githubConfig.status === 'connected'
-                  ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+                  ? 'border-blue-200 text-blue-900 bg-blue-50 hover:bg-blue-100'
                   : 'border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
               title={language === 'ar' ? 'مزامنة مع منظومة النتائج (GitHub)' : 'Sync with Diagnostic System'}
             >
-              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin text-teal-600' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-rose-600' : 'text-blue-700'}`} />
               <span className="hidden xl:inline">
                 {isSyncing
                   ? (language === 'ar' ? 'جارِ المزامنة...' : 'Syncing...')
@@ -157,7 +157,7 @@ export const Header: React.FC = () => {
             <div className="relative">
               <button
                 onClick={() => setNotifOpen(!notifOpen)}
-                className="relative p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                className="relative p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                 title={language === 'ar' ? 'التنبيهات والإشعارات' : 'Notifications'}
               >
                 <Bell className="w-5 h-5" />
@@ -168,7 +168,7 @@ export const Header: React.FC = () => {
 
               {notifOpen && (
                 <div
-                  className={`absolute mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50 ${
+                  className={`absolute mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 ${
                     language === 'ar' ? 'left-0 sm:left-auto sm:right-0' : 'right-0 sm:right-auto sm:left-0'
                   }`}
                 >
@@ -185,7 +185,6 @@ export const Header: React.FC = () => {
                       </button>
                     )}
                   </div>
-
                   <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
                     {notifications.length === 0 ? (
                       <div className="py-8 text-center text-xs text-slate-400">
@@ -212,7 +211,7 @@ export const Header: React.FC = () => {
                             ) : n.type === 'warning' ? (
                               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                             ) : (
-                              <Activity className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+                              <Activity className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                             )}
                             <div className="flex-1">
                               <div className="font-semibold text-slate-900">{n.title}</div>
@@ -230,7 +229,7 @@ export const Header: React.FC = () => {
             {/* Language Switcher */}
             <button
               onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
-              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
+              className="flex items-center gap-1 px-2 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
               title={language === 'ar' ? 'Switch to English' : 'التحويل للعربية'}
             >
               <Globe className="w-4 h-4 text-slate-500" />
@@ -241,9 +240,9 @@ export const Header: React.FC = () => {
             <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors border border-slate-200"
+                className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-100 transition-colors border border-slate-200"
               >
-                <div className={`w-7 h-7 rounded-md ${currentUser.avatarColor} text-white flex items-center justify-center text-xs font-bold`}>
+                <div className={`w-7 h-7 rounded-lg ${currentUser.avatarColor} text-white flex items-center justify-center text-xs font-bold shadow-xs`}>
                   {currentUser.nameAr.charAt(0)}
                 </div>
                 <div className="hidden sm:block text-right">
@@ -251,9 +250,9 @@ export const Header: React.FC = () => {
                     {language === 'ar' ? currentUser.nameAr : currentUser.nameEn}
                   </div>
                   <div className="text-[10px] text-slate-500">
-                    {currentUser.role === 'admin_ceo' ? (language === 'ar' ? 'المدير التنفيذي (CEO)' : 'CEO / Director') :
-                     currentUser.role === 'accountant' ? (language === 'ar' ? 'محاسب / خزينة' : 'Accountant') :
-                     currentUser.role === 'lab_tech' ? (language === 'ar' ? 'فني معمل ومخزن' : 'Lab Chemist') :
+                    {currentUser.role === 'admin_ceo' ? (language === 'ar' ? 'المدير التنفيذي (CEO)' : 'CEO / Director') : 
+                     currentUser.role === 'accountant' ? (language === 'ar' ? 'محاسب / خزينة' : 'Accountant') : 
+                     currentUser.role === 'lab_tech' ? (language === 'ar' ? 'فني معمل ومخزن' : 'Lab Chemist') : 
                      (language === 'ar' ? 'شؤون موظفين' : 'HR Officer')}
                   </div>
                 </div>
@@ -262,7 +261,7 @@ export const Header: React.FC = () => {
 
               {userMenuOpen && (
                 <div
-                  className={`absolute mt-2 w-64 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50 ${
+                  className={`absolute mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 ${
                     language === 'ar' ? 'left-0' : 'right-0'
                   }`}
                 >
@@ -270,7 +269,6 @@ export const Header: React.FC = () => {
                     <div className="text-xs font-bold text-slate-900">{language === 'ar' ? currentUser.nameAr : currentUser.nameEn}</div>
                     <div className="text-xs text-slate-500">{language === 'ar' ? currentUser.titleAr : currentUser.titleEn}</div>
                   </div>
-
                   <button
                     onClick={() => {
                       setUserMenuOpen(false);
@@ -281,7 +279,6 @@ export const Header: React.FC = () => {
                     <Lock className="w-4 h-4 text-slate-400" />
                     <span>{language === 'ar' ? 'تبديل المستخدم أو تسجيل الدخول بالـ PIN' : 'Switch User / Enter PIN'}</span>
                   </button>
-
                   <button
                     onClick={() => {
                       setUserMenuOpen(false);
@@ -295,7 +292,6 @@ export const Header: React.FC = () => {
                 </div>
               )}
             </div>
-
           </div>
         </div>
       </div>
@@ -304,6 +300,12 @@ export const Header: React.FC = () => {
       <PWAInstallModal
         isOpen={installModalOpen}
         onClose={() => setInstallModalOpen(false)}
+      />
+
+      {/* Test Catalog Manager Modal */}
+      <TestCatalogManagerModal
+        isOpen={catalogModalOpen}
+        onClose={() => setCatalogModalOpen(false)}
       />
     </header>
   );

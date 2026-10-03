@@ -1,30 +1,67 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bgMaskGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0f766e" />
-      <stop offset="50%" stop-color="#115e59" />
-      <stop offset="100%" stop-color="#042f2e" />
+    <linearGradient id="finBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4c0519" />
+      <stop offset="45%" stop-color="#881337" />
+      <stop offset="100%" stop-color="#0f172a" />
     </linearGradient>
+    <linearGradient id="goldCoin" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="35%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+    <linearGradient id="redAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#991b1b" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
   </defs>
 
-  <!-- Full-bleed background for maskable -->
-  <rect width="512" height="512" fill="url(#bgMaskGrad)" />
+  <!-- Background rounded squircle -->
+  <rect width="512" height="512" rx="112" fill="url(#finBg)" />
 
-  <!-- Center contents scaled to fit 80% safe zone (center at 256,256, scaled 0.8) -->
-  <g transform="translate(51.2, 51.2) scale(0.8)">
-    <!-- Pulse EKG wave line behind letters -->
-    <path d="M 60 350 L 170 350 L 195 315 L 220 395 L 245 285 L 270 370 L 290 350 L 452 350" 
-          fill="none" stroke="#2dd4bf" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.4" />
+  <!-- Outer Golden Frame Ring -->
+  <rect x="16" y="16" width="480" height="480" rx="98" fill="none" stroke="#f59e0b" stroke-width="5" stroke-opacity="0.6" />
 
-    <!-- Center RT Monogram -->
-    <g fill="#ffffff">
-      <path d="M 120 160 L 195 160 C 235 160 258 178 258 208 C 258 232 240 248 214 253 L 264 340 L 218 340 L 174 260 L 162 260 L 162 340 L 120 340 Z M 162 225 L 192 225 C 208 225 216 218 216 208 C 216 197 208 192 192 192 L 162 192 Z" />
-      <path d="M 280 160 L 400 160 L 400 195 L 362 195 L 362 340 L 318 340 L 318 195 L 280 195 Z" />
-    </g>
+  <!-- Background subtle financial grid lines -->
+  <g opacity="0.12" stroke="#ffffff" stroke-width="1.5">
+    <line x1="60" y1="120" x2="452" y2="120" />
+    <line x1="60" y1="200" x2="452" y2="200" />
+    <line x1="60" y1="280" x2="452" y2="280" />
+    <line x1="60" y1="360" x2="452" y2="360" />
+    <line x1="160" y1="60" x2="160" y2="452" />
+    <line x1="352" y1="60" x2="352" y2="452" />
+  </g>
 
-    <!-- Tagline text DIAGNOSTICS -->
-    <text x="256" y="420" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="34" font-weight="900" fill="#2dd4bf" letter-spacing="12" text-anchor="middle">
-      DIAGNOSTICS
+  <!-- Golden Financial Badge / Currency Coin (Top Right) -->
+  <g transform="translate(390, 110)" filter="url(#glow)">
+    <circle cx="0" cy="0" r="54" fill="url(#goldCoin)" stroke="#ffffff" stroke-width="3" />
+    <!-- Coin Inner Ring -->
+    <circle cx="0" cy="0" r="44" fill="none" stroke="#78350f" stroke-width="2" stroke-dasharray="4 3" />
+    <!-- Currency / Cash Symbol -->
+    <text x="0" y="12" font-family="'Cairo', sans-serif" font-size="34" font-weight="900" fill="#78350f" text-anchor="middle">ج.م</text>
+  </g>
+
+  <!-- RT Monogram Group with 3D drop shadow -->
+  <g filter="url(#glow)">
+    <!-- Letter R (Metallic White with Rose Glow) -->
+    <path d="M 110 150 L 195 150 C 240 150 265 170 265 204 C 265 230 246 248 218 254 L 272 350 L 222 350 L 174 264 L 158 264 L 158 350 L 110 350 Z M 158 222 L 192 222 C 210 222 220 215 220 204 C 220 193 210 186 192 186 L 158 186 Z" fill="#ffffff" />
+
+    <!-- Letter T -->
+    <path d="M 280 150 L 415 150 L 415 190 L 372 190 L 372 350 L 324 350 L 324 190 L 280 190 Z" fill="#ffffff" />
+  </g>
+
+  <!-- Red Underline Wave Swoosh (Signature RT Lab Wall Feature) -->
+  <path d="M 90 380 Q 256 410 422 380" fill="none" stroke="url(#redAccent)" stroke-width="14" stroke-linecap="round" />
+  <path d="M 90 380 Q 256 410 422 380" fill="none" stroke="#f59e0b" stroke-width="4" stroke-linecap="round" opacity="0.8" />
+
+  <!-- Distinct Financial Tagline Pill -->
+  <g transform="translate(256, 436)">
+    <rect x="-160" y="-22" width="320" height="44" rx="22" fill="#0f172a" stroke="#f59e0b" stroke-width="2.5" />
+    <text x="0" y="7" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="900" fill="#fef08a" letter-spacing="4" text-anchor="middle">
+      FINANCIAL ERP
     </text>
   </g>
 </svg>

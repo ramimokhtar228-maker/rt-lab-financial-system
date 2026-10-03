@@ -183,7 +183,7 @@ export const ReportsModule: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-teal-700" />
+              <BarChart3 className="w-5 h-5 text-rose-800" />
               <span>{language === 'ar' ? 'التقارير المالية الشهرية التفصيلية وتقفيل الخزينة' : 'Detailed Monthly Financial Reports & Closeout'}</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -199,7 +199,7 @@ export const ReportsModule: React.FC = () => {
                 type="button"
                 onClick={() => setActiveReportTab('financial_statement')}
                 className={`px-3 py-1.5 rounded-md transition-colors ${
-                  activeReportTab === 'financial_statement' ? 'bg-white text-teal-900 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
+                  activeReportTab === 'financial_statement' ? 'bg-white text-rose-950 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 القائمة المالية المعتمدة
@@ -228,7 +228,7 @@ export const ReportsModule: React.FC = () => {
               onClick={() => window.print()}
               className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
             >
-              <Printer className="w-4 h-4 text-teal-700" />
+              <Printer className="w-4 h-4 text-rose-800" />
               <span>طباعة</span>
             </button>
 
@@ -279,7 +279,7 @@ export const ReportsModule: React.FC = () => {
                 </p>
               </div>
               <div className="text-left font-mono">
-                <div className="w-12 h-12 bg-teal-800 text-white font-black text-2xl flex items-center justify-center rounded-lg">
+                <div className="w-12 h-12 bg-rose-900 text-white font-black text-2xl flex items-center justify-center rounded-lg">
                   RT
                 </div>
                 <div className="text-[10px] text-slate-500 mt-1">مدير المعمل: أ.د. رامي مختار</div>
@@ -364,14 +364,14 @@ export const ReportsModule: React.FC = () => {
 
             {/* Net Operating Surplus and Profit Shares */}
             <div>
-              <h3 className="text-xs font-black text-slate-900 bg-teal-50 text-teal-900 p-2 rounded mb-3 border border-teal-200">
+              <h3 className="text-xs font-black text-slate-900 bg-rose-50 text-rose-950 p-2 rounded mb-3 border border-rose-200">
                 ثالثاً: صافي الأرباح واعتماد توزيع نسب المعمل والـ CEO
               </h3>
 
               <div className="bg-slate-50 p-4 rounded-lg border border-slate-300 space-y-3 text-xs">
                 <div className="flex justify-between items-center text-sm font-bold text-slate-900 pb-2 border-b border-slate-200">
                   <span>صافي الفائض التشغيلي (الإيراد المحصل - المصروفات):</span>
-                  <span className="text-base font-mono font-black text-teal-950">
+                  <span className="text-base font-mono font-black text-slate-950">
                     {monthStats.netOperatingProfit.toLocaleString()} ج.م
                   </span>
                 </div>
@@ -388,12 +388,12 @@ export const ReportsModule: React.FC = () => {
                     <div className="text-[10px] text-slate-500 mt-0.5">{profitConfig.ceoNameAr}</div>
                   </div>
 
-                  <div className="p-3 bg-white rounded border border-teal-200">
+                  <div className="p-3 bg-white rounded border border-rose-200">
                     <div className="flex justify-between text-slate-600 font-semibold">
                       <span>حصة المعمل وتطوير الأجهزة:</span>
-                      <span className="font-mono text-teal-800 font-bold">{profitConfig.labPercentage}%</span>
+                      <span className="font-mono text-rose-900 font-bold">{profitConfig.labPercentage}%</span>
                     </div>
-                    <div className="text-lg font-black font-mono text-teal-900 mt-1">
+                    <div className="text-lg font-black font-mono text-rose-950 mt-1">
                       {monthStats.labShare.toLocaleString()} ج.م
                     </div>
                     <div className="text-[10px] text-slate-500 mt-0.5">مخصص إعادة الاستثمار والتوسعات</div>
@@ -463,7 +463,7 @@ export const ReportsModule: React.FC = () => {
                   {/* Progress bar */}
                   <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
                     <div
-                      className="bg-teal-700 h-2 rounded-full transition-all duration-500"
+                      className="bg-rose-800 h-2 rounded-full transition-all duration-500"
                       style={{ width: `${dept.percentage}%` }}
                     />
                   </div>
@@ -480,7 +480,7 @@ export const ReportsModule: React.FC = () => {
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5">
             <div className="border-b pb-3">
               <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5 text-teal-700" />
+                <ShieldAlert className="w-5 h-5 text-rose-800" />
                 <span>تقفيل الخزينة اليومية ومطابقة النقدية الفعلية (Daily Cash Drawer Reconciliation)</span>
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -539,8 +539,8 @@ export const ReportsModule: React.FC = () => {
               </div>
 
               {/* Actual Cash Input */}
-              <div className="bg-teal-50 p-4 rounded-lg border border-teal-200 space-y-3">
-                <label className="block text-teal-950 font-black text-sm">
+              <div className="bg-rose-50 p-4 rounded-lg border border-rose-200 space-y-3">
+                <label className="block text-slate-950 font-black text-sm">
                   العد الفعلي للنقدية الموجودة بالدرج الآن (ج.م) *:
                 </label>
                 <div className="flex gap-4 items-center">
@@ -549,7 +549,7 @@ export const ReportsModule: React.FC = () => {
                     min={0}
                     value={actualCashInput}
                     onChange={e => setActualCashInput(Number(e.target.value))}
-                    className="w-48 px-4 py-2.5 rounded-lg border border-teal-400 font-mono text-lg font-black text-teal-950 bg-white"
+                    className="w-48 px-4 py-2.5 rounded-lg border border-rose-400 font-mono text-lg font-black text-slate-950 bg-white"
                   />
                   <div className="text-xs">
                     {actualCashInput === cashExpected ? (
@@ -584,7 +584,7 @@ export const ReportsModule: React.FC = () => {
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-teal-800 hover:bg-teal-900 text-white font-bold rounded-lg shadow-sm"
+                  className="px-6 py-2.5 bg-rose-900 hover:bg-rose-950 text-white font-bold rounded-lg shadow-sm"
                 >
                   اعتماد وحفظ تقفيل الخزينة
                 </button>

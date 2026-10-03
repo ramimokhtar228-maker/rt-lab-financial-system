@@ -185,7 +185,7 @@ export const ExpenseAndProfitModule: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <PieChart className="w-5 h-5 text-teal-700" />
+              <PieChart className="w-5 h-5 text-rose-800" />
               <span>{language === 'ar' ? 'المصروفات وتوزيع نسب الأرباح للمعمل والـ CEO' : 'Expenses & Profit Share Distribution'}</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -214,7 +214,7 @@ export const ExpenseAndProfitModule: React.FC = () => {
                 onClick={() => setActiveSubTab('profit_split')}
                 className={`px-3 py-1.5 rounded-md transition-colors ${
                   activeSubTab === 'profit_split'
-                    ? 'bg-white text-teal-900 shadow-sm font-bold'
+                    ? 'bg-white text-rose-950 shadow-sm font-bold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -269,7 +269,7 @@ export const ExpenseAndProfitModule: React.FC = () => {
 
             <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm">
               <div className="text-[11px] font-bold text-slate-500">صيانة ومعايرة وتحاليل L2L</div>
-              <div className="text-lg font-black font-mono text-teal-800 mt-1">
+              <div className="text-lg font-black font-mono text-rose-900 mt-1">
                 {(categoryStats.equipment_maintenance + categoryStats.lab_to_lab).toLocaleString()} ج.م
               </div>
               <div className="text-[10px] text-slate-400 mt-0.5">أجهزة وإحالات خارجية</div>
@@ -284,7 +284,7 @@ export const ExpenseAndProfitModule: React.FC = () => {
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 placeholder="ابحث ببيان الصرف، الجهة المدفوع لها، القسم..."
-                className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700"
+                className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-800"
               />
             </div>
 
@@ -395,22 +395,22 @@ export const ExpenseAndProfitModule: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             
             {/* CEO Share Card */}
-            <div className="p-6 bg-gradient-to-br from-emerald-900 to-teal-950 text-white rounded-xl shadow-lg border border-teal-800 space-y-3 relative overflow-hidden">
+            <div className="p-6 bg-gradient-to-br from-emerald-900 to-slate-950 text-white rounded-xl shadow-lg border border-rose-900 space-y-3 relative overflow-hidden">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-teal-200 tracking-wider">
+                <span className="text-xs font-semibold text-rose-200 tracking-wider">
                   حصة المدير التنفيذي (CEO Share)
                 </span>
-                <span className="text-xs font-mono font-bold bg-teal-800/80 px-2 py-0.5 rounded text-white border border-teal-600">
+                <span className="text-xs font-mono font-bold bg-rose-900/80 px-2 py-0.5 rounded text-white border border-rose-700">
                   {profitConfig.ceoPercentage}%
                 </span>
               </div>
               <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-white">
                 {financialMetrics.ceoShare.toLocaleString()} <span className="text-base font-normal">ج.م</span>
               </div>
-              <div className="text-xs text-teal-100 font-medium">
+              <div className="text-xs text-rose-100 font-medium">
                 المستحق: {profitConfig.ceoNameAr}
               </div>
-              <div className="pt-2 border-t border-teal-800/60 text-[11px] text-teal-200 flex justify-between">
+              <div className="pt-2 border-t border-rose-900/60 text-[11px] text-rose-200 flex justify-between">
                 <span>أساس الاحتساب:</span>
                 <span className="font-bold">
                   {profitConfig.calculationBase === 'net_profit' ? 'صافي الأرباح (بعد المصروفات)' : 'إجمالي الإيرادات المحصلة'}
@@ -428,7 +428,7 @@ export const ExpenseAndProfitModule: React.FC = () => {
                   {profitConfig.labPercentage}%
                 </span>
               </div>
-              <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-teal-400">
+              <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-rose-400">
                 {financialMetrics.labShare.toLocaleString()} <span className="text-base font-normal">ج.م</span>
               </div>
               <div className="text-xs text-slate-300 font-medium">
@@ -436,7 +436,7 @@ export const ExpenseAndProfitModule: React.FC = () => {
               </div>
               <div className="pt-2 border-t border-slate-700 text-[11px] text-slate-300 flex justify-between">
                 <span>إعادة الاستثمار المعملي:</span>
-                <span className="font-bold text-teal-300">نشط ومعتمد</span>
+                <span className="font-bold text-amber-400">نشط ومعتمد</span>
               </div>
             </div>
 
@@ -467,7 +467,7 @@ export const ExpenseAndProfitModule: React.FC = () => {
           {/* Mathematical Proof / Ledger Statement */}
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
             <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-2">
-              <Percent className="w-4 h-4 text-teal-700" />
+              <Percent className="w-4 h-4 text-rose-800" />
               <span>ميزان الإيرادات والمصروفات والتوزيع الربحي المعتمد:</span>
             </h3>
 
@@ -493,9 +493,9 @@ export const ExpenseAndProfitModule: React.FC = () => {
                 </span>
               </div>
 
-              <div className="bg-teal-50 p-3 rounded-lg border border-teal-200">
-                <span className="text-teal-800 font-semibold block">مجموع التوزيعات (100%):</span>
-                <span className="text-base font-black font-mono text-teal-900">
+              <div className="bg-rose-50 p-3 rounded-lg border border-rose-200">
+                <span className="text-rose-900 font-semibold block">مجموع التوزيعات (100%):</span>
+                <span className="text-base font-black font-mono text-rose-950">
                   {(financialMetrics.ceoShare + financialMetrics.labShare + financialMetrics.emergencyShare).toLocaleString()} ج.م
                 </span>
               </div>
@@ -507,7 +507,7 @@ export const ExpenseAndProfitModule: React.FC = () => {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-teal-700" />
+                  <Shield className="w-4 h-4 text-rose-800" />
                   <span>تعديل وضبط نسب الأرباح للمعمل والـ CEO:</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -535,7 +535,7 @@ export const ExpenseAndProfitModule: React.FC = () => {
                     disabled={currentUser.role !== 'admin_ceo'}
                     value={ceoPercent}
                     onChange={e => setCeoPercent(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-teal-700 disabled:bg-slate-100"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-rose-800 disabled:bg-slate-100"
                   />
                   <span className="text-[11px] text-slate-400 mt-0.5 block">
                     المستحق: {profitConfig.ceoNameAr}
@@ -553,7 +553,7 @@ export const ExpenseAndProfitModule: React.FC = () => {
                     disabled={currentUser.role !== 'admin_ceo'}
                     value={labPercent}
                     onChange={e => setLabPercent(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-teal-700 disabled:bg-slate-100"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-rose-800 disabled:bg-slate-100"
                   />
                   <span className="text-[11px] text-slate-400 mt-0.5 block">
                     مخصص لتطوير أجهزة معمل RT
@@ -571,7 +571,7 @@ export const ExpenseAndProfitModule: React.FC = () => {
                     disabled={currentUser.role !== 'admin_ceo'}
                     value={emergencyPercent}
                     onChange={e => setEmergencyPercent(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-teal-700 disabled:bg-slate-100"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono text-sm font-bold text-slate-900 focus:ring-2 focus:ring-rose-800 disabled:bg-slate-100"
                   />
                   <span className="text-[11px] text-slate-400 mt-0.5 block">
                     رصيد أمان للمعامل
@@ -605,7 +605,7 @@ export const ExpenseAndProfitModule: React.FC = () => {
                   {currentUser.role === 'admin_ceo' && (
                     <button
                       type="submit"
-                      className="px-5 py-2 bg-teal-800 hover:bg-teal-900 text-white font-bold text-xs rounded-lg transition-colors shadow-sm flex items-center gap-1.5"
+                      className="px-5 py-2 bg-rose-900 hover:bg-rose-950 text-white font-bold text-xs rounded-lg transition-colors shadow-sm flex items-center gap-1.5"
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       <span>حفظ واعتماد النسب الجديدة</span>
@@ -631,7 +631,7 @@ export const ExpenseAndProfitModule: React.FC = () => {
           <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full my-auto overflow-hidden">
             <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
               <h3 className="font-bold text-sm flex items-center gap-2">
-                <Plus className="w-4 h-4 text-teal-400" />
+                <Plus className="w-4 h-4 text-rose-400" />
                 <span>تسجيل إذن صرف ومصروف جديد</span>
               </h3>
               <button

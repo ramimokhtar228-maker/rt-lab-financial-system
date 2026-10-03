@@ -24,6 +24,9 @@ export interface InvoiceTestItem {
   nameEn: string;
   price: number;
   category: string;
+  cost?: number; // Approximate reagent & material cost
+  sampleType?: string;
+  turnaroundTime?: string;
 }
 
 export interface IncomeRecord {
@@ -39,6 +42,9 @@ export interface IncomeRecord {
   tests: InvoiceTestItem[];
   subtotal: number;
   discount: number;
+  loyaltyDiscountEGP?: number;
+  loyaltyPointsRedeemed?: number;
+  loyaltyPointsEarned?: number;
   netAmount: number;
   paidAmount: number;
   remainingAmount: number;
@@ -80,36 +86,25 @@ export interface ExpenseRecord {
 }
 
 export interface ProfitShareConfig {
-  ceoPercentage: number; // default e.g. 45%
-  labPercentage: number; // default e.g. 45%
-  emergencyFundPercentage: number; // default e.g. 10%
-  calculationBase: 'net_profit' | 'gross_income'; // net_profit = (income - expenses)
+  ceoPercentage: number;
+  labPercentage: number;
+  emergencyFundPercentage: number;
+  calculationBase: 'net_profit' | 'gross_income';
   ceoNameAr: string;
   ceoNameEn: string;
 }
 
-export type InventoryCategory =
-  | 'chemistry_reagents'
-  | 'elisa_clia_kits'
-  | 'hematology_diluents'
-  | 'tubes_vacutainers'
-  | 'tips_consumables'
-  | 'rapid_tests'
-  | 'controls_calibrators';
-
 export interface InventoryItem {
   id: string;
-  itemCode: string;
-  barcode: string;
+  code: string;
   nameAr: string;
   nameEn: string;
-  category: InventoryCategory;
+  category: 'reagent' | 'consumable' | 'control_calibrator' | 'tube' | 'ppe';
+  supplier: string;
   currentQuantity: number;
-  unit: string; // 'Kit' | 'Vial' | 'Box' | 'Test' | 'Pack'
+  unit: string;
   minThreshold: number;
-  unitCost: number;
-  supplierName: string;
-  supplierPhone: string;
+  costPerUnit: number;
   lotNumber: string;
   expiryDate: string;
   storageTemp: '2-8°C' | '15-25°C' | '-20°C';
@@ -191,8 +186,8 @@ export interface AuditLog {
   userId: string;
   userName: string;
   userRole: UserRole;
-  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'SYNC' | 'CLOSEOUT' | 'BACKUP' | 'LOGIN';
-  module: 'INCOME' | 'EXPENSES' | 'INVENTORY' | 'HR' | 'LAB_TO_LAB' | 'SETTINGS' | 'SECURITY';
+  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'SYNC' | 'CLOSEOUT' | 'BACKUP' | 'LOGIN' | 'CATALOG_UPDATE' | 'LOYALTY';
+  module: 'INCOME' | 'EXPENSES' | 'INVENTORY' | 'HR' | 'LAB_TO_LAB' | 'SETTINGS' | 'SECURITY' | 'CATALOG' | 'LOYALTY';
   description: string;
 }
 
@@ -231,4 +226,44 @@ export interface DailyCloseout {
   closedBy: string;
   notes?: string;
   timestamp: string;
+}
+
+// Loyalty System Types
+export type LoyaltyTier = 'Silver' | 'Gold' | 'Platinum' | 'VIP';
+
+export interface LoyaltyTransaction {
+  id: string;
+  date: string;
+  type: 'earn' | 'redeem' | 'bonus' | 'adjust';
+  points: number;
+  description: string;
+  reportNumber?: string;
+  invoiceNumber?: string;
+  amountEGP?: number;
+}
+
+export interface PatientLoyaltyProfile {
+  patientId: string;
+  patientName: string;
+  phone: string;
+  barcode: string;
+  bloodGroup: string;
+  totalPoints: number;
+  tier: LoyaltyTier;
+  lifetimeSpent: number;
+  emergencyContact?: string;
+  chronicConditions?: string[];
+  issueDate: string;
+  transactions: LoyaltyTransaction[];
+}
+
+export interface LoyaltyConfig {
+  pointsPerEGP: number; // default: 1 pt per 1 EGP
+  egpPer100Points: number; // default: 10 EGP per 100 points
+  tiers: {
+    Silver: { discountRate: number; minPoints: number };
+    Gold: { discountRate: number; minPoints: number };
+    Platinum: { discountRate: number; minPoints: number };
+    VIP: { discountRate: number; minPoints: number };
+  };
 }

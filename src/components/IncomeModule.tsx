@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { IncomeRecord, InvoiceTestItem, PaymentMethod, PaymentStatus } from '../types';
-import { TEST_CATALOG } from '../data/catalog';
+import { TestCatalogManagerModal } from './TestCatalogManagerModal';
+import { Award, Sparkles, Gift } from 'lucide-react';
 import {
   Plus,
   Search,
@@ -35,8 +36,15 @@ export const IncomeModule: React.FC = () => {
     scannedBarcode,
     setScannedBarcode,
     setScannerOpen,
-    githubConfig
+    githubConfig,
+    testCatalog,
+    loyaltyProfiles,
+    loyaltyConfig,
+    redeemLoyaltyPoints,
+    calculatePointsForAmount,
+    calculateCashForPoints
   } = useApp();
+  const [catalogModalOpen, setCatalogModalOpen] = useState(false);
 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,6 +74,7 @@ export const IncomeModule: React.FC = () => {
   const [branch, setBranch] = useState('فرع قصر العيني الرئيسي');
   const [selectedTests, setSelectedTests] = useState<InvoiceTestItem[]>([]);
   const [discount, setDiscount] = useState<number>(0);
+  const [redeemedPointsAmount, setRedeemedPointsAmount] = useState<number>(0);
   const [paidAmount, setPaidAmount] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [notes, setNotes] = useState('');
@@ -161,7 +170,7 @@ export const IncomeModule: React.FC = () => {
 
   // Test catalog search
   const filteredCatalog = useMemo(() => {
-    return TEST_CATALOG.filter(test => {
+    return testCatalog.filter(test => {
       if (catalogCategory !== 'all' && test.category !== catalogCategory) return false;
       if (customTestSearch.trim()) {
         const term = customTestSearch.toLowerCase();
@@ -216,8 +225,15 @@ export const IncomeModule: React.FC = () => {
       status = 'partial';
     }
 
+    const invNum = `INV-${new Date().getFullYear()}-${(incomeRecords.length + 896).toString().padStart(4, '0')}`;
+    
+    // If patient redeemed points
+    if (redeemedPointsAmount > 0 && matchingLoyalty) {
+      redeemLoyaltyPoints(matchingLoyalty.patientId, redeemedPointsAmount, invNum);
+    }
+
     const newRecord = addIncomeRecord({
-      invoiceNumber: `INV-${new Date().getFullYear()}-${(incomeRecords.length + 896).toString().padStart(4, '0')}`,
+      invoiceNumber: invNum,
       patientName: patientName.trim(),
       patientPhone: patientPhone.trim() || '01000000000',
       patientAge: Number(patientAge) || 30,
@@ -228,6 +244,8 @@ export const IncomeModule: React.FC = () => {
       tests: selectedTests,
       subtotal: subtotalNew,
       discount,
+      loyaltyPointsRedeemed: redeemedPointsAmount,
+      loyaltyPointsEarned: calculatePointsForAmount(paidAmount),
       netAmount: netAmountNew,
       paidAmount,
       remainingAmount: remainingNew,
@@ -235,7 +253,7 @@ export const IncomeModule: React.FC = () => {
       paymentStatus: status,
       cashierName: currentUser.nameAr,
       branch,
-      notes,
+      notes: redeemedPointsAmount > 0 ? `${notes ? notes + ' | ' : ''}تم استبدال ${redeemedPointsAmount} نقطة ولاء` : notes,
       syncStatus: githubConfig.token ? 'synced' : 'local_only',
       syncDate: new Date().toISOString()
     });
@@ -302,8 +320,13 @@ export const IncomeModule: React.FC = () => {
     playScanSuccessSound();
   };
 
+  const matchingLoyalty = useMemo(() => {
+    if (!patientPhone && !patientName) return null;
+    return loyaltyProfiles.find(p => (patientPhone && p.phone === patientPhone.trim()) || (patientName && p.patientName.trim().toLowerCase() === patientName.trim().toLowerCase()));
+  }, [patientPhone, patientName, loyaltyProfiles]);
+
   const categories = useMemo(() => {
-    const set = new Set(TEST_CATALOG.map(t => t.category));
+    const set = new Set(testCatalog.map(t => t.category));
     return ['all', ...Array.from(set)];
   }, []);
 
@@ -315,7 +338,7 @@ export const IncomeModule: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-teal-700" />
+              <DollarSign className="w-5 h-5 text-rose-900" />
               <span>{language === 'ar' ? 'سجل الدخل اليومي وحسابات المرضى' : 'Daily Patient Income & Billing'}</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -330,7 +353,7 @@ export const IncomeModule: React.FC = () => {
               onClick={() => setScannerOpen(true)}
               className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
             >
-              <ScanLine className="w-4 h-4 text-teal-700" />
+              <ScanLine className="w-4 h-4 text-rose-900" />
               <span>{language === 'ar' ? 'مسح باركود' : 'Scan'}</span>
             </button>
 
@@ -340,7 +363,7 @@ export const IncomeModule: React.FC = () => {
                 setSelectedTests([]);
                 setIsAddModalOpen(true);
               }}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-teal-800 hover:bg-teal-900 rounded-lg transition-colors shadow-sm"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-900 hover:bg-rose-800 rounded-lg transition-colors shadow-sm"
             >
               <Plus className="w-4 h-4" />
               <span>{language === 'ar' ? 'تسجيل كشف / فاتورة جديدة' : 'New Invoice'}</span>
@@ -367,7 +390,7 @@ export const IncomeModule: React.FC = () => {
             <div className="text-base font-black text-slate-900 font-mono mt-0.5">
               {summaryMetrics.cashPaid.toLocaleString()} {language === 'ar' ? 'ج.م' : 'EGP'}
             </div>
-            <div className="text-[10px] text-teal-700 mt-0.5">جاهز للتقفيل</div>
+            <div className="text-[10px] text-rose-900 mt-0.5">جاهز للتقفيل</div>
           </div>
 
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
@@ -422,7 +445,7 @@ export const IncomeModule: React.FC = () => {
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder={language === 'ar' ? 'ابحث باسم المريض، رقم الهاتف، الباركود، كود المعمل...' : 'Search by name, phone, barcode...'}
-              className="w-full text-xs pr-8 pl-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700"
+              className="w-full text-xs pr-8 pl-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-700"
             />
             <Search className="w-4 h-4 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" />
           </div>
@@ -468,7 +491,7 @@ export const IncomeModule: React.FC = () => {
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value as 'all' | 'paid' | 'partial' | 'unpaid')}
-              className="text-xs py-2 px-3 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-teal-700 font-medium"
+              className="text-xs py-2 px-3 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-rose-700 font-medium"
             >
               <option value="all">{language === 'ar' ? 'جميع حالات السداد' : 'All Payment Statuses'}</option>
               <option value="paid">{language === 'ar' ? 'مسدد بالكامل' : 'Fully Paid'}</option>
@@ -479,7 +502,7 @@ export const IncomeModule: React.FC = () => {
             <select
               value={methodFilter}
               onChange={e => setMethodFilter(e.target.value as 'all' | PaymentMethod)}
-              className="text-xs py-2 px-3 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-teal-700 font-medium"
+              className="text-xs py-2 px-3 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-rose-700 font-medium"
             >
               <option value="all">{language === 'ar' ? 'جميع طرق الدفع' : 'All Methods'}</option>
               <option value="cash">{language === 'ar' ? 'نقدي (كاش)' : 'Cash'}</option>
@@ -527,7 +550,7 @@ export const IncomeModule: React.FC = () => {
                       {/* Invoice & Lab No */}
                       <td className="py-3 px-4">
                         <div className="font-mono font-bold text-slate-900">{record.invoiceNumber}</div>
-                        <div className="text-[11px] font-mono text-teal-800">{record.labNumber}</div>
+                        <div className="text-[11px] font-mono text-rose-950">{record.labNumber}</div>
                         <div className="text-[10px] text-slate-400 mt-0.5">
                           {new Date(record.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
                         </div>
@@ -689,11 +712,11 @@ export const IncomeModule: React.FC = () => {
             <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
               <div>
                 <h3 className="font-bold text-base flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-teal-400" />
+                  <Plus className="w-5 h-5 text-rose-400" />
                   <span>{language === 'ar' ? 'تسجيل حالة ومريض جديد وإصدار فاتورة' : 'New Patient Intake & Billing'}</span>
                 </h3>
                 <div className="text-xs text-slate-400 mt-0.5">
-                  معامل RT للتشخيص · كود التحليل التلقائي: <span className="font-mono text-teal-300 font-bold">{nextLabNumber}</span> · باركود: <span className="font-mono text-teal-300 font-bold">{nextBarcode}</span>
+                  معامل RT للتشخيص · كود التحليل التلقائي: <span className="font-mono text-rose-300 font-bold">{nextLabNumber}</span> · باركود: <span className="font-mono text-rose-300 font-bold">{nextBarcode}</span>
                 </div>
               </div>
               <button
@@ -711,7 +734,7 @@ export const IncomeModule: React.FC = () => {
               {/* Row 1: Patient Information */}
               <div>
                 <h4 className="text-xs font-bold text-slate-900 border-b border-slate-200 pb-1.5 mb-3 flex items-center gap-1.5">
-                  <User className="w-4 h-4 text-teal-700" />
+                  <User className="w-4 h-4 text-rose-900" />
                   <span>بيانات المريض الأساسية:</span>
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
@@ -723,7 +746,7 @@ export const IncomeModule: React.FC = () => {
                       value={patientName}
                       onChange={e => setPatientName(e.target.value)}
                       placeholder="مثال: أحمد عبد الله حسين"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 font-medium"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-700 font-medium"
                     />
                   </div>
 
@@ -734,7 +757,7 @@ export const IncomeModule: React.FC = () => {
                       value={patientPhone}
                       onChange={e => setPatientPhone(e.target.value)}
                       placeholder="01012345678"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 font-mono"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-700 font-mono"
                     />
                   </div>
 
@@ -747,7 +770,7 @@ export const IncomeModule: React.FC = () => {
                         max={120}
                         value={patientAge}
                         onChange={e => setPatientAge(Number(e.target.value))}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 font-mono"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-700 font-mono"
                       />
                     </div>
                     <div>
@@ -755,7 +778,7 @@ export const IncomeModule: React.FC = () => {
                       <select
                         value={patientGender}
                         onChange={e => setPatientGender(e.target.value as 'male' | 'female')}
-                        className="w-full px-2 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 bg-white"
+                        className="w-full px-2 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-700 bg-white"
                       >
                         <option value="male">ذكر</option>
                         <option value="female">أنثى</option>
@@ -770,7 +793,7 @@ export const IncomeModule: React.FC = () => {
                       value={referringDoctor}
                       onChange={e => setReferringDoctor(e.target.value)}
                       placeholder="د. استشاري الباطنة أو فحص ذاتي"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-700"
                     />
                   </div>
                 </div>
@@ -780,7 +803,7 @@ export const IncomeModule: React.FC = () => {
               <div>
                 <h4 className="text-xs font-bold text-slate-900 border-b border-slate-200 pb-1.5 mb-3 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <Tag className="w-4 h-4 text-teal-700" />
+                    <Tag className="w-4 h-4 text-rose-900" />
                     <span>اختيار التحاليل والفحوصات المطلوبة:</span>
                   </span>
                   <span className="text-slate-500 font-normal">
@@ -798,14 +821,14 @@ export const IncomeModule: React.FC = () => {
                     selectedTests.map(t => (
                       <span
                         key={t.id}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-100 text-teal-900 rounded-md text-xs font-bold border border-teal-200"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-rose-100 text-rose-950 rounded-md text-xs font-bold border border-rose-200"
                       >
                         <span>{t.nameAr}</span>
-                        <span className="font-mono text-teal-700">({t.price} ج)</span>
+                        <span className="font-mono text-rose-900">({t.price} ج)</span>
                         <button
                           type="button"
                           onClick={() => handleRemoveTest(t.id)}
-                          className="text-teal-700 hover:text-rose-600 font-bold mr-1"
+                          className="text-rose-900 hover:text-rose-600 font-bold mr-1"
                         >
                           ✕
                         </button>
@@ -822,7 +845,7 @@ export const IncomeModule: React.FC = () => {
                       value={customTestSearch}
                       onChange={e => setCustomTestSearch(e.target.value)}
                       placeholder="ابحث في التحاليل بالاسم أو الكود (مثل: FBS, CBC, TSH, سكر, كلى)..."
-                      className="w-full text-xs pr-8 pl-3 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700"
+                      className="w-full text-xs pr-8 pl-3 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-700"
                     />
                     <Search className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" />
                   </div>
@@ -856,17 +879,17 @@ export const IncomeModule: React.FC = () => {
                         }}
                         className={`p-2 text-right rounded-md border text-xs transition-colors flex items-center justify-between ${
                           isSelected
-                            ? 'bg-teal-700 text-white border-teal-800'
+                            ? 'bg-rose-900 text-white border-rose-950'
                             : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200'
                         }`}
                       >
                         <div className="truncate">
                           <div className="font-bold truncate">{test.nameAr}</div>
-                          <div className={`text-[10px] font-mono ${isSelected ? 'text-teal-200' : 'text-slate-400'}`}>
+                          <div className={`text-[10px] font-mono ${isSelected ? 'text-rose-200' : 'text-slate-400'}`}>
                             {test.code}
                           </div>
                         </div>
-                        <div className={`font-mono font-bold mr-1 shrink-0 ${isSelected ? 'text-white' : 'text-teal-800'}`}>
+                        <div className={`font-mono font-bold mr-1 shrink-0 ${isSelected ? 'text-white' : 'text-rose-950'}`}>
                           {test.price} ج
                         </div>
                       </button>
@@ -878,7 +901,7 @@ export const IncomeModule: React.FC = () => {
               {/* Row 3: Financial Calculations & Payment */}
               <div>
                 <h4 className="text-xs font-bold text-slate-900 border-b border-slate-200 pb-1.5 mb-3 flex items-center gap-1.5">
-                  <CreditCard className="w-4 h-4 text-teal-700" />
+                  <CreditCard className="w-4 h-4 text-rose-900" />
                   <span>الحساب المالي والتحصيل:</span>
                 </h4>
                 
@@ -902,13 +925,13 @@ export const IncomeModule: React.FC = () => {
                         setDiscount(val);
                         setPaidAmount(Math.max(0, subtotalNew - val));
                       }}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-300 font-mono text-xs focus:ring-2 focus:ring-teal-700"
+                      className="w-full px-3 py-1.5 rounded-lg border border-slate-300 font-mono text-xs focus:ring-2 focus:ring-rose-700"
                     />
                   </div>
 
                   <div>
                     <label className="block text-slate-500 font-bold mb-1">الصافي المطلوب:</label>
-                    <div className="text-lg font-black font-mono text-teal-900 py-1">
+                    <div className="text-lg font-black font-mono text-rose-950 py-1">
                       {netAmountNew.toFixed(2)} ج.م
                     </div>
                   </div>
@@ -982,7 +1005,7 @@ export const IncomeModule: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-teal-800 hover:bg-teal-900 text-white font-bold text-xs rounded-lg transition-colors shadow-md flex items-center gap-2"
+                  className="px-6 py-2.5 bg-rose-900 hover:bg-rose-800 text-white font-bold text-xs rounded-lg transition-colors shadow-md flex items-center gap-2"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>حفظ الفاتورة وإصدار الباركود والطباعة</span>
@@ -1140,6 +1163,7 @@ export const IncomeModule: React.FC = () => {
         </div>
       )}
 
+      <TestCatalogManagerModal isOpen={catalogModalOpen} onClose={() => setCatalogModalOpen(false)} />
     </div>
   );
 };

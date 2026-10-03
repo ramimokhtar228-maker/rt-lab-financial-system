@@ -39,7 +39,7 @@ export const AuditLogModule: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-teal-700" />
+              <ShieldCheck className="w-5 h-5 text-rose-800" />
               <span>{language === 'ar' ? 'سجل الحركات الشامل ومراقبة العمليات (Audit Trail)' : 'Activity & Audit Trail Log'}</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -62,7 +62,7 @@ export const AuditLogModule: React.FC = () => {
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder="ابحث في سجل العمليات أو اسم المستخدم..."
-              className="w-full text-xs pr-8 pl-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700"
+              className="w-full text-xs pr-8 pl-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-800"
             />
             <Search className="w-4 h-4 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" />
           </div>

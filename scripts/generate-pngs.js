@@ -1,73 +1,73 @@
 import fs from 'fs';
 import zlib from 'zlib';
 
-function createPNG(width, height, isMaskable = false) {
-  // RGB raw scanlines
-  // Each scanline: 1 byte filter (0) + width * 3 bytes (R, G, B)
+// High-Fidelity Financial System Icon: Deep Red (#881337) & Gold/Amber Coin & RT Monogram
+function createFinancialPNG(width, height, isMaskable = false) {
   const rowLength = 1 + width * 3;
   const rawData = Buffer.alloc(height * rowLength);
 
   for (let y = 0; y < height; y++) {
     const rowOffset = y * rowLength;
     rawData[rowOffset] = 0; // Filter: None
-
-    // Teal gradient from top-left (#0f766e: 15, 118, 110) to bottom-right (#042f2e: 4, 47, 46)
-    const factorY = y / height;
+    const ny = y / height;
 
     for (let x = 0; x < width; x++) {
-      const factorX = x / width;
-      const t = (factorX + factorY) / 2;
-
-      // Base background color
-      let r = Math.round(15 * (1 - t) + 4 * t);
-      let g = Math.round(118 * (1 - t) + 47 * t);
-      let b = Math.round(110 * (1 - t) + 46 * t);
-
-      // Check if pixel is within center "RT" or medical cross motif
       const nx = x / width;
-      const ny = y / height;
+      // Background gradient: Deep Crimson Red (#881337: 136, 19, 55) to Obsidian Navy (#0f172a: 15, 23, 42)
+      const t = (nx + ny) / 2;
+      let r = Math.round(136 * (1 - t) + 15 * t);
+      let g = Math.round(19 * (1 - t) + 23 * t);
+      let b = Math.round(55 * (1 - t) + 42 * t);
 
-      // Inner ring if not maskable
+      // Outer golden border if not maskable
       if (!isMaskable) {
         const borderDist = Math.min(nx, 1 - nx, ny, 1 - ny);
-        if (borderDist > 0.04 && borderDist < 0.046) {
-          r = 45; g = 212; b = 191; // Teal accent ring
+        if (borderDist > 0.035 && borderDist < 0.05) {
+          // Gold accent #f59e0b
+          r = 245; g = 158; b = 11;
         }
       }
 
-      // Draw stylized "R" (left half)
-      // vertical bar: nx in [0.24, 0.31], ny in [0.32, 0.68]
-      const inR_bar = nx >= 0.24 && nx <= 0.31 && ny >= 0.32 && ny <= 0.68;
-      // top bar: nx in [0.24, 0.44], ny in [0.32, 0.38]
-      const inR_top = nx >= 0.24 && nx <= 0.44 && ny >= 0.32 && ny <= 0.38;
-      // mid bar: nx in [0.24, 0.44], ny in [0.47, 0.53]
-      const inR_mid = nx >= 0.24 && nx <= 0.44 && ny >= 0.47 && ny <= 0.53;
-      // right curve: nx in [0.38, 0.45], ny in [0.32, 0.53]
-      const inR_curve = nx >= 0.38 && nx <= 0.45 && ny >= 0.32 && ny <= 0.53;
-      // diagonal leg: nx in [0.32, 0.45], ny in [0.53, 0.68] with diagonal condition
-      const inR_leg = ny >= 0.53 && ny <= 0.68 && nx >= 0.28 + (ny - 0.53) * 0.9 && nx <= 0.35 + (ny - 0.53) * 0.9;
+      // Golden Financial Coin / Vault Shield in top-right
+      const coinCx = 0.76;
+      const coinCy = 0.24;
+      const coinDist = Math.hypot(nx - coinCx, ny - coinCy);
+      if (coinDist <= 0.12) {
+        if (coinDist <= 0.10) {
+          // Inner gold coin #fbbf24
+          r = 251; g = 191; b = 36;
+          // Currency symbol / bar inside coin
+          if (Math.abs(nx - coinCx) < 0.015 && Math.abs(ny - coinCy) < 0.055) {
+            r = 136; g = 19; b = 55; // Red inner bar
+          } else if (Math.abs(ny - coinCy) < 0.012 && Math.abs(nx - coinCx) < 0.045) {
+            r = 136; g = 19; b = 55; // Red cross bar
+          }
+        } else {
+          // Darker gold border #d97706
+          r = 217; g = 119; b = 6;
+        }
+      }
 
-      // Draw stylized "T" (right half)
-      // top bar: nx in [0.55, 0.78], ny in [0.32, 0.39]
-      const inT_top = nx >= 0.55 && nx <= 0.78 && ny >= 0.32 && ny <= 0.39;
-      // vertical post: nx in [0.63, 0.70], ny in [0.32, 0.68]
-      const inT_post = nx >= 0.63 && nx <= 0.70 && ny >= 0.32 && ny <= 0.68;
+      // Draw stylized "R" (left side)
+      const inR_bar = nx >= 0.20 && nx <= 0.27 && ny >= 0.35 && ny <= 0.72;
+      const inR_top = nx >= 0.20 && nx <= 0.42 && ny >= 0.35 && ny <= 0.41;
+      const inR_mid = nx >= 0.20 && nx <= 0.42 && ny >= 0.49 && ny <= 0.55;
+      const inR_curve = nx >= 0.36 && nx <= 0.43 && ny >= 0.35 && ny <= 0.55;
+      const inR_leg = ny >= 0.53 && ny <= 0.72 && nx >= 0.26 + (ny - 0.53) * 0.9 && nx <= 0.33 + (ny - 0.53) * 0.9;
 
-      // Medical cross in top right corner
-      const crossCenterX = 0.78;
-      const crossCenterY = 0.22;
-      const inCrossV = Math.abs(nx - crossCenterX) < 0.015 && Math.abs(ny - crossCenterY) < 0.045;
-      const inCrossH = Math.abs(nx - crossCenterX) < 0.045 && Math.abs(ny - crossCenterY) < 0.015;
+      // Draw stylized "T" (right side)
+      const inT_top = nx >= 0.50 && nx <= 0.74 && ny >= 0.35 && ny <= 0.42;
+      const inT_post = nx >= 0.59 && nx <= 0.66 && ny >= 0.35 && ny <= 0.72;
 
-      // EKG pulse line below letters
-      const inEKG_baseline = ny >= 0.73 && ny <= 0.745;
-      const inEKG_peak = (nx >= 0.44 && nx <= 0.48 && ny >= 0.69 && ny <= 0.745) ||
-                         (nx >= 0.48 && nx <= 0.52 && ny >= 0.73 && ny <= 0.78);
+      // Underline wave swoosh (red & gold)
+      const inWave = ny >= 0.76 && ny <= 0.785 && nx >= 0.18 && nx <= 0.82;
 
       if (inR_bar || inR_top || inR_mid || inR_curve || inR_leg || inT_top || inT_post) {
-        r = 255; g = 255; b = 255; // White
-      } else if (inCrossV || inCrossH || inEKG_baseline || inEKG_peak) {
-        r = 45; g = 212; b = 191; // Bright Teal accent #2dd4bf
+        // Bright metallic white
+        r = 255; g = 255; b = 255;
+      } else if (inWave) {
+        // Gold accent #f59e0b
+        r = 245; g = 158; b = 11;
       }
 
       const pixelOffset = rowOffset + 1 + x * 3;
@@ -77,27 +77,19 @@ function createPNG(width, height, isMaskable = false) {
     }
   }
 
-  // Compress with zlib
   const compressed = zlib.deflateSync(rawData);
-
-  // Build PNG chunks
   const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
-  // IHDR chunk: 13 bytes
   const ihdrData = Buffer.alloc(13);
   ihdrData.writeUInt32BE(width, 0);
   ihdrData.writeUInt32BE(height, 4);
-  ihdrData[8] = 8; // Bit depth: 8
-  ihdrData[9] = 2; // Color type: 2 (Truecolor RGB)
-  ihdrData[10] = 0; // Compression: Deflate
-  ihdrData[11] = 0; // Filter: 0
-  ihdrData[12] = 0; // Interlace: 0
+  ihdrData[8] = 8;
+  ihdrData[9] = 2;
+  ihdrData[10] = 0;
+  ihdrData[11] = 0;
+  ihdrData[12] = 0;
   const ihdrChunk = createChunk('IHDR', ihdrData);
-
-  // IDAT chunk
   const idatChunk = createChunk('IDAT', compressed);
-
-  // IEND chunk
   const iendChunk = createChunk('IEND', Buffer.alloc(0));
 
   return Buffer.concat([signature, ihdrChunk, idatChunk, iendChunk]);
@@ -114,7 +106,6 @@ function createChunk(type, data) {
   return buf;
 }
 
-// Standard CRC32 table
 const crcTable = new Uint32Array(256);
 for (let n = 0; n < 256; n++) {
   let c = n;
@@ -132,15 +123,14 @@ function crc32(buf) {
   return (c ^ 0xffffffff) >>> 0;
 }
 
-// Write files to public
 if (!fs.existsSync('public')) {
   fs.mkdirSync('public', { recursive: true });
 }
 
-fs.writeFileSync('public/pwa-192x192.png', createPNG(192, 192, false));
-fs.writeFileSync('public/pwa-512x512.png', createPNG(512, 512, false));
-fs.writeFileSync('public/pwa-maskable-512x512.png', createPNG(512, 512, true));
-fs.writeFileSync('public/apple-touch-icon.png', createPNG(180, 180, false));
-fs.writeFileSync('public/favicon.ico', createPNG(48, 48, false));
+fs.writeFileSync('public/pwa-192x192.png', createFinancialPNG(192, 192, false));
+fs.writeFileSync('public/pwa-512x512.png', createFinancialPNG(512, 512, false));
+fs.writeFileSync('public/pwa-maskable-512x512.png', createFinancialPNG(512, 512, true));
+fs.writeFileSync('public/apple-touch-icon.png', createFinancialPNG(180, 180, false));
+fs.writeFileSync('public/favicon.ico', createFinancialPNG(48, 48, false));
 
-console.log('Successfully generated all PWA PNG icons in public/');
+console.log('Successfully generated RT Lab FINANCIAL PWA icons in public/');

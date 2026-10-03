@@ -1,3 +1,5 @@
+import { RTLogo } from './RTLogo';
+import { TestCatalogManagerModal } from './TestCatalogManagerModal';
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import {
@@ -48,6 +50,7 @@ export const DashboardModule: React.FC = () => {
   const [dateFilter, setDateFilter] = useState<'today' | 'this_month' | 'all'>('this_month');
   const [branchFilter, setBranchFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [catalogModalOpen, setCatalogModalOpen] = useState(false);
 
   // Today's date string YYYY-MM-DD
   const todayStr = new Date().toISOString().split('T')[0];
@@ -149,23 +152,36 @@ export const DashboardModule: React.FC = () => {
   return (
     <div className="space-y-6 pb-12">
       {/* Top Banner & Context */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 text-white rounded-2xl p-6 shadow-xl border border-slate-700">
+      <div className="bg-gradient-to-r from-slate-950 via-[#4c0519] to-[#0f172a] text-white rounded-2xl p-6 shadow-xl border border-slate-700">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-500/20 text-teal-300 border border-teal-500/30 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse"></span>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
                 الصفحة الرئيسية ولوحة القيادة المالية ERP
               </span>
               <span className="text-xs text-slate-400 hidden sm:inline">|</span>
               <span className="text-xs text-slate-300 hidden sm:inline">أ.د. رامي مختار - رئيس مجلس الإدارة</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-white">
-              منظومة المتابعة المالية والأرباح اللحظية - معامل RT
-            </h1>
-            <p className="text-xs text-slate-300 max-w-2xl">
-              نظرة شاملة ومؤشرات حية على الخزينة، التدفقات النقدية، المصروفات التشغيلية، ومستحقات الفحوصات الطبية مع دعم كامل للأجهزة اللوحية
-            </p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
+              <RTLogo size="md" showSlogan={false} theme="dark" />
+              <div className="border-r border-rose-900/80 pr-3 sm:mr-1">
+                <h1 className="text-xl sm:text-2xl font-black text-white leading-tight">
+                  معامل RT للتحاليل التشخيصية
+                </h1>
+                <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                  <span className="text-sm font-extrabold text-rose-300">معامل رامي مختار</span>
+                  <span className="text-rose-500 font-bold">·</span>
+                  <span className="text-xs font-bold text-blue-300 bg-blue-950/60 px-2 py-0.5 rounded border border-blue-800/40">
+                    أطباء كلية طب قصر العيني
+                  </span>
+                </div>
+                <div className="text-[11px] text-rose-200/70 mt-1 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                  <span>التشخيص الصحيح يبدأ معنا · المنظومة المالية والفوترة ERP والرقابة الإدارية الشاملة</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Quick Filters */}
@@ -175,7 +191,7 @@ export const DashboardModule: React.FC = () => {
                 type="button"
                 onClick={() => setDateFilter('today')}
                 className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
-                  dateFilter === 'today' ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-300 hover:text-white'
+                  dateFilter === 'today' ? 'bg-rose-900 text-white shadow-xs' : 'text-slate-300 hover:text-white'
                 }`}
               >
                 اليوم
@@ -184,7 +200,7 @@ export const DashboardModule: React.FC = () => {
                 type="button"
                 onClick={() => setDateFilter('this_month')}
                 className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
-                  dateFilter === 'this_month' ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-300 hover:text-white'
+                  dateFilter === 'this_month' ? 'bg-rose-900 text-white shadow-xs' : 'text-slate-300 hover:text-white'
                 }`}
               >
                 الشهر الحالي
@@ -193,7 +209,7 @@ export const DashboardModule: React.FC = () => {
                 type="button"
                 onClick={() => setDateFilter('all')}
                 className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
-                  dateFilter === 'all' ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-300 hover:text-white'
+                  dateFilter === 'all' ? 'bg-rose-900 text-white shadow-xs' : 'text-slate-300 hover:text-white'
                 }`}
               >
                 الكل
@@ -203,7 +219,7 @@ export const DashboardModule: React.FC = () => {
             <select
               value={branchFilter}
               onChange={e => setBranchFilter(e.target.value)}
-              className="bg-slate-800 text-slate-200 border border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
+              className="bg-slate-800 text-slate-200 border border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-600 focus:outline-none"
             >
               <option value="all">كافة الفروع</option>
               {branches.map(b => (
@@ -214,13 +230,29 @@ export const DashboardModule: React.FC = () => {
         </div>
 
         {/* Quick Actions Shortcuts */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5 mt-5 pt-4 border-t border-slate-700/60">
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 mt-5 pt-4 border-t border-slate-700/60">
+          <button
+            type="button"
+            onClick={() => setCatalogModalOpen(true)}
+            className="flex items-center gap-2 p-2.5 bg-amber-950/40 hover:bg-amber-900/60 border border-amber-600/40 rounded-xl text-xs font-bold text-amber-200 transition-all active:scale-95 text-center justify-center"
+          >
+            <FlaskConical className="w-4 h-4 text-amber-400" />
+            <span>كتالوج الفحوصات (165+)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('loyalty')}
+            className="flex items-center gap-2 p-2.5 bg-rose-950/60 hover:bg-rose-900/80 border border-rose-500/50 rounded-xl text-xs font-bold text-rose-200 transition-all active:scale-95 text-center justify-center"
+          >
+            <CreditCard className="w-4 h-4 text-rose-300" />
+            <span>كروت ونقاط الولاء</span>
+          </button>
           <button
             type="button"
             onClick={() => setActiveTab('income')}
-            className="flex items-center gap-2 p-2.5 bg-teal-600/30 hover:bg-teal-600/50 border border-teal-500/40 rounded-xl text-xs font-bold text-teal-200 transition-all active:scale-95 text-center justify-center"
+            className="flex items-center gap-2 p-2.5 bg-rose-900/60 hover:bg-rose-800/80 border border-rose-600/60 rounded-xl text-xs font-bold text-rose-100 transition-all active:scale-95 text-center justify-center"
           >
-            <Plus className="w-4 h-4 text-teal-300" />
+            <Plus className="w-4 h-4 text-rose-300" />
             <span>فاتورة جديدة</span>
           </button>
 
@@ -277,7 +309,7 @@ export const DashboardModule: React.FC = () => {
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500">الإيراد المحصل</span>
-            <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-900 flex items-center justify-center">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
@@ -285,7 +317,7 @@ export const DashboardModule: React.FC = () => {
             <div className="text-xl sm:text-2xl font-black text-slate-900 font-mono">
               {totalRevenue.toLocaleString()} <span className="text-xs font-normal text-slate-500">ج.م</span>
             </div>
-            <div className="text-[11px] text-teal-700 font-semibold mt-1 flex items-center gap-1">
+            <div className="text-[11px] text-rose-900 font-semibold mt-1 flex items-center gap-1">
               <CheckCircle2 className="w-3 h-3" />
               <span>{filteredIncome.length} فاتورة مسجلة</span>
             </div>
@@ -384,7 +416,7 @@ export const DashboardModule: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('inventory')}
-              className="text-[11px] text-teal-700 font-bold hover:underline mt-1 block"
+              className="text-[11px] text-rose-900 font-bold hover:underline mt-1 block"
             >
               عرض سجل الكواشف ←
             </button>
@@ -399,7 +431,7 @@ export const DashboardModule: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
               <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-teal-700" />
+                <Receipt className="w-5 h-5 text-rose-900" />
                 <span>أحدث فواتير المرضى والمقبوضات المالية</span>
               </h2>
               <p className="text-xs text-slate-500">
@@ -414,7 +446,7 @@ export const DashboardModule: React.FC = () => {
                 placeholder="بحث باسم المريض أو الفاتورة..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="bg-slate-50 border border-slate-200 text-xs rounded-lg pr-8 pl-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-600 w-full sm:w-56"
+                className="bg-slate-50 border border-slate-200 text-xs rounded-lg pr-8 pl-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-rose-600 w-full sm:w-56"
               />
             </div>
           </div>
@@ -473,7 +505,7 @@ export const DashboardModule: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setActiveTab('income')}
-                          className="p-1.5 text-teal-700 hover:bg-teal-50 rounded-lg transition-colors"
+                          className="p-1.5 text-rose-900 hover:bg-rose-50 rounded-lg transition-colors"
                           title="عرض وتعديل في شاشة الفواتير"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
@@ -503,7 +535,7 @@ export const DashboardModule: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('income')}
-              className="text-teal-700 font-bold hover:underline flex items-center gap-1"
+              className="text-rose-900 font-bold hover:underline flex items-center gap-1"
             >
               <span>فتح سجل الدخل والفواتير الكامل</span>
               <span>←</span>
@@ -530,7 +562,7 @@ export const DashboardModule: React.FC = () => {
                 topTests.map((t, idx) => (
                   <div key={t.name} className="flex items-center justify-between text-xs p-2 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors">
                     <div className="flex items-center gap-2.5">
-                      <span className="w-5 h-5 rounded-full bg-teal-100 text-teal-800 font-bold text-[10px] flex items-center justify-center">
+                      <span className="w-5 h-5 rounded-full bg-rose-100 text-rose-900 font-bold text-[10px] flex items-center justify-center">
                         {idx + 1}
                       </span>
                       <div>
@@ -538,7 +570,7 @@ export const DashboardModule: React.FC = () => {
                         <div className="text-[10px] text-slate-500">{t.count} فحص تم إجراؤه</div>
                       </div>
                     </div>
-                    <span className="font-mono font-bold text-teal-800">
+                    <span className="font-mono font-bold text-rose-900">
                       {t.revenue.toLocaleString()} ج.م
                     </span>
                   </div>
@@ -581,6 +613,7 @@ export const DashboardModule: React.FC = () => {
           </div>
         </div>
       </div>
+      <TestCatalogManagerModal isOpen={catalogModalOpen} onClose={() => setCatalogModalOpen(false)} />
     </div>
   );
 };

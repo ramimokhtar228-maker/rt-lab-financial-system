@@ -40,7 +40,7 @@ export const RoleLoginModal: React.FC = () => {
         {/* Modal Header */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <Shield className="w-5 h-5 text-teal-400" />
+            <Shield className="w-5 h-5 text-rose-400" />
             <h3 className="font-bold text-base">
               {language === 'ar' ? 'تبديل المستخدم وتأكيد الصلاحية' : 'Role-Based Authentication'}
             </h3>
@@ -72,7 +72,7 @@ export const RoleLoginModal: React.FC = () => {
                   onClick={() => handleSelectUser(u.username)}
                   className={`p-3 text-right rounded-lg border transition-all text-xs ${
                     isSelected
-                      ? 'border-teal-700 bg-teal-50 ring-1 ring-teal-700'
+                      ? 'border-rose-800 bg-rose-50 ring-1 ring-rose-800'
                       : 'border-slate-200 hover:border-slate-300 bg-white'
                   }`}
                 >
@@ -82,7 +82,7 @@ export const RoleLoginModal: React.FC = () => {
                   <div className="text-[11px] text-slate-500 mt-0.5">
                     {language === 'ar' ? u.titleAr : u.titleEn}
                   </div>
-                  <div className="mt-1 font-mono text-[10px] text-teal-800">
+                  <div className="mt-1 font-mono text-[10px] text-rose-900">
                     PIN: {u.pin}
                   </div>
                 </button>
@@ -106,7 +106,7 @@ export const RoleLoginModal: React.FC = () => {
                   }}
                   autoFocus
                   placeholder="••••"
-                  className="w-full text-center tracking-[0.5em] text-xl font-mono px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700"
+                  className="w-full text-center tracking-[0.5em] text-xl font-mono px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-800 focus:border-rose-800"
                 />
                 <KeyRound className="w-5 h-5 text-slate-400 absolute left-3 top-3 pointer-events-none" />
               </div>
@@ -121,7 +121,7 @@ export const RoleLoginModal: React.FC = () => {
             <div className="flex gap-2 pt-2">
               <button
                 type="submit"
-                className="flex-1 py-2.5 px-4 bg-teal-800 hover:bg-teal-900 text-white font-bold text-xs rounded-lg transition-colors shadow-sm"
+                className="flex-1 py-2.5 px-4 bg-rose-900 hover:bg-rose-950 text-white font-bold text-xs rounded-lg transition-colors shadow-sm"
               >
                 {language === 'ar' ? 'تسجيل الدخول' : 'Authenticate & Sign In'}
               </button>

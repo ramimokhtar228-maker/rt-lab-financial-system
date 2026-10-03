@@ -1,3 +1,4 @@
+import { RTLogo } from './RTLogo';
 import React, { useState } from 'react';
 import { IncomeRecord } from '../types';
 import { generateBarcodeSVG } from '../utils/barcode';
@@ -29,7 +30,7 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ invoice, o
         {/* Modal Controls Bar (Hidden during print) */}
         <div className="px-6 py-3.5 bg-slate-900 text-white flex items-center justify-between print:hidden">
           <div className="flex items-center gap-2">
-            <Printer className="w-5 h-5 text-teal-400" />
+            <Printer className="w-5 h-5 text-amber-400" />
             <h3 className="font-bold text-sm">
               {language === 'ar' ? 'طباعة فاتورة / إيصال مريض' : 'Print Patient Invoice & Receipt'}
             </h3>
@@ -42,7 +43,7 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ invoice, o
                 type="button"
                 onClick={() => setPrintLayout('standard')}
                 className={`px-2.5 py-1 rounded-md transition-colors ${
-                  printLayout === 'standard' ? 'bg-teal-700 text-white font-bold' : 'text-slate-300 hover:text-white'
+                  printLayout === 'standard' ? 'bg-rose-900 text-white font-bold' : 'text-slate-300 hover:text-white'
                 }`}
               >
                 {language === 'ar' ? 'فاتورة A4/A5' : 'Standard'}
@@ -51,7 +52,7 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ invoice, o
                 type="button"
                 onClick={() => setPrintLayout('thermal')}
                 className={`px-2.5 py-1 rounded-md transition-colors ${
-                  printLayout === 'thermal' ? 'bg-teal-700 text-white font-bold' : 'text-slate-300 hover:text-white'
+                  printLayout === 'thermal' ? 'bg-rose-900 text-white font-bold' : 'text-slate-300 hover:text-white'
                 }`}
               >
                 {language === 'ar' ? 'إيصال حراري 80mm' : 'Thermal'}
@@ -60,7 +61,7 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ invoice, o
                 type="button"
                 onClick={() => setPrintLayout('tube_sticker')}
                 className={`px-2.5 py-1 rounded-md transition-colors ${
-                  printLayout === 'tube_sticker' ? 'bg-teal-700 text-white font-bold' : 'text-slate-300 hover:text-white'
+                  printLayout === 'tube_sticker' ? 'bg-rose-900 text-white font-bold' : 'text-slate-300 hover:text-white'
                 }`}
               >
                 {language === 'ar' ? 'استيكر الأنابيب' : 'Tube Label'}
@@ -69,7 +70,7 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ invoice, o
 
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-700 hover:bg-rose-900 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
             >
               <Printer className="w-4 h-4" />
               <span>{language === 'ar' ? 'طباعة الآن' : 'Print'}</span>
@@ -91,23 +92,24 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ invoice, o
           {printLayout === 'standard' && (
             <div className="printable-content bg-white text-slate-900 border border-slate-200 p-6 rounded-lg print:border-none print:p-0">
               {/* Header Letterhead */}
-              <div className="border-b-2 border-slate-800 pb-4 mb-4 flex items-center justify-between">
-                <div>
-                  <h1 className="text-xl font-black text-slate-900 tracking-tight">
-                    معامل RT للتشخيص والتحاليل الطبية
+              <div className="border-b-2 border-rose-900 pb-4 mb-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <h1 className="text-xl font-black text-rose-950 tracking-tight">
+                    معامل RT للتحاليل التشخيصية
                   </h1>
-                  <p className="text-xs text-slate-600 font-semibold mt-0.5">
-                    RT Diagnostic Clinical & Molecular Pathology Laboratories
-                  </p>
-                  <p className="text-[11px] text-slate-500">
-                    تحت إشراف: أ.د. رامي مختار - استشاري الباثولوجيا الإكلينيكية والكيميائية
+                  <div className="text-sm font-black text-slate-900">
+                    معامل رامي مختار
+                  </div>
+                  <div className="text-xs font-bold text-blue-900">
+                    أطباء كلية طب قصر العيني
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-medium">
+                    التشخيص الصحيح يبدأ معنا · Accurate Diagnosis Starts With Us
                   </p>
                 </div>
-                <div className="text-left font-mono">
-                  <div className="w-12 h-12 bg-teal-800 text-white font-extrabold text-2xl flex items-center justify-center rounded-lg shadow-sm">
-                    RT
-                  </div>
-                  <div className="text-[10px] text-slate-500 mt-1">EGY-MED-48201</div>
+                <div className="flex flex-col items-end">
+                  <RTLogo size="sm" showSlogan={false} theme="light" />
+                  <div className="text-[10px] text-slate-400 font-mono mt-1">ISO 15189 Certified</div>
                 </div>
               </div>
 
@@ -119,7 +121,7 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ invoice, o
                 </div>
                 <div>
                   <span className="text-slate-500 block">كود المعمل (Lab No):</span>
-                  <span className="font-bold font-mono text-teal-800">{invoice.labNumber}</span>
+                  <span className="font-bold font-mono text-rose-900">{invoice.labNumber}</span>
                 </div>
                 <div>
                   <span className="text-slate-500 block">التاريخ والوقت:</span>
@@ -174,7 +176,7 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ invoice, o
                   {invoice.tests.map((test, index) => (
                     <tr key={test.id || index}>
                       <td className="py-2.5 px-3 text-slate-500">{index + 1}</td>
-                      <td className="py-2.5 px-3 font-mono font-semibold text-teal-800">{test.code}</td>
+                      <td className="py-2.5 px-3 font-mono font-semibold text-rose-900">{test.code}</td>
                       <td className="py-2.5 px-3 font-bold text-slate-900">{test.nameAr}</td>
                       <td className="py-2.5 px-3 text-slate-500">{test.category}</td>
                       <td className="py-2.5 px-3 text-left font-mono font-bold">{test.price.toFixed(2)}</td>
@@ -198,7 +200,7 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ invoice, o
                   )}
                   <div className="flex justify-between text-sm font-bold text-slate-900 pt-1 border-t border-slate-200">
                     <span>الصافي المطلوب:</span>
-                    <span className="font-mono text-teal-900">{invoice.netAmount.toFixed(2)} ج.م</span>
+                    <span className="font-mono text-rose-950">{invoice.netAmount.toFixed(2)} ج.م</span>
                   </div>
                   <div className="flex justify-between text-emerald-700 font-bold">
                     <span>المدفوع نقداً/فيزا:</span>

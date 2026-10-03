@@ -111,7 +111,7 @@ export const DiagnosticSyncHub: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <GitBranch className="w-5 h-5 text-teal-700" />
+              <GitBranch className="w-5 h-5 text-rose-800" />
               <span>{language === 'ar' ? 'ربط وتسميع منظومة تحاليل RT التشخيصية مع الحسابات' : 'RT Diagnostic System Integration Hub'}</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -126,7 +126,7 @@ export const DiagnosticSyncHub: React.FC = () => {
               href="https://ramimokhtar228-maker.github.io/rt-lab-diagnostic-system/"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-teal-900 bg-teal-50 hover:bg-teal-100 rounded-lg border border-teal-200 transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-rose-950 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors"
             >
               <span>{language === 'ar' ? 'فتح منظومة النتائج الخارجية' : 'Open Diagnostic App'}</span>
               <ExternalLink className="w-3.5 h-3.5" />
@@ -142,7 +142,7 @@ export const DiagnosticSyncHub: React.FC = () => {
               <span className="font-bold text-sm">
                 المستودع المستهدف: {githubConfig.repoOwner}/{githubConfig.repoName}
               </span>
-              <span className="text-[11px] font-mono text-teal-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
+              <span className="text-[11px] font-mono text-rose-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
                 branch: {githubConfig.branch}
               </span>
             </div>
@@ -165,7 +165,7 @@ export const DiagnosticSyncHub: React.FC = () => {
                 href="https://ramimokhtar228-maker.github.io/rt-lab-diagnostic-system/"
                 target="_blank"
                 rel="noreferrer"
-                className="font-mono text-teal-300 hover:underline truncate block"
+                className="font-mono text-amber-400 hover:underline truncate block"
               >
                 ramimokhtar228-maker.github.io/rt-lab-diagnostic-system
               </a>
@@ -185,7 +185,7 @@ export const DiagnosticSyncHub: React.FC = () => {
                   type="checkbox"
                   checked={githubConfig.autoSync}
                   onChange={e => updateGitHubConfig({ autoSync: e.target.checked })}
-                  className="rounded text-teal-600 focus:ring-teal-500"
+                  className="rounded text-rose-700 focus:ring-rose-500"
                 />
                 <span className="font-bold text-emerald-400">
                   {githubConfig.autoSync ? 'مفعل (تسميع فوري عند كل فاتورة)' : 'معطل (يدوي فقط)'}
@@ -204,18 +204,18 @@ export const DiagnosticSyncHub: React.FC = () => {
         {/* Sync Actions Bar */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
           {/* Action 1: Pull from Diagnostic System */}
-          <div className="p-4 bg-teal-50 border border-teal-200 rounded-xl space-y-2.5">
-            <div className="flex items-center gap-2 text-teal-900 font-bold text-sm">
-              <DownloadCloud className="w-5 h-5 text-teal-700" />
+          <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl space-y-2.5">
+            <div className="flex items-center gap-2 text-rose-950 font-bold text-sm">
+              <DownloadCloud className="w-5 h-5 text-rose-800" />
               <span>جلب الحالات من منظومة النتائج إلى الحسابات (Pull Cases)</span>
             </div>
-            <p className="text-xs text-teal-800 leading-relaxed">
+            <p className="text-xs text-rose-900 leading-relaxed">
               يقوم بقراءة تقارير المرضى والحالات المفتوحة في منظومة نتائج RT وعرضها للاستقبال لإصدار الفواتير وتحصيل الرسوم بضغطة زر واحدة.
             </p>
             <button
               onClick={handlePull}
               disabled={isSyncing}
-              className="w-full py-2.5 px-4 bg-teal-800 hover:bg-teal-900 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm"
+              className="w-full py-2.5 px-4 bg-rose-900 hover:bg-rose-950 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm"
             >
               <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
               <span>جلب وتحديث قائمة الحالات الآن</span>
@@ -236,7 +236,7 @@ export const DiagnosticSyncHub: React.FC = () => {
               disabled={isSyncing}
               className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm"
             >
-              <FileCheck2 className="w-4 h-4 text-teal-400" />
+              <FileCheck2 className="w-4 h-4 text-rose-400" />
               <span>تسميع وإرسال إشعارات السداد إلى GitHub</span>
             </button>
           </div>
@@ -251,7 +251,7 @@ export const DiagnosticSyncHub: React.FC = () => {
         {/* Visual Workflow Steps Guide */}
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-4">
           <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
-            <ArrowRightLeft className="w-5 h-5 text-teal-700" />
+            <ArrowRightLeft className="w-5 h-5 text-rose-800" />
             <span>دليل وخطوات العمل اليومية للربط والتسميع بين البرنامجين (Workflow):</span>
           </div>
 
@@ -259,13 +259,13 @@ export const DiagnosticSyncHub: React.FC = () => {
             {/* Step 1 */}
             <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-xs space-y-2">
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-teal-800 text-white font-bold text-xs flex items-center justify-center shrink-0">1</span>
+                <span className="w-6 h-6 rounded-full bg-rose-900 text-white font-bold text-xs flex items-center justify-center shrink-0">1</span>
                 <span className="font-bold text-slate-900">تسجيل الفاتورة والعينة (الاستقبال)</span>
               </div>
               <p className="text-slate-600 leading-relaxed text-[11px]">
                 يدخل المريض الاستقبال، فيقوم موظف الاستقبال أو الخزينة بفتح تبويب <strong>"سجل الدخل والفواتير"</strong> وإدخال بيانات المريض واختيار التحاليل.
               </p>
-              <div className="text-[10px] text-teal-800 font-semibold bg-teal-50 p-1.5 rounded">
+              <div className="text-[10px] text-rose-900 font-semibold bg-rose-50 p-1.5 rounded">
                 ← يُنشئ البرنامج كود العينة (مثل RT-2026-0896) والباركود تلقائياً ويطبع الفاتورة ولاصق الأنبوبة.
               </div>
             </div>
@@ -273,7 +273,7 @@ export const DiagnosticSyncHub: React.FC = () => {
             {/* Step 2 */}
             <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-xs space-y-2">
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-teal-800 text-white font-bold text-xs flex items-center justify-center shrink-0">2</span>
+                <span className="w-6 h-6 rounded-full bg-rose-900 text-white font-bold text-xs flex items-center justify-center shrink-0">2</span>
                 <span className="font-bold text-slate-900">التسميع الفوري عبر GitHub (تلقائي)</span>
               </div>
               <p className="text-slate-600 leading-relaxed text-[11px]">
@@ -287,7 +287,7 @@ export const DiagnosticSyncHub: React.FC = () => {
             {/* Step 3 */}
             <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-xs space-y-2">
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-teal-800 text-white font-bold text-xs flex items-center justify-center shrink-0">3</span>
+                <span className="w-6 h-6 rounded-full bg-rose-900 text-white font-bold text-xs flex items-center justify-center shrink-0">3</span>
                 <span className="font-bold text-slate-900">إدخال النتائج وتسليم التقرير الطبي</span>
               </div>
               <p className="text-slate-600 leading-relaxed text-[11px]">
@@ -314,7 +314,7 @@ export const DiagnosticSyncHub: React.FC = () => {
           </div>
           <button
             onClick={handlePull}
-            className="text-xs font-bold text-teal-800 hover:text-teal-900 flex items-center gap-1"
+            className="text-xs font-bold text-rose-900 hover:text-rose-950 flex items-center gap-1"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>تحديث القائمة</span>
@@ -351,7 +351,7 @@ export const DiagnosticSyncHub: React.FC = () => {
 
                   return (
                     <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3 px-4 font-mono font-bold text-teal-800">{c.labNumber}</td>
+                      <td className="py-3 px-4 font-mono font-bold text-rose-900">{c.labNumber}</td>
                       <td className="py-3 px-4 font-mono font-bold text-slate-800">{c.barcode}</td>
                       <td className="py-3 px-4 font-bold text-slate-900">{c.fullName}</td>
                       <td className="py-3 px-4 text-slate-600">
@@ -382,7 +382,7 @@ export const DiagnosticSyncHub: React.FC = () => {
                         {!existingInvoice ? (
                           <button
                             onClick={() => handleBillPatient(c)}
-                            className="px-2.5 py-1 bg-teal-800 hover:bg-teal-900 text-white rounded text-[11px] font-bold shadow-sm transition-colors"
+                            className="px-2.5 py-1 bg-rose-900 hover:bg-rose-950 text-white rounded text-[11px] font-bold shadow-sm transition-colors"
                           >
                             إصدار فاتورة
                           </button>
@@ -402,7 +402,7 @@ export const DiagnosticSyncHub: React.FC = () => {
       {/* GitHub Configuration Card */}
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
         <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-          <Key className="w-4 h-4 text-teal-700" />
+          <Key className="w-4 h-4 text-rose-800" />
           <span>إعدادات مفتاح الوصول والمستودع (GitHub Access Token):</span>
         </h3>
 
@@ -457,7 +457,7 @@ export const DiagnosticSyncHub: React.FC = () => {
             <button
               type="button"
               onClick={handleSaveToken}
-              className="px-4 py-2 bg-teal-800 text-white font-bold text-xs rounded-lg"
+              className="px-4 py-2 bg-rose-900 text-white font-bold text-xs rounded-lg"
             >
               تحديث وحفظ المفتاح
             </button>

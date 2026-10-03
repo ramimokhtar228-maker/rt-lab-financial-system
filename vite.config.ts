@@ -14,34 +14,34 @@ export default defineConfig(() => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
         manifest: {
-          id: '/',
-          name: 'RT Lab Financial & Management ERP | نظام حسابات معمل RT',
-          short_name: 'RT Lab ERP',
-          description: 'نظام متكامل لإدارة الحسابات والماليات، سجل الدخل اليومي، الكيماويات، والمرتبات لمعامل RT للتشخيص والتحاليل الطبية.',
-          theme_color: '#0f766e',
-          background_color: '#f8fafc',
+          id: './',
+          name: 'معامل RT - المنظومة المالية والفوترة ERP',
+          short_name: 'RT Financial',
+          description: 'نظام الحسابات والماليات الشامل لمعامل RT: سجل الدخل، المصروفات، نسب الأرباح، الكيماويات، والمرتبات وكروت الولاء.',
+          theme_color: '#881337',
+          background_color: '#0f172a',
           display: 'standalone',
           orientation: 'any',
-          start_url: '/',
-          scope: '/',
+          start_url: './',
+          scope: './',
           lang: 'ar',
           dir: 'rtl',
           categories: ['medical', 'finance', 'business'],
           icons: [
             {
-              src: '/pwa-192x192.png',
+              src: 'pwa-192x192.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: '/pwa-512x512.png',
+              src: 'pwa-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: '/pwa-maskable-512x512.png',
+              src: 'pwa-maskable-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable'

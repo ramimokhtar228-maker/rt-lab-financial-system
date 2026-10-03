@@ -147,7 +147,7 @@ export const LabToLabModule: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <Network className="w-5 h-5 text-teal-700" />
+              <Network className="w-5 h-5 text-rose-800" />
               <span>{language === 'ar' ? 'إدارة تحاليل وعينات اللاب تو لاب (Lab-to-Lab)' : 'Lab-to-Lab Referral Orders'}</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -159,7 +159,7 @@ export const LabToLabModule: React.FC = () => {
 
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-teal-800 hover:bg-teal-900 rounded-lg transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-900 hover:bg-rose-950 rounded-lg transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4" />
             <span>{language === 'ar' ? 'إرسال عينة جديدة لمعمل خارجي' : 'New Referral'}</span>
@@ -209,7 +209,7 @@ export const LabToLabModule: React.FC = () => {
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder="ابحث باسم المريض، كود العينة، اسم المعمل المرجعي..."
-              className="w-full text-xs pr-8 pl-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-700"
+              className="w-full text-xs pr-8 pl-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-800"
             />
             <Search className="w-4 h-4 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" />
           </div>
@@ -259,7 +259,7 @@ export const LabToLabModule: React.FC = () => {
                   <tr key={order.id} className="hover:bg-slate-50 transition-colors">
                     <td className="py-3 px-4">
                       <div className="font-mono font-bold text-slate-900">{order.orderNumber}</div>
-                      <div className="text-[10px] font-mono text-teal-800">{order.patientLabNumber}</div>
+                      <div className="text-[10px] font-mono text-rose-900">{order.patientLabNumber}</div>
                     </td>
                     <td className="py-3 px-4 font-bold text-slate-900">{order.patientName}</td>
                     <td className="py-3 px-4 font-semibold text-slate-800">{order.externalLabName}</td>
@@ -478,7 +478,7 @@ export const LabToLabModule: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-teal-800 text-white rounded font-bold shadow-sm"
+                  className="px-5 py-2 bg-rose-900 text-white rounded font-bold shadow-sm"
                 >
                   تسجيل الإحالة
                 </button>

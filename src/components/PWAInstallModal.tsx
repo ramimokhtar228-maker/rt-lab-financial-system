@@ -44,16 +44,16 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-teal-900 via-teal-800 to-slate-900 text-white flex items-center justify-between">
+        <div className="px-6 py-4 bg-gradient-to-r from-slate-950 via-[#4c0519] to-[#0f172a] text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-xs flex items-center justify-center text-teal-300 font-bold border border-white/20">
-              <Download className="w-5 h-5 text-teal-300" />
+            <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-xs flex items-center justify-center text-amber-400 font-bold border border-white/20">
+              <Download className="w-5 h-5 text-amber-400" />
             </div>
             <div>
               <h3 className="font-extrabold text-base leading-tight">
                 {language === 'ar' ? 'تنزيل برنامج معمل RT كتطبيق' : 'Install RT Lab App'}
               </h3>
-              <p className="text-xs text-teal-200/90 mt-0.5">
+              <p className="text-xs text-rose-200/90 mt-0.5">
                 {language === 'ar' ? 'يعمل كتطبيق أصلي على الكمبيوتر والموبايل' : 'Install on Laptop, Android & iPhone'}
               </p>
             </div>
@@ -69,6 +69,22 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
         {/* Content */}
         <div className="p-6 space-y-5">
           
+                    {/* Differentiated Icon Notice */}
+          <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-rose-50 to-amber-50 border border-rose-200 rounded-xl">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#881337] to-[#0f172a] p-1 border-2 border-amber-400 shadow-md shrink-0 flex items-center justify-center text-white font-black text-xs font-mono">
+              <span className="text-amber-300">RT</span> <span className="text-[9px] text-white">ERP</span>
+            </div>
+            <div>
+              <div className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                <span>أيقونة المنظومة المالية والخزينة (RT Financial)</span>
+                <span className="px-1.5 py-0.2 bg-amber-400 text-rose-950 text-[9px] font-black rounded">حسابات</span>
+              </div>
+              <p className="text-[11px] text-slate-600 mt-0.5 leading-tight">
+                تم تمييز الأيقونة باللون الأحمر الداكن والدرع الذهبي (🪙) للتفرقة التامة عند التثبيت عن منظومة النتائج الطبية.
+              </p>
+            </div>
+          </div>
+
           {/* Device Type Segmented Tabs */}
           <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-bold">
             <button
@@ -80,7 +96,7 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Laptop className="w-4 h-4 text-teal-700" />
+              <Laptop className="w-4 h-4 text-rose-900" />
               <span>{language === 'ar' ? 'اللاب توب / الكمبيوتر' : 'Laptop / PC'}</span>
             </button>
 
@@ -114,9 +130,9 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
           {/* TAB 1: LAPTOP / PC INSTRUCTIONS */}
           {activeDeviceTab === 'laptop' && (
             <div className="space-y-4">
-              <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 text-xs text-teal-900 space-y-2">
-                <div className="font-bold flex items-center gap-2 text-sm text-teal-950">
-                  <Laptop className="w-4 h-4 text-teal-800" />
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-xs text-rose-950 space-y-2">
+                <div className="font-bold flex items-center gap-2 text-sm text-slate-950">
+                  <Laptop className="w-4 h-4 text-rose-900" />
                   <span>تثبيت البرنامج على نظام ويندوز أو ماك (Windows / macOS):</span>
                 </div>
                 <p className="text-slate-600 leading-relaxed text-xs">
@@ -128,9 +144,9 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
                 <button
                   type="button"
                   onClick={handleInstallClick}
-                  className="w-full py-3 px-4 bg-teal-800 hover:bg-teal-900 text-white font-black text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 hover:shadow-lg"
+                  className="w-full py-3 px-4 bg-rose-900 hover:bg-rose-800 text-white font-black text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 hover:shadow-lg"
                 >
-                  <Download className="w-5 h-5 text-teal-300" />
+                  <Download className="w-5 h-5 text-amber-400" />
                   <span>تثبيت التطبيق على جهاز الكمبيوتر الآن بنقرة واحدة</span>
                 </button>
               ) : (
@@ -223,17 +239,17 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
           {/* Advantages of Installing */}
           <div className="pt-2 border-t border-slate-100 grid grid-cols-3 gap-2 text-center text-[11px] text-slate-500">
             <div className="p-2 bg-slate-50 rounded-lg">
-              <Sparkles className="w-4 h-4 mx-auto text-teal-700 mb-1" />
+              <Sparkles className="w-4 h-4 mx-auto text-rose-900 mb-1" />
               <div className="font-bold text-slate-800">شاشة كاملة</div>
               <div>بدون شريط المتصفح</div>
             </div>
             <div className="p-2 bg-slate-50 rounded-lg">
-              <HardDrive className="w-4 h-4 mx-auto text-teal-700 mb-1" />
+              <HardDrive className="w-4 h-4 mx-auto text-rose-900 mb-1" />
               <div className="font-bold text-slate-800">سرعة فائقة</div>
               <div>تخزين محلي فوري</div>
             </div>
             <div className="p-2 bg-slate-50 rounded-lg">
-              <ShieldCheck className="w-4 h-4 mx-auto text-teal-700 mb-1" />
+              <ShieldCheck className="w-4 h-4 mx-auto text-rose-900 mb-1" />
               <div className="font-bold text-slate-800">حفظ تلقائي</div>
               <div>تشفير ومزامنة سحابية</div>
             </div>

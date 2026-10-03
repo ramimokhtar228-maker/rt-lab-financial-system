@@ -102,7 +102,7 @@ export const SettingsBackupModule: React.FC = () => {
       {/* Header */}
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
         <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-          <HardDrive className="w-5 h-5 text-teal-700" />
+          <HardDrive className="w-5 h-5 text-rose-800" />
           <span>{language === 'ar' ? 'النسخ الاحتياطي السحابي وحماية البيانات بكلمات مرور' : 'Cloud Backup & Password-Protected Encryption'}</span>
         </h2>
         <p className="text-xs text-slate-500 mt-0.5">
@@ -117,7 +117,7 @@ export const SettingsBackupModule: React.FC = () => {
         {/* EXPORT CARD */}
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5">
           <div className="flex items-center gap-2.5 text-slate-900 font-bold text-sm border-b pb-3">
-            <Download className="w-5 h-5 text-teal-700" />
+            <Download className="w-5 h-5 text-rose-800" />
             <span>تصدير نسخة احتياطية آمنة (Export Backup)</span>
           </div>
 
@@ -131,7 +131,7 @@ export const SettingsBackupModule: React.FC = () => {
                 type="checkbox"
                 checked={useEncryption}
                 onChange={e => setUseEncryption(e.target.checked)}
-                className="rounded text-teal-600 focus:ring-teal-500"
+                className="rounded text-rose-700 focus:ring-rose-500"
               />
               <span className="font-bold text-slate-800">حماية النسخة الاحتياطية بكلمة مرور مشفرة (AES-256)</span>
             </label>
@@ -145,7 +145,7 @@ export const SettingsBackupModule: React.FC = () => {
                     value={exportPassword}
                     onChange={e => setExportPassword(e.target.value)}
                     placeholder="أدخل كلمة مرور قوية لحماية الملف..."
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono text-xs focus:ring-2 focus:ring-teal-700 bg-white"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono text-xs focus:ring-2 focus:ring-rose-800 bg-white"
                   />
                   <KeyRound className="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
                 </div>
@@ -159,7 +159,7 @@ export const SettingsBackupModule: React.FC = () => {
           <button
             onClick={handleExport}
             disabled={isExporting}
-            className="w-full py-2.5 px-4 bg-teal-800 hover:bg-teal-900 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm"
+            className="w-full py-2.5 px-4 bg-rose-900 hover:bg-rose-950 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm"
           >
             <Download className="w-4 h-4" />
             <span>{isExporting ? 'جارِ تشفير وتصدير النسخة...' : 'تصدير وتحميل النسخة الاحتياطية الآن'}</span>
@@ -195,7 +195,7 @@ export const SettingsBackupModule: React.FC = () => {
                 value={importPassword}
                 onChange={e => setImportPassword(e.target.value)}
                 placeholder="أدخل كلمة المرور إذا كان الملف مشفراً..."
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono text-xs focus:ring-2 focus:ring-teal-700 bg-white"
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono text-xs focus:ring-2 focus:ring-rose-800 bg-white"
               />
             </div>
           </div>
@@ -221,16 +221,16 @@ export const SettingsBackupModule: React.FC = () => {
       </div>
 
       {/* PWA App Installation Card */}
-      <div className="bg-gradient-to-br from-teal-900 via-teal-950 to-slate-900 text-white p-6 rounded-2xl shadow-lg border border-teal-800 space-y-4">
+      <div className="bg-gradient-to-br from-rose-950 via-slate-950 to-slate-900 text-white p-6 rounded-2xl shadow-lg border border-rose-900 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-teal-300" />
+              <Sparkles className="w-5 h-5 text-amber-400" />
               <h3 className="font-extrabold text-base text-white">
                 تنزيل وتثبيت المنظومة كتطبيق أصلي (PWA) على اللاب توب والموبايل
               </h3>
             </div>
-            <p className="text-xs text-teal-200/90 leading-relaxed max-w-2xl">
+            <p className="text-xs text-rose-200/90 leading-relaxed max-w-2xl">
               يمكنك تشغيل البرنامج كتطبيق مستقل على سطح المكتب في نظام Windows / Mac، أو كتطبيق على هواتف Android و iPhone. يتميز بالعمل بدون إعلانات أو أشرطة متصفح، وسرعة فائقة في فتح الفواتير وتوليد الباركود.
             </p>
           </div>
@@ -238,19 +238,19 @@ export const SettingsBackupModule: React.FC = () => {
           <button
             type="button"
             onClick={() => setPwaModalOpen(true)}
-            className="px-5 py-3 bg-teal-500 hover:bg-teal-400 text-teal-950 font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0 hover:shadow-teal-500/20"
+            className="px-5 py-3 bg-rose-500 hover:bg-rose-400 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0 hover:shadow-rose-500/20"
           >
             <Download className="w-4 h-4" />
             <span>تنزيل وتثبيت التطبيق الآن</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-teal-800/60 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-rose-900/60 text-xs">
           <div className="bg-white/10 backdrop-blur-xs p-3 rounded-xl border border-white/10 flex items-center gap-2.5">
-            <Laptop className="w-5 h-5 text-teal-300 shrink-0" />
+            <Laptop className="w-5 h-5 text-amber-400 shrink-0" />
             <div>
               <div className="font-bold text-white">اللاب توب والكمبيوتر</div>
-              <div className="text-[11px] text-teal-200">Chrome, Edge, Brave</div>
+              <div className="text-[11px] text-rose-200">Chrome, Edge, Brave</div>
             </div>
           </div>
           <div className="bg-white/10 backdrop-blur-xs p-3 rounded-xl border border-white/10 flex items-center gap-2.5">
@@ -278,7 +278,7 @@ export const SettingsBackupModule: React.FC = () => {
       {/* Lab Facilities & Reset Settings */}
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
         <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2 border-b pb-2">
-          <Building className="w-4 h-4 text-teal-700" />
+          <Building className="w-4 h-4 text-rose-800" />
           <span>بيانات معامل RT المعتمدة:</span>
         </h3>
 
@@ -290,7 +290,7 @@ export const SettingsBackupModule: React.FC = () => {
 
           <div className="p-3 bg-slate-50 rounded border">
             <span className="text-slate-500 block">المدير الطبي ورئيس مجلس الإدارة:</span>
-            <span className="font-bold text-teal-900">أ.د. رامي مختار</span>
+            <span className="font-bold text-rose-950">أ.د. رامي مختار</span>
           </div>
 
           <div className="p-3 bg-slate-50 rounded border">
