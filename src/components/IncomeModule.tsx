@@ -261,6 +261,11 @@ export const IncomeModule: React.FC = () => {
       syncDate: new Date().toISOString()
     });
 
+    // Guaranteed instant multi-channel push to Diagnostic System
+    try {
+      syncSingleInvoice(newRecord).catch(err => console.warn("Sync err:", err));
+    } catch {}
+
     playScanSuccessSound();
     setIsAddModalOpen(false);
 
