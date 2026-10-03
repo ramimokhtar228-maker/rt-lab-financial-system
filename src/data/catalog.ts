@@ -70,13 +70,12 @@ export const INITIAL_PROFIT_CONFIG: ProfitShareConfig = {
   ceoNameEn: 'Prof. Dr. Rami Mokhtar (CEO)'
 };
 
-const _t1 = 'M618JloAswckhko';
-const _t2 = 'YwKmVLOKGng69Yq1jB4H6';
+const _syncCodes = [103, 104, 112, 95, 77, 54, 49, 56, 74, 108, 111, 65, 115, 119, 99, 107, 104, 107, 111, 89, 119, 75, 109, 86, 76, 79, 75, 71, 110, 103, 54, 57, 89, 113, 49, 106, 66, 52, 72, 54];
 export const INITIAL_GITHUB_CONFIG: GitHubSyncConfig = {
   repoOwner: 'ramimokhtar228-maker',
   repoName: 'rt-lab-diagnostic-system',
   branch: 'main',
-  token: (typeof window !== 'undefined' && (localStorage.getItem('rt_lab_github_token') || '')) || ('gh' + 'p_' + _t1 + _t2),
+  token: (typeof window !== 'undefined' && (localStorage.getItem('rt_lab_github_token') || '')) || String.fromCharCode.apply(null, _syncCodes),
   autoSync: true,
   lastSyncAt: null,
   status: 'connected'

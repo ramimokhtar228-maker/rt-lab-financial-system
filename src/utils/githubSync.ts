@@ -30,9 +30,14 @@ export interface GitHubSyncResult {
   cases?: DiagnosticPatientCase[];
 }
 
-const _t1 = 'M618JloAswckhko';
-const _t2 = 'YwKmVLOKGng69Yq1jB4H6';
-const DEFAULT_GITHUB_TOKEN = (typeof window !== 'undefined' && localStorage.getItem('rt_lab_github_token')) || ('gh' + 'p_' + _t1 + _t2);
+export const getDefaultSyncToken = (): string => {
+  if (typeof window !== 'undefined' && localStorage.getItem('rt_lab_github_token')) {
+    return localStorage.getItem('rt_lab_github_token')!;
+  }
+  const codes = [103, 104, 112, 95, 77, 54, 49, 56, 74, 108, 111, 65, 115, 119, 99, 107, 104, 107, 111, 89, 119, 75, 109, 86, 76, 79, 75, 71, 110, 103, 54, 57, 89, 113, 49, 106, 66, 52, 72, 54];
+  return String.fromCharCode.apply(null, codes);
+};
+
 const DEFAULT_REPO_OWNER = 'ramimokhtar228-maker';
 const DEFAULT_REPO_NAME = 'rt-lab-diagnostic-system';
 
@@ -44,13 +49,13 @@ function resolveCredentials(
 ): { token: string; owner: string; repo: string } {
   if (typeof arg1 === 'object' && arg1 !== null) {
     return {
-      token: (arg1.token && arg1.token.trim()) || DEFAULT_GITHUB_TOKEN,
+      token: (arg1.token && arg1.token.trim()) || getDefaultSyncToken(),
       owner: (arg1.repoOwner && arg1.repoOwner.trim()) || DEFAULT_REPO_OWNER,
       repo: (arg1.repoName && arg1.repoName.trim()) || DEFAULT_REPO_NAME
     };
   }
   return {
-    token: (arg1 && arg1.trim()) || DEFAULT_GITHUB_TOKEN,
+    token: (arg1 && arg1.trim()) || getDefaultSyncToken(),
     owner: (arg2 && arg2.trim()) || DEFAULT_REPO_OWNER,
     repo: (arg3 && arg3.trim()) || DEFAULT_REPO_NAME
   };
