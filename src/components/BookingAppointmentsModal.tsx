@@ -21,7 +21,9 @@ import {
   Star,
   MapPin,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Percent,
+  Edit2
 } from 'lucide-react';
 import { InvoiceTestItem, PaymentMethod } from '../types';
 import { 
@@ -42,7 +44,7 @@ interface BookingAppointmentsModalProps {
 }
 
 export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> = ({ isOpen, onClose }) => {
-  const { testCatalog, addIncomeRecord, incomeRecords, currentUser } = useApp();
+  const { testCatalog, addIncomeRecord, currentUser } = useApp();
 
   // Booking Type
   const [bookingType, setBookingType] = useState<'branch' | 'home_visit'>('branch');
@@ -52,24 +54,27 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
   const [patientGender, setPatientGender] = useState<'male' | 'female'>('male');
   const [patientEmail, setPatientEmail] = useState('');
 
-  // Home Visit fields
+  // Home Visit fields (Fully editable)
   const [homeCity, setHomeCity] = useState('شبرا الخيمة');
   const [homeAddress, setHomeAddress] = useState('');
   const [deliveryNotes, setDeliveryNotes] = useState('');
-  const homeFee = bookingType === 'home_visit' ? 70 : 0;
+  const [customHomeFee, setCustomHomeFee] = useState<number>(70);
+  const effectiveHomeFee = bookingType === 'home_visit' ? customHomeFee : 0;
 
-  // Date & Time
+  // Date & Time (Fully editable)
   const todayStr = new Date().toISOString().split('T')[0];
   const [bookingDate, setBookingDate] = useState(todayStr);
   const [bookingTime, setBookingTime] = useState('10:00 ص');
 
-  // Selected Tests
+  // Selected Tests & Custom test prices
   const [selectedTests, setSelectedTests] = useState<InvoiceTestItem[]>([]);
+  const [customTestPrices, setCustomTestPrices] = useState<Record<string, number>>({});
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Discount Modes
+  // Discount Modes & Percentage Selection
   const [discountMode, setDiscountMode] = useState<'none' | 'percent' | 'daily_fixed' | 'package' | 'dynamic' | 'coupon'>('none');
-  const [customPercent, setCustomPercent] = useState(15);
+  const [customPercent, setCustomPercent] = useState<number>(15);
+  const [customFlatDiscount, setCustomFlatDiscount] = useState<number>(0);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
 
@@ -78,13 +83,8 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
   const [paidNow, setPaidNow] = useState<number | ''>('');
 
   // Sample collection & post-draw state
-  const [isSampleDrawn, setIsSampleDrawn] = useState(false);
   const [sampleNotes, setSampleNotes] = useState('تم سحب العينات بنجاح وأمان كامل');
   const [loyaltyCardIssued, setLoyaltyCardIssued] = useState(false);
-
-  // Rating
-  const [rating, setRating] = useState(5);
-  const [ratingComment, setRatingComment] = useState('');
 
   const filteredCatalog = useMemo(() => {
     if (!searchQuery) return testCatalog.slice(0, 20);
@@ -93,8 +93,12 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
   }, [testCatalog, searchQuery]);
 
   const subtotal = useMemo(() => {
-    return selectedTests.reduce((sum, t) => sum + t.price, 0) + homeFee;
-  }, [selectedTests, homeFee]);
+    const testsSum = selectedTests.reduce((sum, t) => {
+      const p = customTestPrices[t.id] !== undefined ? customTestPrices[t.id] : t.price;
+      return sum + p;
+    }, 0);
+    return testsSum + effectiveHomeFee;
+  }, [selectedTests, customTestPrices, effectiveHomeFee]);
 
   const discountAmount = useMemo(() => {
     if (appliedCoupon === 'RTLAB10') return Math.round(subtotal * 0.1);
@@ -103,20 +107,20 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
     if (appliedCoupon === 'VIP2026') return Math.round(subtotal * 0.25);
 
     if (discountMode === 'percent') return Math.round((subtotal * customPercent) / 100);
-    if (discountMode === 'daily_fixed') return Math.min(subtotal, 60);
-    if (discountMode === 'package') return Math.min(subtotal, 100);
-    if (discountMode === 'dynamic') return Math.round((subtotal * 18) / 100);
+    if (discountMode === 'daily_fixed') return Math.min(subtotal, customFlatDiscount > 0 ? customFlatDiscount : 60);
+    if (discountMode === 'package') return Math.min(subtotal, customFlatDiscount > 0 ? customFlatDiscount : 100);
+    if (discountMode === 'dynamic') return Math.round((subtotal * (customPercent || 18)) / 100);
     return 0;
-  }, [subtotal, discountMode, customPercent, appliedCoupon]);
+  }, [subtotal, discountMode, customPercent, customFlatDiscount, appliedCoupon]);
 
   const discountLabel = useMemo(() => {
     if (appliedCoupon) return `كوبون (${appliedCoupon})`;
     if (discountMode === 'percent') return `خصم مئوي ${customPercent}%`;
-    if (discountMode === 'daily_fixed') return 'عرض اليوم الثابت (خصم 60 ج)';
-    if (discountMode === 'package') return 'خصم باقة ثابتة (100 ج)';
-    if (discountMode === 'dynamic') return 'عرض معمل متغير (18%)';
+    if (discountMode === 'daily_fixed') return `خصم نقدي (${discountAmount} ج)`;
+    if (discountMode === 'package') return `خصم باقة ثابتة (${discountAmount} ج)`;
+    if (discountMode === 'dynamic') return `عرض معمل متغير (${customPercent || 18}%)`;
     return 'بدون خصم';
-  }, [discountMode, customPercent, appliedCoupon]);
+  }, [discountMode, customPercent, discountAmount, appliedCoupon]);
 
   const netAmount = Math.max(0, subtotal - discountAmount);
 
@@ -126,6 +130,10 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
     } else {
       setSelectedTests(prev => [...prev, test]);
     }
+  };
+
+  const handleTestPriceChange = (id: string, newPrice: number) => {
+    setCustomTestPrices(prev => ({ ...prev, [id]: newPrice }));
   };
 
   const handleApplyCoupon = () => {
@@ -161,7 +169,10 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
       barcode,
       labNumber: bookingNum,
       referringDoctor: bookingType === 'branch' ? 'فحص بالفرع الرئيسي' : 'زيارة منزلية',
-      tests: selectedTests,
+      tests: selectedTests.map(t => ({
+        ...t,
+        price: customTestPrices[t.id] !== undefined ? customTestPrices[t.id] : t.price
+      })),
       subtotal,
       discount: discountAmount,
       netAmount,
@@ -172,7 +183,7 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
       cashierName: currentUser?.nameAr || 'استقبال معامل RT',
       branch: bookingType === 'branch' ? 'الفرع الرئيسي - بهتيم' : 'زيارة منزلية',
       notes: `${bookingType === 'branch' ? 'حضور بالفرع الرئيسي' : 'زيارة منزلية: ' + homeCity + ' - ' + homeAddress} • موعد: ${bookingDate} ${bookingTime} • ${discountLabel}`,
-      syncStatus: 'local_only',
+      syncStatus: 'local_only'
     });
 
     // Send WhatsApp confirmation
@@ -184,7 +195,10 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
       isHomeVisit: bookingType === 'home_visit',
       address: `${homeCity} - ${homeAddress}`,
       deliveryNotes,
-      tests: selectedTests,
+      tests: selectedTests.map(t => ({
+        nameAr: t.nameAr,
+        price: customTestPrices[t.id] !== undefined ? customTestPrices[t.id] : t.price
+      })),
       subtotal,
       discountAmount,
       discountLabel,
@@ -203,7 +217,6 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
       alert('يرجى إدخال اسم المريض أولاً');
       return;
     }
-    setIsSampleDrawn(true);
     setLoyaltyCardIssued(true);
 
     const cardCode = `RT-GOLD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -214,7 +227,7 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
       patientName: patientName.trim(),
       patientPhone: patientPhone.trim() || '01000000000',
       tier: 'Gold VIP',
-      discountPercentage: 15,
+      discountPercentage: customPercent || 15,
       points: Math.floor(netAmount / 2)
     });
 
@@ -225,7 +238,7 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
       notes: sampleNotes,
       expectedTime: 'خلال 4 ساعات اليوم بإذن الله',
       loyaltyCardCode: cardCode,
-      discountPercentage: 15
+      discountPercentage: customPercent || 15
     });
     openWhatsAppChat(patientPhone, postSampleText);
   };
@@ -243,13 +256,13 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
             </div>
             <div>
               <h3 className="font-bold text-base flex items-center gap-2">
-                <span>حجز مريض جديد وتحديد المواعيد</span>
+                <span>حجز مريض جديد وتحديد المواعيد والخصومات</span>
                 <span className="text-xs bg-rose-950 text-rose-300 border border-rose-800 px-2 py-0.5 rounded-md font-medium">
                   الفرع الرئيسي والزيارات المنزلية
                 </span>
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                {LAB_NAME_AR} • تسعير تلقائي، خصومات متعددة، إنستا باي، وواتساب فوري
+                {LAB_NAME_AR} • نسب خصم متعددة، تسعير ديناميكي، إنستا باي، وواتساب
               </p>
             </div>
           </div>
@@ -264,7 +277,7 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
             <h4 className="font-bold text-slate-900 text-xs flex items-center gap-2 border-b border-slate-200 pb-2">
               <span className="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px]">1</span>
-              <span>بيانات المريض الأساسية:</span>
+              <span>بيانات المريض الأساسية (قابلة للتعديل بالكامل):</span>
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
@@ -330,7 +343,7 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
             <h4 className="font-bold text-slate-900 text-xs flex items-center gap-2 border-b border-slate-200 pb-2">
               <span className="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px]">2</span>
-              <span>مقر وتفاصيل الحجز:</span>
+              <span>مقر وتفاصيل الحجز ورسوم التوصيل:</span>
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
@@ -356,7 +369,7 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
               >
                 <Home className={`w-5 h-5 mt-0.5 ${bookingType === 'home_visit' ? 'text-rose-600' : 'text-slate-400'}`} />
                 <div>
-                  <div className="font-bold text-slate-900">زيارة منزلية خاصة (+70 ج.م)</div>
+                  <div className="font-bold text-slate-900">زيارة منزلية خاصة (+{customHomeFee} ج.م)</div>
                   <div className="text-[11px] text-slate-500">سحب عينات معقم بالمنزل</div>
                 </div>
               </button>
@@ -371,7 +384,7 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
               </div>
             ) : (
               <div className="bg-white p-3 rounded-lg border border-slate-200 space-y-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div>
                     <label className="block text-slate-700 font-bold mb-1">المنطقة / المدينة</label>
                     <input
@@ -382,14 +395,24 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-700 font-bold mb-1">العنوان بالتفصيل (الشارع ورقم العقار والدور)</label>
+                    <label className="block text-slate-700 font-bold mb-1">العنوان بالتفصيل</label>
                     <input
                       type="text"
                       required={bookingType === 'home_visit'}
                       value={homeAddress}
                       onChange={e => setHomeAddress(e.target.value)}
-                      placeholder="شارع الجمهورية، عمارة 10، الدور 3، شقة 5"
+                      placeholder="شارع 15 مايو، عمارة 10، الدور 3، شقة 5"
                       className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">رسوم الزيارة (ج.م) [قابل للتعديل]</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={customHomeFee}
+                      onChange={e => setCustomHomeFee(Number(e.target.value) || 0)}
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md font-bold font-mono text-rose-800"
                     />
                   </div>
                 </div>
@@ -399,7 +422,7 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
                     type="text"
                     value={deliveryNotes}
                     onChange={e => setDeliveryNotes(e.target.value)}
-                    placeholder="بجوار صيدلية الأمل، أو المريض مسن يرجى الصعود..."
+                    placeholder="بجوار مسجد النور، الأسانسير معطل، أو المريض طفل..."
                     className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md"
                   />
                 </div>
@@ -411,7 +434,7 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
             <h4 className="font-bold text-slate-900 text-xs flex items-center gap-2 border-b border-slate-200 pb-2">
               <span className="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px]">3</span>
-              <span>تحديد اليوم والساعة (جدول الإدارة والأطباء):</span>
+              <span>تحديد اليوم والساعة (مواعيد الإدارة والأطباء):</span>
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -430,7 +453,7 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
                   onChange={e => setBookingTime(e.target.value)}
                   className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg font-bold"
                 >
-                  {['09:00 ص', '09:30 ص', '10:00 ص', '10:30 ص', '11:00 ص', '12:00 م', '05:00 م', '06:00 م', '07:30 م', '09:00 م'].map(s => (
+                  {['08:30 ص', '09:00 ص', '09:30 ص', '10:00 ص', '10:30 ص', '11:00 ص', '12:00 م', '05:00 م', '06:00 م', '07:30 م', '09:00 م'].map(s => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
@@ -443,9 +466,9 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
             <div className="flex items-center justify-between border-b border-slate-200 pb-2">
               <h4 className="font-bold text-slate-900 text-xs flex items-center gap-2">
                 <span className="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px]">4</span>
-                <span>اختيار التحاليل والتسعير التلقائي:</span>
+                <span>اختيار التحاليل والتسعير التلقائي (مع إمكانية تعديل سعر كل فحص):</span>
               </h4>
-              <span className="text-rose-900 font-bold">تم اختيار {selectedTests.length} تحليل</span>
+              <span className="text-rose-900 font-bold">تم اختيار {selectedTests.length} فحص</span>
             </div>
 
             <div className="relative">
@@ -462,6 +485,7 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-40 overflow-y-auto p-1 bg-white border border-slate-200 rounded-lg">
               {filteredCatalog.map(t => {
                 const isSelected = selectedTests.some(x => x.id === t.id);
+                const currentPrice = customTestPrices[t.id] !== undefined ? customTestPrices[t.id] : t.price;
                 return (
                   <button
                     key={t.id}
@@ -475,70 +499,171 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
                       <div className="truncate text-xs">{t.nameAr}</div>
                       <div className={`text-[10px] font-mono ${isSelected ? 'text-rose-200' : 'text-slate-400'}`}>{t.code}</div>
                     </div>
-                    <span className="font-mono shrink-0 mr-1">{t.price} ج</span>
+                    <span className="font-mono shrink-0 mr-1">{currentPrice} ج</span>
                   </button>
                 );
               })}
             </div>
+
+            {/* Selected Tests with Editable Price */}
+            {selectedTests.length > 0 && (
+              <div className="space-y-1.5 pt-2">
+                <span className="font-bold text-slate-700 block">تعديل أسعار الفحوصات المختارة يدوياً:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {selectedTests.map(t => {
+                    const price = customTestPrices[t.id] !== undefined ? customTestPrices[t.id] : t.price;
+                    return (
+                      <div key={t.id} className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-200">
+                        <span className="truncate font-semibold">{t.nameAr}</span>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="0"
+                            value={price}
+                            onChange={e => handleTestPriceChange(t.id, Number(e.target.value) || 0)}
+                            className="w-16 px-1.5 py-0.5 text-center font-bold font-mono border border-slate-300 rounded text-xs"
+                          />
+                          <span className="text-slate-400 text-[10px]">ج</span>
+                          <button
+                            type="button"
+                            onClick={() => toggleTest(t)}
+                            className="text-rose-600 hover:text-rose-800 p-1 cursor-pointer font-bold"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Section 5: Multiple Discount Modes & Coupons */}
+          {/* Section 5: Multiple Discount Modes & Percentages Selector */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
             <h4 className="font-bold text-slate-900 text-xs flex items-center gap-2 border-b border-slate-200 pb-2">
               <span className="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px]">5</span>
-              <span>نسب الخصم المتعددة وكوبونات الخصم:</span>
+              <span>اختيار نسب الخصم وإمكانية الإضافة والتعديل:</span>
             </h4>
 
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {/* Quick Percentage Buttons */}
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 mb-1.5 flex items-center gap-1">
+                <Percent className="w-3.5 h-3.5 text-rose-700" />
+                <span>اختر نسبة الخصم المئوية (%):</span>
+              </label>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {[5, 10, 15, 20, 25, 30, 35, 40, 50].map(pct => (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => {
+                      setDiscountMode('percent');
+                      setCustomPercent(pct);
+                      setAppliedCoupon(null);
+                    }}
+                    className={`px-2.5 py-1.5 rounded-lg font-bold font-mono text-xs cursor-pointer transition-all ${
+                      discountMode === 'percent' && customPercent === pct && !appliedCoupon
+                        ? 'bg-rose-900 text-white shadow-xs scale-105'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    {pct}%
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Editable percentage & editable flat discount amount */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  إدخال / تعديل نسبة الخصم يدوياً (%):
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={customPercent}
+                    onChange={e => {
+                      setCustomPercent(Number(e.target.value) || 0);
+                      setDiscountMode('percent');
+                      setAppliedCoupon(null);
+                    }}
+                    placeholder="مثال: 18%"
+                    className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-mono font-bold text-rose-900"
+                  />
+                  <span className="absolute left-3 top-1.5 text-slate-400 font-bold">%</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  أو إدخال خصم نقدي مباشر بالجنيه (ج.م):
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    max={subtotal}
+                    value={customFlatDiscount || ''}
+                    onChange={e => {
+                      setCustomFlatDiscount(Number(e.target.value) || 0);
+                      setDiscountMode('daily_fixed');
+                      setAppliedCoupon(null);
+                    }}
+                    placeholder="مثال: 60 ج.م"
+                    className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-mono font-bold text-emerald-800"
+                  />
+                  <span className="absolute left-3 top-1.5 text-slate-400">ج.م</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Preset Modes */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => { setDiscountMode('none'); setAppliedCoupon(null); }}
+                onClick={() => { setDiscountMode('none'); setAppliedCoupon(null); setCustomFlatDiscount(0); }}
                 className={`p-2 rounded-lg border text-center font-bold text-xs cursor-pointer ${
-                  discountMode === 'none' && !appliedCoupon ? 'bg-rose-900 text-white border-rose-950' : 'bg-white border-slate-200'
+                  discountMode === 'none' && !appliedCoupon ? 'bg-rose-900 text-white' : 'bg-white border-slate-200'
                 }`}
               >
                 بدون خصم
               </button>
               <button
                 type="button"
-                onClick={() => { setDiscountMode('percent'); setCustomPercent(15); setAppliedCoupon(null); }}
+                onClick={() => { setDiscountMode('daily_fixed'); setCustomFlatDiscount(60); setAppliedCoupon(null); }}
                 className={`p-2 rounded-lg border text-center font-bold text-xs cursor-pointer ${
-                  discountMode === 'percent' ? 'bg-rose-900 text-white border-rose-950' : 'bg-white border-slate-200'
+                  discountMode === 'daily_fixed' ? 'bg-rose-900 text-white' : 'bg-white border-slate-200'
                 }`}
               >
-                خصم مئوي (%15)
+                عرض اليوم (60 ج)
               </button>
               <button
                 type="button"
-                onClick={() => { setDiscountMode('daily_fixed'); setAppliedCoupon(null); }}
+                onClick={() => { setDiscountMode('package'); setCustomFlatDiscount(100); setAppliedCoupon(null); }}
                 className={`p-2 rounded-lg border text-center font-bold text-xs cursor-pointer ${
-                  discountMode === 'daily_fixed' ? 'bg-rose-900 text-white border-rose-950' : 'bg-white border-slate-200'
-                }`}
-              >
-                خصم يومي ثابت (60 ج)
-              </button>
-              <button
-                type="button"
-                onClick={() => { setDiscountMode('package'); setAppliedCoupon(null); }}
-                className={`p-2 rounded-lg border text-center font-bold text-xs cursor-pointer ${
-                  discountMode === 'package' ? 'bg-rose-900 text-white border-rose-950' : 'bg-white border-slate-200'
+                  discountMode === 'package' ? 'bg-rose-900 text-white' : 'bg-white border-slate-200'
                 }`}
               >
                 باقة ثابتة (وفر 100 ج)
               </button>
               <button
                 type="button"
-                onClick={() => { setDiscountMode('dynamic'); setAppliedCoupon(null); }}
+                onClick={() => { setDiscountMode('dynamic'); setCustomPercent(18); setAppliedCoupon(null); }}
                 className={`p-2 rounded-lg border text-center font-bold text-xs cursor-pointer ${
-                  discountMode === 'dynamic' ? 'bg-rose-900 text-white border-rose-950' : 'bg-white border-slate-200'
+                  discountMode === 'dynamic' ? 'bg-rose-900 text-white' : 'bg-white border-slate-200'
                 }`}
               >
-                عرض معمل متغير (18%)
+                عرض معمل (18%)
               </button>
             </div>
 
             {/* Coupon input */}
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-2 pt-2 border-t border-slate-200">
               <input
                 type="text"
                 value={couponCode}
@@ -605,7 +730,7 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
               </button>
             </div>
 
-            {/* Total calculation card */}
+            {/* Total calculation card (Fully editable) */}
             <div className="bg-white p-4 rounded-xl border border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
               <div>
                 <span className="text-slate-500 block">الإجمالي قبل الخصم:</span>
@@ -620,7 +745,7 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
                 <strong className="text-xl font-black font-mono text-emerald-700">{netAmount} ج.م</strong>
               </div>
               <div>
-                <label className="text-slate-500 block">المدفوع الآن:</label>
+                <label className="text-slate-500 block">المدفوع الآن (ج.م):</label>
                 <input
                   type="number"
                   value={paidNow}
@@ -650,7 +775,7 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
             </div>
 
             <div className="text-xs text-amber-900 leading-relaxed">
-              عند سحب العينة بنجاح، يتم تفعيل كارت الولاء الطبي الخاص بالعميل بنسبة خصم دائمة 15%، وتنزيل صورة الكارت الفاخرة تلقائياً بجهازك وإرسال رسالة ما بعد السحب عبر واتساب للمريض مع موعد ظهور النتيجة.
+              عند سحب العينة بنجاح، يتم تفعيل كارت الولاء الطبي الخاص بالعميل بنسبة خصم دائمة {customPercent || 15}%، وتنزيل صورة الكارت الفاخرة تلقائياً بجهازك وإرسال رسالة ما بعد السحب عبر واتساب للمريض مع موعد ظهور النتيجة.
             </div>
           </div>
 
@@ -668,7 +793,7 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
                     time: bookingTime,
                     isHomeVisit: bookingType === 'home_visit',
                     address: `${homeCity} - ${homeAddress}`,
-                    tests: selectedTests,
+                    tests: selectedTests.map(t => ({ nameAr: t.nameAr })),
                     netAmount
                   });
                 }}
