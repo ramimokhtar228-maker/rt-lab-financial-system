@@ -187,6 +187,18 @@ const STORAGE_KEYS = {
   LOYALTY_CONFIG: 'rt_lab_loyalty_settings'
 };
 
+// Clean old demo patients/branches/chemists on first load of this clean version
+if (typeof window !== "undefined" && !localStorage.getItem("rt_fin_clean_v3_oct")) {
+  try {
+    localStorage.removeItem("rt_lab_income_v2");
+    localStorage.removeItem("rt_lab_diag_cases_v2");
+    localStorage.removeItem("rt_lab_attendance_v2");
+    localStorage.removeItem("rt_lab_payroll_v2");
+    localStorage.removeItem("rt_lab_closeouts");
+    localStorage.setItem("rt_fin_clean_v3_oct", "true");
+  } catch {}
+}
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Language
   const [language, setLanguageState] = useState<Language>(() => {
