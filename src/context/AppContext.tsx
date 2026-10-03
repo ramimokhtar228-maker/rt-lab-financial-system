@@ -397,6 +397,120 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return DEFAULT_LOYALTY_CONFIG;
   });
 
+  // Lab Info & Administration
+  const [labInfo, setLabInfo] = useState<LabInfo>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.LAB_INFO);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.labNameAr) return parsed;
+      } catch { /* ignore */ }
+    }
+    return INITIAL_LAB_INFO;
+  });
+
+  const updateLabInfo = (updates: Partial<LabInfo>) => {
+    setLabInfo(prev => {
+      const updated = { ...prev, ...updates };
+      localStorage.setItem(STORAGE_KEYS.LAB_INFO, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // Lab Branches / Facilities
+  const [facilities, setFacilities] = useState<LabFacility[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.FACILITIES);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch { /* ignore */ }
+    }
+    return INITIAL_FACILITIES;
+  });
+
+  const addFacility = (facility: Omit<LabFacility, "id">): LabFacility => {
+    const newFacility: LabFacility = {
+      ...facility,
+      id: `branch-${Date.now()}`
+    };
+    setFacilities(prev => {
+      const updated = [...prev, newFacility];
+      localStorage.setItem(STORAGE_KEYS.FACILITIES, JSON.stringify(updated));
+      return updated;
+    });
+    return newFacility;
+  };
+
+  const updateFacility = (id: string, updates: Partial<LabFacility>) => {
+    setFacilities(prev => {
+      const updated = prev.map(f => f.id === id ? { ...f, ...updates } : f);
+      localStorage.setItem(STORAGE_KEYS.FACILITIES, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const deleteFacility = (id: string) => {
+    setFacilities(prev => {
+      const updated = prev.filter(f => f.id !== id);
+      localStorage.setItem(STORAGE_KEYS.FACILITIES, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // Staff Members Directory
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.STAFF_MEMBERS);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch { /* ignore */ }
+    }
+    return INITIAL_STAFF_MEMBERS;
+  });
+
+  const addStaffMember = (staff: Omit<StaffMember, "id">): StaffMember => {
+    const newStaff: StaffMember = {
+      ...staff,
+      id: `staff-${Date.now()}`
+    };
+    setStaffMembers(prev => {
+      const updated = [...prev, newStaff];
+      localStorage.setItem(STORAGE_KEYS.STAFF_MEMBERS, JSON.stringify(updated));
+      return updated;
+    });
+    return newStaff;
+  };
+
+  const updateStaffMember = (id: string, updates: Partial<StaffMember>) => {
+    setStaffMembers(prev => {
+      const updated = prev.map(s => s.id === id ? { ...s, ...updates } : s);
+      localStorage.setItem(STORAGE_KEYS.STAFF_MEMBERS, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const deleteStaffMember = (id: string) => {
+    setStaffMembers(prev => {
+      const updated = prev.filter(s => s.id !== id);
+      localStorage.setItem(STORAGE_KEYS.STAFF_MEMBERS, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.LAB_INFO, JSON.stringify(labInfo));
+  }, [labInfo]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.FACILITIES, JSON.stringify(facilities));
+  }, [facilities]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.STAFF_MEMBERS, JSON.stringify(staffMembers));
+  }, [staffMembers]);
+
   // LocalStorage Persisters
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.INCOME, JSON.stringify(incomeRecords));
