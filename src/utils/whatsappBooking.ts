@@ -26,19 +26,33 @@ export function generateBookingWhatsAppMessage(params: {
   isHomeVisit: boolean;
   address?: string;
   deliveryNotes?: string;
+  branchName?: string;
+  branchAddress?: string;
+  branchPhone?: string;
+  labNameAr?: string;
+  visitFee?: number;
+  visitSpecialist?: string;
   tests: { nameAr: string; price: number }[];
   subtotal: number;
+  testsSubtotal?: number;
   discountAmount: number;
   discountLabel: string;
   netAmount: number;
   paymentMethod: string;
 }): string {
   const testsList = params.tests.map((t, idx) => `  ${idx + 1}. ${t.nameAr} (${t.price} ج.م)`).join('\n');
+  
   const loc = params.isHomeVisit
-    ? `🏠 *نوع الحجز: زيارة منزلية خاصة*\n📍 *العنوان:* ${params.address || 'العنوان بالتفصيل مسجل لدى المعمل'}\n📝 *ملاحظات التوصيل:* ${params.deliveryNotes || 'لا توجد ملاحظات خاصة'}`
-    : `📍 *المقر: الفرع الرئيسي لمعامل RT*\n🏢 *العنوان:* ${BRANCH_MAIN_ADDRESS}`;
+    ? `🏠 *نوع الحجز: زيارة منزلية خاصة*\n📍 *العنوان:* ${params.address || 'العنوان بالتفصيل مسجل لدى المعمل'}${params.visitSpecialist ? `\n🩺 *المسؤول عن الزيارة:* ${params.visitSpecialist}` : ''}\n📝 *ملاحظات التوصيل:* ${params.deliveryNotes || 'لا توجد ملاحظات خاصة'}`
+    : `📍 *المقر:* ${params.branchName || 'الفرع الرئيسي لمعامل RT'}\n🏢 *العنوان:* ${params.branchAddress || BRANCH_MAIN_ADDRESS}\n📞 *هاتف الفرع:* ${params.branchPhone || LAB_PHONE}`;
 
-  return `*مرحباً بك في ${LAB_NAME_AR}* 🔬✨
+  const visitFeeText = (params.visitFee && params.visitFee > 0)
+    ? `• *رسوم الزيارة المنزلية المستقلة:* +${params.visitFee} ج.م (ثابتة وغير خاضعة للخصم)\n`
+    : '';
+
+  const labTitle = params.labNameAr || LAB_NAME_AR;
+
+  return `*مرحباً بك في ${labTitle}* 🔬✨
 تم تأكيد حجز موعد التحاليل الطبية الخاص بكم بنجاح!
 
 📋 *بيانات الحجز:*
@@ -46,22 +60,21 @@ export function generateBookingWhatsAppMessage(params: {
 • *اسم المريض:* ${params.patientName}
 • *اليوم والتاريخ:* ${params.date}
 • *الساعة المحددة:* ${params.time}
-
 ${loc}
 
 🧪 *الفحوصات المطلوبة:*
 ${testsList}
 
-💰 *تفاصيل التسعير والحساب:*
-• *الإجمالي قبل الخصم:* ${params.subtotal} ج.م
-• *قيمة الخصم المطبق:* ${params.discountLabel} (-${params.discountAmount} ج.م)
-• *المبلغ الصافي المطلوب:* *${params.netAmount} ج.م*
+💰 *تفاصيل التسعير والفوترة:*
+• *إجمالي التحاليل قبل الخصم:* ${params.testsSubtotal || params.subtotal} ج.م
+• *قيمة الخصم المطبق على التحاليل:* ${params.discountLabel} (-${params.discountAmount} ج.م)
+${visitFeeText}• *المبلغ الصافي المطلوب سداده:* *${params.netAmount} ج.م*
 • *طريقة الدفع:* ${params.paymentMethod}
 
 ⚠️ *تعليمات هامة:* يرجى الصيام في حال طلبت التحاليل ذلك (يسمح بشرب الماء فقط).
-🎁 *ملاحظة:* بعد سحب العينة سيتم تفعيل كارت الولاء RT بنسبة خصم دائمة على زياراتكم القادمة!
+🎁 *ملاحظة:* بعد سحب العينة سيتم تفعيل كارت الولاء RT بنسبة خصم دائمة ونقاط تراكمية على الفحوصات الطبية!
+📞 *لأي استفسار أو تعديل الموعد:* ${params.branchPhone || LAB_PHONE}
 
-📞 *لأي استفسار أو تعديل الموعد:* ${LAB_PHONE}
 نسعد دائماً بخدمتكم وتمنياتنا لكم بالصحة والعافية! ❤️`;
 }
 
@@ -72,23 +85,25 @@ export function generatePostSampleWhatsAppMessage(params: {
   expectedTime?: string;
   loyaltyCardCode?: string;
   discountPercentage?: number;
+  labNameAr?: string;
+  branchPhone?: string;
 }): string {
-  const loyaltyPart = params.loyaltyCardCode ? `
-💳 *تم تفعيل كارت الولاء RT الخاص بكم بنجاح:*
+  const loyaltyPart = params.loyaltyCardCode ? `\n💳 *تم تفعيل كارت الولاء RT الخاص بكم بنجاح:*
 • *رقم الكارت:* ${params.loyaltyCardCode}
 • *نسبة الخصم الدائمة:* ${params.discountPercentage || 15}%
 يمكنكم إبراز كارت الولاء في الزيارات القادمة للحصول على الخصم الفوري.` : '';
 
-  return `*معامل RT للتحاليل الطبية والتشخيصية* 🔬🩺
-عزيزنا المريض: *${params.patientName}*
+  const labTitle = params.labNameAr || LAB_NAME_AR;
 
+  return `*${labTitle}* 🔬🩺
+عزيزنا المريض: *${params.patientName}*
 ✅ *تم سحب واستلام عيناتكم الطبية بنجاح.*
+
 • *رقم الإيصال:* #${params.bookingNumber}
 • *تاريخ ووقت السحب:* ${new Date().toLocaleString('ar-EG')}
 ${params.notes ? `• *ملاحظات العينة:* ${params.notes}\n` : ''}• *الموعد المتوقع لصدور النتيجة المعتمدة:* ${params.expectedTime || 'خلال ساعات قليلة اليوم بإذن الله'}
 
-سيصلكم إشعار ورابط النتيجة فور اعتمادها من استشاري التحاليل الطبية.
-${loyaltyPart}
+سيصلكم إشعار ورابط النتيجة فور اعتمادها من استشاري التحاليل الطبية.${loyaltyPart}
 
 ⭐ *تقييمكم يهمنا:* يسعدنا تقييم تجربتكم اليوم لمساعدتنا على تقديم أفضل رعاية طبية دائماً.
 مع أطيب تمنيات معامل RT لكم بالشفاء العاجل! 🌹`;

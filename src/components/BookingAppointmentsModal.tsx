@@ -44,7 +44,9 @@ interface BookingAppointmentsModalProps {
 }
 
 export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> = ({ isOpen, onClose }) => {
-  const { testCatalog, addIncomeRecord, currentUser } = useApp();
+  const { testCatalog, addIncomeRecord, currentUser, facilities, staffMembers, labInfo } = useApp();
+  const [selectedBranchId, setSelectedBranchId] = useState<string>(facilities[0]?.id || "branch-behteem");
+  const [selectedSpecialist, setSelectedSpecialist] = useState<string>("أ/ يوسف طارق المنشاوي (أخصائي سحب العينات والزيارات)");
 
   // Booking Type
   const [bookingType, setBookingType] = useState<'branch' | 'home_visit'>('branch');
@@ -160,6 +162,9 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
     const bookingNum = `RT-BK-${Math.floor(1000 + Math.random() * 9000)}`;
     const barcode = `${new Date().getFullYear().toString().slice(-2)}${Math.floor(100000 + Math.random() * 900000)}`;
 
+    const activeBranch = facilities.find(f => f.id === selectedBranchId) || facilities[0];
+    const branchName = bookingType === 'branch' ? (activeBranch?.nameAr || 'الفرع الرئيسي - بهتيم') : 'زيارة منزلية';
+
     addIncomeRecord({
       invoiceNumber: bookingNum,
       patientName: patientName.trim(),
@@ -168,25 +173,31 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
       patientGender,
       barcode,
       labNumber: bookingNum,
-      referringDoctor: bookingType === 'branch' ? 'فحص بالفرع الرئيسي' : 'زيارة منزلية',
+      referringDoctor: bookingType === 'branch' ? `فحص بفرع (${activeBranch?.nameAr || 'الرئيسي'})` : `زيارة منزلية - ${selectedSpecialist}`,
       tests: selectedTests.map(t => ({
         ...t,
         price: customTestPrices[t.id] !== undefined ? customTestPrices[t.id] : t.price
       })),
       subtotal,
+      testsSubtotal,
       discount: discountAmount,
+      visitFee: effectiveHomeFee,
+      isHomeVisit: bookingType === 'home_visit',
+      visitAddress: bookingType === 'home_visit' ? `${homeCity} - ${homeAddress}` : undefined,
+      visitSpecialist: bookingType === 'home_visit' ? selectedSpecialist : undefined,
+      branchId: activeBranch?.id,
+      branch: branchName,
       netAmount,
       paidAmount: paidNow === '' ? netAmount : Number(paidNow),
       remainingAmount: Math.max(0, netAmount - (paidNow === '' ? netAmount : Number(paidNow))),
       paymentMethod,
       paymentStatus: (paidNow === '' || Number(paidNow) >= netAmount) ? 'paid' : (Number(paidNow) > 0 ? 'partial' : 'unpaid'),
       cashierName: currentUser?.nameAr || 'استقبال معامل RT',
-      branch: bookingType === 'branch' ? 'الفرع الرئيسي - بهتيم' : 'زيارة منزلية',
-      notes: `${bookingType === 'branch' ? 'حضور بالفرع الرئيسي' : 'زيارة منزلية: ' + homeCity + ' - ' + homeAddress} • موعد: ${bookingDate} ${bookingTime} • ${discountLabel}`,
+      notes: `${bookingType === 'branch' ? 'حضور بالفرع: ' + (activeBranch?.nameAr || 'الرئيسي') : 'زيارة منزلية: ' + homeCity + ' - ' + homeAddress + (effectiveHomeFee > 0 ? ' (رسوم زيارة: ' + effectiveHomeFee + ' ج)' : '')} • موعد: ${bookingDate} ${bookingTime} • ${discountLabel}${bookingType === 'home_visit' ? ' • المسؤول: ' + selectedSpecialist : ''}`,
       syncStatus: 'local_only'
     });
 
-    // Send WhatsApp confirmation
+    // Send WhatsApp confirmation with dynamic branch & visit fee
     const waText = generateBookingWhatsAppMessage({
       patientName: patientName.trim(),
       bookingNumber: bookingNum,
@@ -195,11 +206,18 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
       isHomeVisit: bookingType === 'home_visit',
       address: `${homeCity} - ${homeAddress}`,
       deliveryNotes,
+      branchName: activeBranch?.nameAr,
+      branchAddress: activeBranch?.address,
+      branchPhone: (activeBranch?.phones && activeBranch.phones[0]) || labInfo?.hotline,
+      labNameAr: labInfo?.labNameAr,
+      visitFee: effectiveHomeFee,
+      visitSpecialist: bookingType === 'home_visit' ? selectedSpecialist : undefined,
       tests: selectedTests.map(t => ({
         nameAr: t.nameAr,
         price: customTestPrices[t.id] !== undefined ? customTestPrices[t.id] : t.price
       })),
       subtotal,
+      testsSubtotal,
       discountAmount,
       discountLabel,
       netAmount,
@@ -376,55 +394,123 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
             </div>
 
             {bookingType === 'branch' ? (
-              <div className="bg-white p-3 rounded-lg border border-slate-200 flex items-center gap-2 text-slate-800">
-                <MapPin className="w-4 h-4 text-rose-600 shrink-0" />
-                <span className="font-semibold text-xs leading-relaxed">
-                  عنوان الفرع الرئيسي: {BRANCH_MAIN_ADDRESS}
-                </span>
+              <div className="bg-white p-3 rounded-lg border border-slate-200 space-y-2">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <label className="block text-slate-700 font-bold text-xs">اختر فرع المعمل المطلوب:</label>
+                  <select
+                    value={selectedBranchId}
+                    onChange={e => setSelectedBranchId(e.target.value)}
+                    className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 bg-slate-50 focus:ring-2 focus:ring-rose-600"
+                  >
+                    {facilities.map(f => (
+                      <option key={f.id} value={f.id}>
+                        {f.nameAr} {f.isMainBranch ? '(الرئيسي)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {(() => {
+                  const b = facilities.find(f => f.id === selectedBranchId) || facilities[0];
+                  return (
+                    <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-xs space-y-1">
+                      <div className="flex items-start gap-2 text-slate-800">
+                        <MapPin className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                        <span className="font-semibold leading-relaxed">
+                          {b?.address || BRANCH_MAIN_ADDRESS}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-600 pr-6 text-[11px]">
+                        <Phone className="w-3.5 h-3.5 text-slate-400" />
+                        <span className="font-mono">هاتف الفرع: {(b?.phones || []).join(' / ')}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
-              <div className="bg-white p-3 rounded-lg border border-slate-200 space-y-2">
+              <div className="bg-white p-3 rounded-lg border border-slate-200 space-y-2.5">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-slate-700 font-bold mb-1">المنطقة / المدينة</label>
+                    <label className="block text-slate-700 font-bold mb-1">المنطقة / الحي</label>
                     <input
                       type="text"
                       value={homeCity}
                       onChange={e => setHomeCity(e.target.value)}
-                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md"
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md text-xs font-semibold"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-700 font-bold mb-1">العنوان بالتفصيل</label>
+                    <label className="block text-slate-700 font-bold mb-1">العنوان بالتفصيل *</label>
                     <input
                       type="text"
                       required={bookingType === 'home_visit'}
                       value={homeAddress}
                       onChange={e => setHomeAddress(e.target.value)}
                       placeholder="شارع 15 مايو، عمارة 10، الدور 3، شقة 5"
-                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md"
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md text-xs"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-700 font-bold mb-1">رسوم الزيارة (ج.م) [قابل للتعديل]</label>
+                    <label className="block text-slate-700 font-bold mb-1">
+                      رسوم الزيارة (ج.م) [ثابتة لا تخصم]
+                    </label>
                     <input
                       type="number"
                       min="0"
                       value={customHomeFee}
                       onChange={e => setCustomHomeFee(Number(e.target.value) || 0)}
-                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md font-bold font-mono text-rose-800"
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md font-bold font-mono text-rose-900 text-xs"
                     />
                   </div>
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-100">
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1 text-[11px]">
+                      الكيميائي / الفني المسؤول عن سحب الزيارة:
+                    </label>
+                    <select
+                      value={selectedSpecialist}
+                      onChange={e => setSelectedSpecialist(e.target.value)}
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md text-xs font-semibold bg-slate-50"
+                    >
+                      {staffMembers
+                        .filter(s => s.department === 'chemists' || s.department === 'phlebotomists' || true)
+                        .map(s => (
+                          <option key={s.id} value={`${s.name} (${s.title})`}>
+                            {s.name} - {s.title}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1 text-[11px]">الفرع المنسق للزيارة:</label>
+                    <select
+                      value={selectedBranchId}
+                      onChange={e => setSelectedBranchId(e.target.value)}
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md text-xs font-semibold bg-slate-50"
+                    >
+                      {facilities.map(f => (
+                        <option key={f.id} value={f.id}>{f.nameAr}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">ملاحظات إضافية حول التوصيل والمنطقة وحالة المريض</label>
+                  <label className="block text-slate-700 font-bold mb-1 text-[11px]">ملاحظات الوصول وحالة المريض:</label>
                   <input
                     type="text"
                     value={deliveryNotes}
                     onChange={e => setDeliveryNotes(e.target.value)}
                     placeholder="بجوار مسجد النور، الأسانسير معطل، أو المريض طفل..."
-                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md text-xs"
                   />
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg text-amber-900 text-[11px] font-bold flex items-center justify-between">
+                  <span>💡 رسوم الزيارة المنزلية ({customHomeFee} ج.م):</span>
+                  <span>تضاف بالكامل للفاتورة ولا تتأثر بنسبة الخصم، ولا تضاف لنقاط كارت الولاء</span>
                 </div>
               </div>
             )}
@@ -731,27 +817,31 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
             </div>
 
             {/* Total calculation card (Fully editable) */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+            <div className="bg-white p-4 rounded-xl border border-slate-200 grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
               <div>
-                <span className="text-slate-500 block">الإجمالي قبل الخصم:</span>
-                <strong className="text-base font-black font-mono text-slate-900">{subtotal} ج.م</strong>
+                <span className="text-slate-500 block text-[11px]">إجمالي التحاليل:</span>
+                <strong className="text-sm font-black font-mono text-slate-900">{testsSubtotal} ج.م</strong>
               </div>
               <div>
-                <span className="text-slate-500 block">الخصم المطبق:</span>
-                <strong className="text-base font-black font-mono text-rose-700">-{discountAmount} ج.م</strong>
+                <span className="text-slate-500 block text-[11px]">الخصم (على التحاليل):</span>
+                <strong className="text-sm font-black font-mono text-rose-700">-{discountAmount} ج.م</strong>
               </div>
               <div>
-                <span className="text-slate-500 block">المبلغ الصافي:</span>
-                <strong className="text-xl font-black font-mono text-emerald-700">{netAmount} ج.م</strong>
+                <span className="text-slate-500 block text-[11px]">رسوم الزيارة (مستقلة):</span>
+                <strong className="text-sm font-black font-mono text-indigo-700">+{effectiveHomeFee} ج.م</strong>
               </div>
               <div>
-                <label className="text-slate-500 block">المدفوع الآن (ج.م):</label>
+                <span className="text-slate-500 block text-[11px]">المبلغ الصافي المطلوب:</span>
+                <strong className="text-lg font-black font-mono text-emerald-700">{netAmount} ج.م</strong>
+              </div>
+              <div>
+                <label className="text-slate-500 block text-[11px]">المدفوع الآن (ج.م):</label>
                 <input
                   type="number"
                   value={paidNow}
                   onChange={e => setPaidNow(e.target.value === '' ? '' : Number(e.target.value))}
                   placeholder={`${netAmount}`}
-                  className="w-full text-center px-2 py-1 font-bold font-mono border border-slate-300 rounded"
+                  className="w-full text-center px-2 py-1 font-bold font-mono border border-slate-300 rounded text-sm text-slate-900"
                 />
               </div>
             </div>

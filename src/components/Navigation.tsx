@@ -11,7 +11,8 @@ import {
   GitBranch,
   ShieldCheck,
   Settings,
-  CreditCard
+  CreditCard,
+  Building2
 } from 'lucide-react';
 
 export const Navigation: React.FC = () => {
@@ -37,6 +38,13 @@ export const Navigation: React.FC = () => {
       labelEn: 'Executive Dashboard',
       icon: LayoutDashboard,
       permission: 'dashboard'
+    },
+    {
+      id: 'lab_management',
+      labelAr: 'إدارة المعامل والفروع',
+      labelEn: 'Labs & Branches',
+      icon: Building2,
+      permission: 'income'
     },
     {
       id: 'income',

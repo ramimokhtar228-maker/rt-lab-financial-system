@@ -12,11 +12,20 @@ import {
   CheckCircle2,
   FileSpreadsheet,
   Building,
-  ShieldAlert
+  ShieldAlert,
+  Home,
+  MapPin,
+  Phone,
+  User,
+  FileText,
+  Sparkles
 } from 'lucide-react';
 
 export const ReportsModule: React.FC = () => {
   const {
+    facilities,
+    staffMembers,
+    labInfo,
     incomeRecords,
     expenses,
     profitConfig,
@@ -28,13 +37,253 @@ export const ReportsModule: React.FC = () => {
   } = useApp();
 
   const [reportPeriod, setReportPeriod] = useState<string>(new Date().toISOString().substring(0, 7)); // YYYY-MM
-  const [activeReportTab, setActiveReportTab] = useState<'financial_statement' | 'departments' | 'closeout'>('financial_statement');
+  const [activeReportTab, setActiveReportTab] = useState<'financial_statement' | 'departments' | 'visits' | 'closeout'>('financial_statement');
+  const [visitBranchFilter, setVisitBranchFilter] = useState<string>('all');
+  const [visitSpecialistFilter, setVisitSpecialistFilter] = useState<string>('all');
+  const [visitPeriodFilter, setVisitPeriodFilter] = useState<'all' | 'month' | 'today'>('all');
 
   // Daily Closeout State
   const [closeoutDate, setCloseoutDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [actualCashInput, setActualCashInput] = useState<number>(0);
   const [closeoutNotes, setCloseoutNotes] = useState<string>('');
   const [closeoutDoneAlert, setCloseoutDoneAlert] = useState(false);
+
+
+  // Standalone Home Visits Dataset & Metrics
+  const allHomeVisits = useMemo(() => {
+    return incomeRecords.filter(r => 
+      r.isHomeVisit || 
+      (r.visitFee && r.visitFee > 0) || 
+      (r.branch && r.branch.includes('زيارة منزلية')) ||
+      (r.notes && r.notes.includes('زيارة منزلية')) ||
+      (r.referringDoctor && r.referringDoctor.includes('زيارة منزلية'))
+    ).map(r => {
+      let fee = r.visitFee || 0;
+      if (!fee) {
+        const match = r.notes?.match(/رسوم زيارة:s*(d+)/);
+        if (match) fee = Number(match[1]);
+        else if (r.branch?.includes('زيارة منزلية')) fee = 70;
+      }
+      return {
+        ...r,
+        effectiveVisitFee: fee,
+        effectiveTestsNet: Math.max(0, r.netAmount - fee)
+      };
+    });
+  }, [incomeRecords]);
+
+  const filteredVisits = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return allHomeVisits.filter(v => {
+      if (visitPeriodFilter === 'month' && !v.createdAt.startsWith(reportPeriod)) return false;
+      if (visitPeriodFilter === 'today' && !v.createdAt.startsWith(today)) return false;
+      if (visitBranchFilter !== 'all' && (v.branchId !== visitBranchFilter && v.branch !== visitBranchFilter)) return false;
+      if (visitSpecialistFilter !== 'all' && v.visitSpecialist !== visitSpecialistFilter) return false;
+      return true;
+    });
+  }, [allHomeVisits, visitPeriodFilter, reportPeriod, visitBranchFilter, visitSpecialistFilter]);
+
+  const visitMetrics = useMemo(() => {
+    const totalFees = filteredVisits.reduce((acc, v) => acc + v.effectiveVisitFee, 0);
+    const count = filteredVisits.length;
+    const avgFee = count > 0 ? Math.round(totalFees / count) : 0;
+    const accompanyingTestsNet = filteredVisits.reduce((acc, v) => acc + v.effectiveTestsNet, 0);
+    const totalInvoiced = filteredVisits.reduce((acc, v) => acc + v.netAmount, 0);
+    const totalPaid = filteredVisits.reduce((acc, v) => acc + v.paidAmount, 0);
+    return {
+      totalFees,
+      count,
+      avgFee,
+      accompanyingTestsNet,
+      totalInvoiced,
+      totalPaid
+    };
+  }, [filteredVisits]);
+
+  // Clean PDF Export & Print handler for Home Visits Report
+  const handlePrintVisitsPDF = () => {
+    const printWin = window.open('', '_blank');
+    if (!printWin) {
+      window.print();
+      return;
+    }
+
+    const htmlContent = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>تقرير إيرادات الزيارات المنزلية المستقل - ${labInfo?.labNameAr || 'معامل RT'}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Cairo', sans-serif;
+      margin: 0;
+      padding: 15mm 20mm;
+      color: #0f172a;
+      background: #ffffff;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .header {
+      border-bottom: 2px solid #881337;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .title { font-size: 20px; font-weight: 900; color: #881337; margin: 0; }
+    .subtitle { font-size: 13px; font-weight: 700; color: #1e293b; margin: 2px 0; }
+    .meta { font-size: 10px; color: #64748b; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      border: 1px solid #e2e8f0;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: #f8fafc;
+      text-align: center;
+    }
+    .stat-val { font-size: 18px; font-weight: 900; font-family: monospace; color: #881337; }
+    .stat-lbl { font-size: 10px; font-weight: 700; color: #475569; margin-top: 2px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 7px 9px;
+      text-align: right;
+    }
+    th {
+      background: #f1f5f9;
+      font-weight: 800;
+      color: #1e293b;
+    }
+    .fee-highlight {
+      color: #047857;
+      font-weight: 900;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .footer {
+      margin-top: 30px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #64748b;
+    }
+    @media print {
+      body { padding: 10mm; }
+      @page { size: A4 landscape; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1 class="title">${labInfo?.labNameAr || 'معامل RT للتحاليل الطبية والتشخيصية'}</h1>
+      <div class="subtitle">تقرير إيرادات الزيارات المنزلية المستقل والمنفصل عن إجمالي الفاتورة</div>
+      <div class="meta">${labInfo?.supervisionAr || 'أطباء واستشاريو كلية طب قصر العيني'} · المقر الرئيسي: ${labInfo?.mainAddress || 'بهتيم - شبرا الخيمة'}</div>
+    </div>
+    <div style="text-align: left;">
+      <div class="badge">تاريخ الاستخراج: ${new Date().toLocaleDateString('ar-EG')}</div>
+      <div class="meta" style="margin-top:4px;">المستخدم المسؤول: ${currentUser?.nameAr || 'المحاسب المالي'}</div>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card" style="background:#ecfdf5; border-color:#a7f3d0;">
+      <div class="stat-val" style="color:#047857;">${visitMetrics.totalFees.toLocaleString()} ج.م</div>
+      <div class="stat-lbl">إجمالي إيرادات رسوم الزيارات المستقلة</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">${visitMetrics.count}</div>
+      <div class="stat-lbl">إجمالي عدد الزيارات المنفذة</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">${visitMetrics.avgFee} ج.م</div>
+      <div class="stat-lbl">متوسط قيمة رسم الزيارة</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" style="color:#0f172a;">${visitMetrics.accompanyingTestsNet.toLocaleString()} ج.م</div>
+      <div class="stat-lbl">صافي التحاليل المرافقة للزيارات</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>كود الحجز/الفاتورة</th>
+        <th>اسم المريض</th>
+        <th>الهاتف</th>
+        <th>التاريخ</th>
+        <th>العنوان بالتفصيل</th>
+        <th>المسؤول عن الزيارة</th>
+        <th>الفرع المنسق</th>
+        <th>رسم الزيارة (مستقل)</th>
+        <th>صافي التحاليل</th>
+        <th>إجمالي الفاتورة</th>
+        <th>طريقة السداد</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${filteredVisits.map((v, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td style="font-family:monospace; font-weight:bold;">${v.invoiceNumber}</td>
+          <td><b>${v.patientName}</b></td>
+          <td style="font-family:monospace;">${v.patientPhone}</td>
+          <td>${v.createdAt.split('T')[0]}</td>
+          <td>${v.visitAddress || v.notes?.slice(0, 30) || 'عنوان مسجل'}</td>
+          <td>${v.visitSpecialist || 'فني سحب الزيارات'}</td>
+          <td>${v.branch || 'الفرع الرئيسي'}</td>
+          <td class="fee-highlight">+${v.effectiveVisitFee} ج.م</td>
+          <td style="font-family:monospace;">${v.effectiveTestsNet} ج.م</td>
+          <td style="font-family:monospace; font-weight:bold;">${v.netAmount} ج.م</td>
+          <td>${v.paymentMethod === 'cash' ? 'كاش' : v.paymentMethod === 'visa' ? 'فيزا' : 'إنستاباي'}</td>
+        </tr>
+      `).join('')}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <div>تم استخراج هذا التقرير المالي المعتمد آلياً من منظومة معامل RT ERP · تقرير إيرادات الزيارات المستقلة</div>
+    <div>توقيع أمين الخزينة / مدير الحسابات: ____________________</div>
+    <div>اعتماد المدير الطبي (أ.د. رامي مختار): ____________________</div>
+  </div>
+
+  <script>
+    window.addEventListener('load', () => {
+      setTimeout(() => { window.print(); }, 400);
+    });
+  </script>
+</body>
+</html>`;
+
+    printWin.document.open();
+    printWin.document.write(htmlContent);
+    printWin.document.close();
+  };
 
   // Filter records for selected month
   const monthIncomes = useMemo(() => {
@@ -212,6 +461,19 @@ export const ReportsModule: React.FC = () => {
                 }`}
               >
                 تحليل الأقسام التشخيصية
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveReportTab('visits')}
+                className={`px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 ${
+                  activeReportTab === 'visits' ? 'bg-white text-indigo-950 shadow-sm font-bold border border-indigo-200' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Home className="w-3.5 h-3.5 text-indigo-600" />
+                <span>إيرادات الزيارات المنزلية المستقلة</span>
+                <span className="text-[10px] px-1.5 py-0.2 bg-indigo-100 text-indigo-800 rounded-full font-bold">
+                  {allHomeVisits.length}
+                </span>
               </button>
               <button
                 type="button"

@@ -18,7 +18,10 @@ import {
   LoyaltyConfig,
   PatientLoyaltyProfile,
   LoyaltyTransaction,
-  LoyaltyTier
+  LoyaltyTier,
+  LabInfo,
+  LabFacility,
+  StaffMember
 } from '../types';
 import {
   INITIAL_USERS,
@@ -33,7 +36,10 @@ import {
   INITIAL_GITHUB_CONFIG,
   TEST_CATALOG,
   DEFAULT_LOYALTY_CONFIG,
-  INITIAL_LOYALTY_PROFILES
+  INITIAL_LOYALTY_PROFILES,
+  INITIAL_LAB_INFO,
+  INITIAL_FACILITIES,
+  INITIAL_STAFF_MEMBERS
 } from '../data/catalog';
 import {
   fetchDiagnosticCases,
@@ -81,7 +87,19 @@ interface AppContextType {
   updateLoyaltyProfile: (patientId: string, updates: Partial<PatientLoyaltyProfile>) => void;
   addLoyaltyPoints: (patientId: string, points: number, description: string, invoiceNumber?: string, amountEGP?: number) => void;
   redeemLoyaltyPoints: (patientId: string, points: number, invoiceNumber?: string) => { success: boolean; cashValue: number };
-  calculatePointsForAmount: (amountEGP: number) => number;
+  calculatePointsForAmount: (amountEGP: number, visitFee?: number) => number;
+  // Lab Facilities, Staff Directory & Administration
+  labInfo: LabInfo;
+  updateLabInfo: (updates: Partial<LabInfo>) => void;
+  facilities: LabFacility[];
+  addFacility: (facility: Omit<LabFacility, "id">) => LabFacility;
+  updateFacility: (id: string, updates: Partial<LabFacility>) => void;
+  deleteFacility: (id: string) => void;
+  staffMembers: StaffMember[];
+  addStaffMember: (staff: Omit<StaffMember, "id">) => StaffMember;
+  updateStaffMember: (id: string, updates: Partial<StaffMember>) => void;
+  deleteStaffMember: (id: string) => void;
+
   calculateCashForPoints: (points: number) => number;
 
   // Expenses & Profit
@@ -184,7 +202,10 @@ const STORAGE_KEYS = {
   DIAG_CASES: 'rt_lab_diag_cases_v2',
   CATALOG: 'rt_lab_test_catalog',
   LOYALTY_PROFILES: 'rt_lab_loyalty_profiles_v2',
-  LOYALTY_CONFIG: 'rt_lab_loyalty_settings'
+  LOYALTY_CONFIG: 'rt_lab_loyalty_settings',
+  LAB_INFO: 'rt_lab_info_v1',
+  FACILITIES: 'rt_lab_facilities_v2',
+  STAFF_MEMBERS: 'rt_lab_staff_members_v2'
 };
 
 // Clean old demo patients/branches/chemists on first load of this clean version
@@ -534,8 +555,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [logAudit]);
 
   // Loyalty calculations & methods
-  const calculatePointsForAmount = useCallback((amountEGP: number) => {
-    return Math.round(amountEGP * loyaltyConfig.pointsPerEGP);
+  const calculatePointsForAmount = useCallback((amountEGP: number, visitFee: number = 0) => {
+    const eligibleAmount = Math.max(0, amountEGP - (visitFee || 0));
+    return Math.round(eligibleAmount * loyaltyConfig.pointsPerEGP);
   }, [loyaltyConfig]);
 
   const calculateCashForPoints = useCallback((points: number) => {
@@ -762,7 +784,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (newRecord.paidAmount > 0 && newRecord.patientPhone) {
       const match = loyaltyProfiles.find(p => p.phone === newRecord.patientPhone || (p.patientName && p.patientName === newRecord.patientName));
       if (match) {
-        const pts = calculatePointsForAmount(newRecord.paidAmount);
+        const pts = calculatePointsForAmount(newRecord.paidAmount, newRecord.visitFee || 0);
         addLoyaltyPoints(match.patientId, pts, `نقاط فاتورة التحاليل ${newRecord.invoiceNumber}`, newRecord.invoiceNumber, newRecord.paidAmount);
       }
     }
@@ -1239,6 +1261,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         redeemLoyaltyPoints,
         calculatePointsForAmount,
         calculateCashForPoints,
+        labInfo,
+        updateLabInfo,
+        facilities,
+        addFacility,
+        updateFacility,
+        deleteFacility,
+        staffMembers,
+        addStaffMember,
+        updateStaffMember,
+        deleteStaffMember,
+
         expenses,
         addExpense,
         updateExpense,

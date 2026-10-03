@@ -13,6 +13,7 @@ import { ReportsModule } from './components/ReportsModule';
 import { DiagnosticSyncHub } from './components/DiagnosticSyncHub';
 import { AuditLogModule } from './components/AuditLogModule';
 import { SettingsBackupModule } from './components/SettingsBackupModule';
+import { LabManagementModule } from './components/LabManagementModule';
 import { BarcodeScannerModal } from './components/BarcodeScannerModal';
 import { RoleLoginModal } from './components/RoleLoginModal';
 
@@ -30,6 +31,7 @@ const AppContent: React.FC = () => {
       {/* Main Module Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {activeTab === 'dashboard' && <DashboardModule />}
+        {activeTab === 'lab_management' && <LabManagementModule />}
         {activeTab === 'income' && <IncomeModule />}
         {activeTab === 'loyalty' && <LoyaltyModule />}
         {activeTab === 'expenses' && <ExpenseAndProfitModule />}

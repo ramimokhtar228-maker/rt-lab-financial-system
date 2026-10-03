@@ -41,7 +41,13 @@ export interface IncomeRecord {
   referringDoctor: string;
   tests: InvoiceTestItem[];
   subtotal: number;
+  testsSubtotal?: number; // إجمالي التحاليل فقط قبل الخصم
   discount: number;
+  visitFee?: number; // رسوم الزيارة المنزلية المستقلة (غير خاضعة للخصم ولا تحتسب ضمن نقاط الكارت)
+  isHomeVisit?: boolean; // هل الفحص زيارة منزلية
+  visitAddress?: string; // عنوان الزيارة بالتفصيل
+  visitSpecialist?: string; // الكيميائي أو الفني المسؤول عن سحب عينة الزيارة
+  branchId?: string; // كود/معرف الفرع
   loyaltyDiscountEGP?: number;
   loyaltyPointsRedeemed?: number;
   loyaltyPointsEarned?: number;
@@ -284,4 +290,58 @@ export interface LoyaltyConfig {
     Platinum: { discountRate: number; minPoints: number };
     VIP: { discountRate: number; minPoints: number };
   };
+}
+
+// ==========================================
+// Lab & Branches & Staff Administration Types
+// ==========================================
+
+export interface LabInfo {
+  labNameAr: string;
+  labNameEn: string;
+  sloganAr: string;
+  sloganEn: string;
+  supervisionAr: string;
+  supervisionEn: string;
+  accreditation: string;
+  hotline: string;
+  phone: string;
+  whatsapp: string;
+  mainAddress: string;
+  instapay: string;
+  vodafoneCash: string;
+}
+
+export interface LabFacility {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  branchCode: string;
+  address: string;
+  city: string;
+  phones: string[];
+  whatsapp: string;
+  managerName: string;
+  operatingHours: string;
+  isMainBranch: boolean;
+  isActive: boolean;
+}
+
+export type StaffRole = 'admin' | 'accountant' | 'receptionist' | 'chemist' | 'pathologist' | 'phlebotomist';
+export type StaffDepartment = 'administration' | 'accounts' | 'reception' | 'chemists' | 'pathologists' | 'phlebotomists';
+
+export interface StaffMember {
+  id: string;
+  name: string;
+  role: StaffRole;
+  department: StaffDepartment;
+  title: string; // المسمى الوظيفي
+  specialty: string; // التخصص الدقيق
+  licenseNumber: string; // رقم القيد / الترخيص
+  phone: string;
+  branchId: string;
+  branchName?: string;
+  signatureLabel?: string;
+  isActive: boolean;
+  nationalId?: string;
 }

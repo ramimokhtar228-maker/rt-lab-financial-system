@@ -11,7 +11,8 @@ interface InvoicePrintModalProps {
 }
 
 export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ invoice, onClose }) => {
-  const { language } = useApp();
+  const { language, labInfo, facilities } = useApp();
+  const branchObj = facilities.find(f => f.nameAr === invoice?.branch || f.id === invoice?.branchId) || facilities[0];
   const [printLayout, setPrintLayout] = useState<'standard' | 'thermal' | 'tube_sticker'>('standard');
 
   if (!invoice) return null;
@@ -206,21 +207,25 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ invoice, o
               <div className="border-b-2 border-rose-900 pb-4 mb-4 flex items-center justify-between">
                 <div className="space-y-1">
                   <h1 className="text-xl font-black text-rose-950 tracking-tight">
-                    معامل RT للتحاليل التشخيصية
+                    {labInfo?.labNameAr || 'معامل RT للتحاليل التشخيصية'}
                   </h1>
                   <div className="text-sm font-black text-slate-900">
-                    معامل رامي مختار
+                    معامل رامي مختار · {labInfo?.labNameEn || 'RT Laboratories'}
                   </div>
                   <div className="text-xs font-bold text-blue-900">
-                    أطباء كلية طب قصر العيني
+                    {labInfo?.supervisionAr || 'أطباء واستشاريو كلية طب قصر العيني'}
                   </div>
                   <p className="text-[10px] text-slate-500 font-medium">
-                    التشخيص الصحيح يبدأ معنا · Accurate Diagnosis Starts With Us
+                    {labInfo?.sloganAr || 'التشخيص الصحيح يبدأ معنا · Accurate Diagnosis Starts With Us'}
                   </p>
+                  <div className="text-[11px] text-slate-600 font-semibold pt-0.5">
+                    📍 {branchObj?.nameAr || invoice.branch} - {branchObj?.address || 'ميدان بهتيم برج صيدلية العزبي الدور الثالث شبرا الخيمة'}
+                  </div>
                 </div>
                 <div className="flex flex-col items-end">
                   <RTLogo size="sm" showSlogan={false} theme="light" />
-                  <div className="text-[10px] text-slate-400 font-mono mt-1">ISO 15189 Certified</div>
+                  <div className="text-[10px] text-slate-500 font-mono mt-1 font-bold">{labInfo?.accreditation || 'ISO 15189 Certified'}</div>
+                  <div className="text-[10px] text-rose-900 font-bold mt-0.5" dir="ltr">Hotline: {branchObj?.phones?.[0] || labInfo?.hotline || '01012345678'}</div>
                 </div>
               </div>
 
@@ -298,20 +303,32 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ invoice, o
 
               {/* Financial Calculation Summary */}
               <div className="flex justify-end mb-6">
-                <div className="w-64 bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-1.5">
+                <div className="w-72 bg-slate-50 p-3.5 rounded-lg border border-slate-200 text-xs space-y-1.5">
                   <div className="flex justify-between text-slate-600">
-                    <span>المجموع الإجمالي:</span>
-                    <span className="font-mono font-semibold">{invoice.subtotal.toFixed(2)} ج.م</span>
+                    <span>إجمالي التحاليل:</span>
+                    <span className="font-mono font-semibold">{(invoice.testsSubtotal || invoice.subtotal).toFixed(2)} ج.م</span>
                   </div>
                   {invoice.discount > 0 && (
                     <div className="flex justify-between text-rose-600 font-semibold">
-                      <span>الخصم المطبق:</span>
+                      <span>الخصم (على التحاليل فقط):</span>
                       <span className="font-mono">-{invoice.discount.toFixed(2)} ج.م</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-sm font-bold text-slate-900 pt-1 border-t border-slate-200">
-                    <span>الصافي المطلوب:</span>
-                    <span className="font-mono text-rose-950">{invoice.netAmount.toFixed(2)} ج.م</span>
+                  {invoice.visitFee && invoice.visitFee > 0 ? (
+                    <div className="pt-1 border-t border-dashed border-slate-200 space-y-0.5">
+                      <div className="flex justify-between text-indigo-800 font-bold">
+                        <span>رسوم الزيارة المنزلية:</span>
+                        <span className="font-mono">+{invoice.visitFee.toFixed(2)} ج.م</span>
+                      </div>
+                      <div className="text-[10px] text-slate-500 flex justify-between">
+                        <span>(ثابتة غير خاضعة للخصم)</span>
+                        {invoice.visitSpecialist && <span className="truncate max-w-[150px] font-semibold">{invoice.visitSpecialist}</span>}
+                      </div>
+                    </div>
+                  ) : null}
+                  <div className="flex justify-between text-sm font-bold text-slate-900 pt-1.5 border-t border-slate-300">
+                    <span>الصافي الإجمالي المطلوب:</span>
+                    <span className="font-mono text-rose-950 font-black">{invoice.netAmount.toFixed(2)} ج.م</span>
                   </div>
                   <div className="flex justify-between text-emerald-700 font-bold">
                     <span>المدفوع نقداً/فيزا:</span>
@@ -319,7 +336,7 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ invoice, o
                   </div>
                   <div className="flex justify-between text-slate-900 font-bold pt-1 border-t border-slate-200">
                     <span>المتبقي:</span>
-                    <span className={`font-mono ${invoice.remainingAmount > 0 ? 'text-rose-600' : 'text-slate-500'}`}>
+                    <span className={`font-mono ${invoice.remainingAmount > 0 ? 'text-rose-600 font-bold' : 'text-slate-500'}`}>
                       {invoice.remainingAmount.toFixed(2)} ج.م
                     </span>
                   </div>
@@ -344,9 +361,10 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ invoice, o
           {printLayout === 'thermal' && (
             <div className="printable-content max-w-[320px] mx-auto bg-white p-4 font-mono text-xs border border-dashed border-slate-300 rounded print:border-none print:p-0">
               <div className="text-center pb-2 border-b border-dashed border-slate-400">
-                <div className="font-black text-base">معامل RT للتحاليل الطبية</div>
-                <div className="text-[10px]">RT Diagnostic Laboratories</div>
-                <div className="text-[10px]">هاتف: 01001234567 / 0223654321</div>
+                <div className="font-black text-base">{labInfo?.labNameAr || 'معامل RT للتحاليل الطبية'}</div>
+                <div className="text-[10px]">{labInfo?.supervisionAr || 'أطباء كلية طب قصر العيني'}</div>
+                <div className="text-[10px] font-semibold">{branchObj?.nameAr || invoice.branch} - {branchObj?.address || 'ميدان بهتيم'}</div>
+                <div className="text-[10px] font-mono">هاتف: {(branchObj?.phones || []).join(' / ')}</div>
               </div>
 
               <div className="py-2 text-[11px] border-b border-dashed border-slate-400 space-y-1">
@@ -374,10 +392,16 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ invoice, o
                 </div>
                 {invoice.discount > 0 && (
                   <div className="flex justify-between text-rose-600">
-                    <span>الخصم:</span>
+                    <span>الخصم (تحاليل):</span>
                     <span>-{invoice.discount} ج.م</span>
                   </div>
                 )}
+                {invoice.visitFee && invoice.visitFee > 0 ? (
+                  <div className="flex justify-between text-indigo-900 font-bold">
+                    <span>رسوم الزيارة (ثابتة):</span>
+                    <span>+{invoice.visitFee} ج.م</span>
+                  </div>
+                ) : null}
                 <div className="flex justify-between font-bold text-xs">
                   <span>الصافي:</span>
                   <span>{invoice.netAmount} ج.م</span>

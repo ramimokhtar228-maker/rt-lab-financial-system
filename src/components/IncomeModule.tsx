@@ -76,7 +76,13 @@ export const IncomeModule: React.FC = () => {
   const [patientAge, setPatientAge] = useState<number>(30);
   const [patientGender, setPatientGender] = useState<'male' | 'female'>('male');
   const [referringDoctor, setReferringDoctor] = useState('');
-  const [branch, setBranch] = useState('الفرع الرئيسي');
+  const [branch, setBranch] = useState(facilities[0]?.nameAr || 'الفرع الرئيسي - بهتيم');
+  const [isHomeVisit, setIsHomeVisit] = useState(false);
+  const [visitFee, setVisitFee] = useState<number>(70);
+  const [visitAddress, setVisitAddress] = useState('');
+  const [visitSpecialist, setVisitSpecialist] = useState(
+    staffMembers.find(s => s.department === 'phlebotomists' || s.department === 'chemists')?.name || 'أ/ يوسف طارق (سحب زيارات منزلية)'
+  );
   const [selectedTests, setSelectedTests] = useState<InvoiceTestItem[]>([]);
   const [discount, setDiscount] = useState<number>(0);
   const [redeemedPointsAmount, setRedeemedPointsAmount] = useState<number>(0);
@@ -189,8 +195,11 @@ export const IncomeModule: React.FC = () => {
     });
   }, [catalogCategory, customTestSearch]);
 
+  const effectiveVisitFee = isHomeVisit ? (Number(visitFee) || 0) : 0;
   const subtotalNew = selectedTests.reduce((sum, t) => sum + t.price, 0);
-  const netAmountNew = Math.max(0, subtotalNew - discount);
+  // Discount applies strictly to tests subtotal!
+  const testsNetAmount = Math.max(0, subtotalNew - discount);
+  const netAmountNew = testsNetAmount + effectiveVisitFee;
   const remainingNew = Math.max(0, netAmountNew - paidAmount);
 
   // Auto set paidAmount to netAmount when tests change
@@ -199,7 +208,7 @@ export const IncomeModule: React.FC = () => {
       const updated = [...selectedTests, test];
       setSelectedTests(updated);
       const newSub = updated.reduce((s, t) => s + t.price, 0);
-      const newNet = Math.max(0, newSub - discount);
+      const newNet = Math.max(0, newSub - discount) + effectiveVisitFee;
       setPaidAmount(newNet);
     }
   };
@@ -245,20 +254,28 @@ export const IncomeModule: React.FC = () => {
       patientGender,
       barcode: nextBarcode,
       labNumber: nextLabNumber,
-      referringDoctor: referringDoctor.trim() || (language === 'ar' ? 'فحص ذاتي / كشف معمل' : 'Self Referral'),
+      referringDoctor: isHomeVisit ? `زيارة منزلية - ${visitSpecialist}` : (referringDoctor.trim() || (language === 'ar' ? 'فحص ذاتي / كشف معمل' : 'Self Referral')),
       tests: selectedTests,
-      subtotal: subtotalNew,
+      subtotal: subtotalNew + effectiveVisitFee,
+      testsSubtotal: subtotalNew,
       discount,
+      visitFee: effectiveVisitFee,
+      isHomeVisit,
+      visitAddress: isHomeVisit ? visitAddress : undefined,
+      visitSpecialist: isHomeVisit ? visitSpecialist : undefined,
       loyaltyPointsRedeemed: redeemedPointsAmount,
-      loyaltyPointsEarned: calculatePointsForAmount(paidAmount),
+      // Visit fee excluded from loyalty points!
+      loyaltyPointsEarned: calculatePointsForAmount(paidAmount, effectiveVisitFee),
       netAmount: netAmountNew,
       paidAmount,
       remainingAmount: remainingNew,
       paymentMethod,
       paymentStatus: status,
       cashierName: currentUser.nameAr,
-      branch,
-      notes: redeemedPointsAmount > 0 ? `${notes ? notes + ' | ' : ''}تم استبدال ${redeemedPointsAmount} نقطة ولاء` : notes,
+      branch: isHomeVisit ? 'زيارة منزلية' : branch,
+      notes: isHomeVisit 
+        ? `زيارة منزلية: ${visitAddress || 'عنوان مسجل'} (رسوم زيارة: ${effectiveVisitFee} ج) • المسؤول: ${visitSpecialist}${notes ? ' • ' + notes : ''}`
+        : (redeemedPointsAmount > 0 ? `${notes ? notes + ' | ' : ''}تم استبدال ${redeemedPointsAmount} نقطة ولاء` : notes),
       syncStatus: githubConfig.token ? 'synced' : 'local_only',
       syncDate: new Date().toISOString()
     });
@@ -278,6 +295,8 @@ export const IncomeModule: React.FC = () => {
     setDiscount(0);
     setPaidAmount(0);
     setNotes('');
+    setIsHomeVisit(false);
+    setVisitAddress('');
 
     // Open print preview immediately
     setPrintInvoice(newRecord);
@@ -573,7 +592,14 @@ export const IncomeModule: React.FC = () => {
                       {/* Barcode visual preview */}
                       <td className="py-3 px-4">
                         <div className="font-mono font-bold text-slate-800">{record.barcode}</div>
-                        <div className="text-[10px] text-slate-500">{record.branch.replace('فرع ', '')}</div>
+                        <div className="text-[10px] text-slate-500">
+     {record.branch.replace('فرع ', '')}
+     {record.isHomeVisit && (
+       <span className="inline-block bg-indigo-100 text-indigo-800 text-[9px] font-bold px-1.5 py-0.2 rounded mr-1">
+         🏠 زيارة (+{record.visitFee || 0}ج)
+       </span>
+     )}
+   </div>
                       </td>
 
                       {/* Patient Details */}
@@ -1000,12 +1026,92 @@ export const IncomeModule: React.FC = () => {
 
                   <div>
                     <label className="block text-slate-700 font-bold mb-1">الفرع التابع له:</label>
-                    <input
-                      type="text"
+                    <select
                       value={branch}
                       onChange={e => setBranch(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-slate-50"
-                    />
+                      disabled={isHomeVisit}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800"
+                    >
+                      {facilities.map(f => (
+                        <option key={f.id} value={f.nameAr}>
+                          {f.nameAr} {f.isMainBranch ? '(الرئيسي)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Home Visit Options Box */}
+                  <div className="col-span-2 sm:col-span-3 bg-amber-50/70 border border-amber-200 p-3 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 cursor-pointer font-bold text-amber-950 text-xs">
+                        <input
+                          type="checkbox"
+                          checked={isHomeVisit}
+                          onChange={e => {
+                            const checked = e.target.checked;
+                            setIsHomeVisit(checked);
+                            const fee = checked ? (Number(visitFee) || 70) : 0;
+                            setPaidAmount(testsNetAmount + fee);
+                          }}
+                          className="w-4 h-4 rounded text-rose-700 focus:ring-rose-600"
+                        />
+                        <span>تفعيل حجز زيارة منزلية خاصة (مع إدراج رسوم زيارة مستقلة)</span>
+                      </label>
+                      {isHomeVisit && (
+                        <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">
+                          الرسوم غير خاضعة للخصم
+                        </span>
+                      )}
+                    </div>
+
+                    {isHomeVisit && (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-amber-200/60">
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1 text-[11px]">
+                            رسوم الزيارة (ج.م) [ثابتة]:
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={visitFee}
+                            onChange={e => {
+                              const v = Number(e.target.value) || 0;
+                              setVisitFee(v);
+                              setPaidAmount(testsNetAmount + v);
+                            }}
+                            className="w-full px-2.5 py-1.5 border border-amber-300 bg-white rounded-lg font-bold font-mono text-rose-900 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1 text-[11px]">
+                            الكيميائي / الفني المسؤول عن السحب:
+                          </label>
+                          <select
+                            value={visitSpecialist}
+                            onChange={e => setVisitSpecialist(e.target.value)}
+                            className="w-full px-2.5 py-1.5 border border-amber-300 bg-white rounded-lg text-xs font-semibold"
+                          >
+                            {staffMembers.map(s => (
+                              <option key={s.id} value={`${s.name} (${s.title})`}>
+                                {s.name} - {s.title}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-bold mb-1 text-[11px]">
+                            عنوان الزيارة بالتفصيل:
+                          </label>
+                          <input
+                            type="text"
+                            value={visitAddress}
+                            onChange={e => setVisitAddress(e.target.value)}
+                            placeholder="العنوان، العمارة، الشقة، وأقرب علامة..."
+                            className="w-full px-2.5 py-1.5 border border-amber-300 bg-white rounded-lg text-xs"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>
