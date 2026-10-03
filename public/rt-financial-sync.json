@@ -1,0 +1,13 @@
+{
+  "system": "RT Lab Financial & Accounting ERP",
+  "syncedAt": "2026-10-03T10:00:00.000Z",
+  "summary": {
+    "totalRevenue": 0,
+    "totalExpenses": 0,
+    "netProfit": 0,
+    "ceoShare": 0,
+    "labShare": 0,
+    "casesCount": 0
+  },
+  "clearedInvoices": []
+}

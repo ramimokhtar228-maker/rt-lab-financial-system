@@ -47,7 +47,7 @@ export const HRModule: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [nationalId, setNationalId] = useState('');
   const [shiftHours, setShiftHours] = useState<number>(8);
-  const [branch, setBranch] = useState('فرع قصر العيني الرئيسي');
+  const [branch, setBranch] = useState('الفرع الرئيسي');
 
   // Edit Payroll Modal
   const [editingPayroll, setEditingPayroll] = useState<PayrollRecord | null>(null);

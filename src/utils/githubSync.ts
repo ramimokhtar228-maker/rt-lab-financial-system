@@ -464,8 +464,9 @@ export async function syncInvoiceToDiagnostic(
     // 1. Instant Local Storage Sync (Direct browser sync between apps)
     if (typeof window !== 'undefined') {
       try {
-        const STORAGE_KEY = 'rt_lab_reports_v1';
-        const savedReports = localStorage.getItem(STORAGE_KEY);
+        const STORAGE_KEY_V2 = 'rt_lab_reports_v2';
+        const STORAGE_KEY_V1 = 'rt_lab_reports_v1';
+        const savedReports = localStorage.getItem(STORAGE_KEY_V2) || localStorage.getItem(STORAGE_KEY_V1);
         let reportsList: unknown[] = [];
         if (savedReports) {
           try {
@@ -498,7 +499,8 @@ export async function syncInvoiceToDiagnostic(
           reportsList.unshift(newReport);
         }
 
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(reportsList));
+        localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(reportsList));
+        localStorage.setItem(STORAGE_KEY_V1, JSON.stringify(reportsList));
         localStorage.setItem('rt_lab_sync_trigger', Date.now().toString());
 
         // Also save to pending sync queue

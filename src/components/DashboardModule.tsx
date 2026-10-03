@@ -146,7 +146,7 @@ export const DashboardModule: React.FC = () => {
   // Branches list
   const branches = useMemo(() => {
     const list = Array.from(new Set(incomeRecords.map(r => r.branch).filter(Boolean)));
-    return list.length > 0 ? list : ['فرع قصر العيني الرئيسي', 'فرع الدقي والجيزة', 'فرع سموحة الإسكندرية'];
+    return list.length > 0 ? list : ['الفرع الرئيسي'];
   }, [incomeRecords]);
 
   return (

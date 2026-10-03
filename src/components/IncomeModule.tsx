@@ -74,7 +74,7 @@ export const IncomeModule: React.FC = () => {
   const [patientAge, setPatientAge] = useState<number>(30);
   const [patientGender, setPatientGender] = useState<'male' | 'female'>('male');
   const [referringDoctor, setReferringDoctor] = useState('');
-  const [branch, setBranch] = useState('فرع قصر العيني الرئيسي');
+  const [branch, setBranch] = useState('الفرع الرئيسي');
   const [selectedTests, setSelectedTests] = useState<InvoiceTestItem[]>([]);
   const [discount, setDiscount] = useState<number>(0);
   const [redeemedPointsAmount, setRedeemedPointsAmount] = useState<number>(0);

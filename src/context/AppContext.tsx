@@ -170,20 +170,20 @@ const AppContext = createContext<AppContextType | null>(null);
 const STORAGE_KEYS = {
   LANGUAGE: 'rt_lab_lang',
   CURRENT_USER: 'rt_lab_user',
-  INCOME: 'rt_lab_income',
-  EXPENSES: 'rt_lab_expenses',
+  INCOME: 'rt_lab_income_v2',
+  EXPENSES: 'rt_lab_expenses_v2',
   PROFIT_CONFIG: 'rt_lab_profit_config',
   INVENTORY: 'rt_lab_inventory',
-  EMPLOYEES: 'rt_lab_employees',
-  ATTENDANCE: 'rt_lab_attendance',
-  PAYROLL: 'rt_lab_payroll',
-  LAB_TO_LAB: 'rt_lab_l2l',
+  EMPLOYEES: 'rt_lab_employees_v2',
+  ATTENDANCE: 'rt_lab_attendance_v2',
+  PAYROLL: 'rt_lab_payroll_v2',
+  LAB_TO_LAB: 'rt_lab_l2l_v2',
   CLOSEOUTS: 'rt_lab_closeouts',
   AUDIT_LOGS: 'rt_lab_audit',
   GITHUB_CONFIG: 'rt_lab_github',
-  DIAG_CASES: 'rt_lab_diag_cases',
+  DIAG_CASES: 'rt_lab_diag_cases_v2',
   CATALOG: 'rt_lab_test_catalog',
-  LOYALTY_PROFILES: 'rt_lab_loyalty_profiles',
+  LOYALTY_PROFILES: 'rt_lab_loyalty_profiles_v2',
   LOYALTY_CONFIG: 'rt_lab_loyalty_settings'
 };
 
