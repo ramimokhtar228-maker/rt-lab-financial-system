@@ -258,6 +258,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Active Tab
   const [activeTab, setActiveTab] = useState<string>('dashboard');
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.LAB_INFO, JSON.stringify(labInfo));
+      localStorage.setItem(STORAGE_KEYS.CATALOG, JSON.stringify(testCatalog));
+    } catch {}
+  }, []);
+
+
   // Scanner modal state
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannedBarcode, setScannedBarcode] = useState<string | null>(null);
@@ -408,7 +416,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.labNameAr) return parsed;
+        if (parsed && parsed.labNameAr) {
+          return {
+            ...INITIAL_LAB_INFO,
+            ...parsed,
+            mainAddress: INITIAL_LAB_INFO.mainAddress,
+            phone: INITIAL_LAB_INFO.phone,
+            hotline: INITIAL_LAB_INFO.hotline,
+            whatsapp: INITIAL_LAB_INFO.whatsapp,
+            supervisionAr: INITIAL_LAB_INFO.supervisionAr,
+            accreditation: INITIAL_LAB_INFO.accreditation
+          };
+        }
       } catch { /* ignore */ }
     }
     return INITIAL_LAB_INFO;
