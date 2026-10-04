@@ -271,6 +271,7 @@ export interface PatientLoyaltyProfile {
   patientName: string;
   phone: string;
   barcode: string;
+  cardNumber?: string;
   bloodGroup: string;
   totalPoints: number;
   tier: LoyaltyTier;

@@ -45,7 +45,7 @@ interface BookingAppointmentsModalProps {
 }
 
 export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> = ({ isOpen, onClose }) => {
-  const { testCatalog, addIncomeRecord, currentUser, facilities, staffMembers, labInfo } = useApp();
+  const { testCatalog, addIncomeRecord, currentUser, facilities, staffMembers, labInfo, loyaltyProfiles, addLoyaltyProfile, updateLoyaltyProfile } = useApp();
   const [selectedBranchId, setSelectedBranchId] = useState<string>(facilities[0]?.id || "branch-behteem");
   const [selectedSpecialist, setSelectedSpecialist] = useState<string>("أ/ يوسف طارق المنشاوي (أخصائي سحب العينات والزيارات)");
 
@@ -88,6 +88,8 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
   // Sample collection & post-draw state
   const [sampleNotes, setSampleNotes] = useState('تم سحب العينات بنجاح وأمان كامل');
   const [loyaltyCardIssued, setLoyaltyCardIssued] = useState(false);
+  const [cardCode, setCardCode] = useState('');
+  const [whatsAppBookingSent, setWhatsAppBookingSent] = useState(false);
 
   const filteredCatalog = useMemo(() => {
     if (!searchQuery) return testCatalog.slice(0, 20);
@@ -860,12 +862,25 @@ export const BookingAppointmentsModal: React.FC<BookingAppointmentsModalProps> =
               <button
                 type="button"
                 onClick={handleConfirmDrawAndLoyalty}
-                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                className={`px-3 py-1.5 text-white rounded-lg font-bold flex items-center gap-1.5 cursor-pointer shadow-xs ${
+                  loyaltyCardIssued ? 'bg-amber-700 hover:bg-amber-800 ring-2 ring-amber-400' : 'bg-amber-600 hover:bg-amber-700'
+                }`}
               >
                 <Award className="w-3.5 h-3.5" />
-                <span>تأكيد السحب + تفعيل كارت الولاء وحفظ الصورة</span>
+                <span>{loyaltyCardIssued ? 'كارت الولاء مفعل ✓ (تحميل الصورة مجدداً)' : 'تأكيد السحب + تفعيل كارت الولاء وحفظ الصورة'}</span>
               </button>
             </div>
+
+            {loyaltyCardIssued && (
+              <div className="bg-emerald-100/90 text-emerald-950 border border-emerald-300 p-2.5 rounded-lg flex items-center justify-between text-xs font-bold shadow-xs">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+                  <span>كارت الولاء الطبي الذهبي مفعل بنجاح:</span>
+                  <span className="font-mono bg-white px-2 py-0.5 rounded border border-emerald-300 text-emerald-800 font-bold">{cardCode}</span>
+                </div>
+                <span className="text-[11px] text-emerald-800 bg-white/70 px-2 py-0.5 rounded">مسجل بنظام الولاء ومحفوظ ✓</span>
+              </div>
+            )}
 
             <div className="text-xs text-amber-900 leading-relaxed">
               عند سحب العينة بنجاح، يتم تفعيل كارت الولاء الطبي الخاص بالعميل بنسبة خصم دائمة {customPercent || 15}%، وتنزيل صورة الكارت الفاخرة تلقائياً بجهازك وإرسال رسالة ما بعد السحب عبر واتساب للمريض مع موعد ظهور النتيجة.

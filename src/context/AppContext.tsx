@@ -896,12 +896,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIncomeRecords(prev => [newRecord, ...prev]);
     logAudit('CREATE', 'INCOME', `تسجيل إيراد وفاتورة مريض جديدة: ${newRecord.patientName} (${newRecord.invoiceNumber}) بمبلغ ${newRecord.netAmount} ج.م`);
 
-    // Auto-award points if patient phone matches loyalty profile
+    // Auto-award points or enroll new patient in Loyalty Program
     if (newRecord.paidAmount > 0 && newRecord.patientPhone) {
       const match = loyaltyProfiles.find(p => p.phone === newRecord.patientPhone || (p.patientName && p.patientName === newRecord.patientName));
+      const pts = calculatePointsForAmount(newRecord.paidAmount, newRecord.visitFee || 0);
       if (match) {
-        const pts = calculatePointsForAmount(newRecord.paidAmount, newRecord.visitFee || 0);
         addLoyaltyPoints(match.patientId, pts, `نقاط فاتورة التحاليل ${newRecord.invoiceNumber}`, newRecord.invoiceNumber, newRecord.paidAmount);
+      } else {
+        const generatedCard = `RT-GOLD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+        const newLoyaltyProfile: PatientLoyaltyProfile = {
+          patientId: `pat-${Date.now()}`,
+          patientName: newRecord.patientName,
+          phone: newRecord.patientPhone,
+          cardNumber: generatedCard,
+          barcode: generatedCard,
+          bloodGroup: 'O+',
+          tier: 'Silver',
+          totalPoints: Math.max(pts, 25),
+          lifetimeSpent: newRecord.paidAmount,
+          issueDate: now.substring(0, 10),
+          transactions: [
+            {
+              id: `tx-${Date.now()}`,
+              date: now.substring(0, 10),
+              type: 'earn',
+              points: Math.max(pts, 25),
+              description: `افتتاح حساب كارت الولاء مع فاتورة #${newRecord.invoiceNumber}`,
+              invoiceNumber: newRecord.invoiceNumber,
+              amountEGP: newRecord.paidAmount
+            }
+          ]
+        };
+        addLoyaltyProfile(newLoyaltyProfile);
       }
     }
 
