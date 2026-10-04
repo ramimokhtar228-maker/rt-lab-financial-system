@@ -1,3 +1,4 @@
+import { tafqeetEGP } from '../utils/tafqeet';
 import { RTLogo } from './RTLogo';
 import React, { useState } from 'react';
 import { IncomeRecord } from '../types';
@@ -343,6 +344,46 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ invoice, o
                 </div>
               </div>
 
+              {/* Tafqeet in Arabic Words */}
+              <div className="bg-amber-50/70 border border-amber-200 rounded-lg p-2.5 mb-5 text-xs flex items-center justify-between">
+                <div>
+                  <span className="text-slate-500 font-medium">المبلغ المطلوب كتابةً: </span>
+                  <span className="font-black text-rose-950 text-xs sm:text-sm">{tafqeetEGP(invoice.netAmount)}</span>
+                </div>
+                <div className="text-[10px] text-emerald-800 font-bold bg-emerald-100/80 px-2 py-0.5 rounded border border-emerald-300">
+                  سداد رسمي معتمد ✓
+                </div>
+              </div>
+
+              {/* Signatures & Official Stamp Grid */}
+              <div className="grid grid-cols-3 gap-4 items-center my-5 pt-3 border-t border-slate-200 text-xs">
+                {/* Cashier Signature Box */}
+                <div className="text-center p-2.5 border border-slate-200 rounded-lg bg-slate-50/60">
+                  <div className="text-slate-500 font-bold text-[11px] mb-1">المحاسب / مسؤول الخزينة</div>
+                  <div className="font-bold text-slate-800 text-xs">{invoice.cashierName || 'قسم الاستقبال والخزينة'}</div>
+                  <div className="text-[10px] font-mono text-slate-400 mt-3 border-t border-dashed border-slate-300 pt-1">توقيع الموظف المعتمد</div>
+                </div>
+
+                {/* Official Seal Graphic */}
+                <div className="flex justify-center">
+                  <div className="w-28 h-28 rounded-full border-2 border-dashed border-rose-900/60 p-1 flex items-center justify-center relative rotate-[-5deg] select-none opacity-90">
+                    <div className="w-full h-full rounded-full border border-rose-900 flex flex-col items-center justify-center text-center p-1 text-rose-900 bg-rose-50/40">
+                      <div className="text-[8px] font-black uppercase tracking-wider">RT Laboratories</div>
+                      <div className="text-[9.5px] font-extrabold my-0.5">معتمد رسمياً</div>
+                      <div className="text-[7.5px] font-bold">ISO 15189 QUALITY</div>
+                      <div className="text-[7px] text-slate-600 mt-0.5">شبرا الخيمة • بهتيم</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Patient Signature Box */}
+                <div className="text-center p-2.5 border border-slate-200 rounded-lg bg-slate-50/60">
+                  <div className="text-slate-500 font-bold text-[11px] mb-1">المستلم / المريض</div>
+                  <div className="font-bold text-slate-800 text-xs truncate">{invoice.patientName}</div>
+                  <div className="text-[10px] font-mono text-slate-400 mt-3 border-t border-dashed border-slate-300 pt-1">توقيع المستلم</div>
+                </div>
+              </div>
+
               {/* Footer info & QR Note */}
               <div className="border-t border-slate-200 pt-3 text-[11px] text-slate-500 flex justify-between items-end">
                 <div>
@@ -413,6 +454,9 @@ export const InvoicePrintModal: React.FC<InvoicePrintModalProps> = ({ invoice, o
                 <div className="flex justify-between">
                   <span>المتبقي:</span>
                   <span>{invoice.remainingAmount} ج.م</span>
+                </div>
+                <div className="pt-1 border-t border-dashed border-slate-300 text-[10px] font-bold">
+                  فقط {tafqeetEGP(invoice.netAmount)}
                 </div>
               </div>
 

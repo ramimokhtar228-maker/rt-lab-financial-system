@@ -88,6 +88,9 @@ interface AppContextType {
   addLoyaltyPoints: (patientId: string, points: number, description: string, invoiceNumber?: string, amountEGP?: number) => void;
   redeemLoyaltyPoints: (patientId: string, points: number, invoiceNumber?: string) => { success: boolean; cashValue: number };
   calculatePointsForAmount: (amountEGP: number, visitFee?: number) => number;
+  deleteLoyaltyProfile: (patientId: string) => void;
+  deleteLoyaltyTransaction: (patientId: string, transactionId: string) => void;
+  retroactiveSyncAllInvoicesToLoyalty: () => { syncedCount: number; newProfilesCount: number };
   // Lab Facilities, Staff Directory & Administration
   labInfo: LabInfo;
   updateLabInfo: (updates: Partial<LabInfo>) => void;
@@ -696,6 +699,111 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setLoyaltyProfiles(prev => [profile, ...prev]);
     logAudit('CREATE', 'LOYALTY', `إصدار كرت مريض ذكي جديد للمريض: ${profile.patientName}`);
   }, [logAudit]);
+
+  const deleteLoyaltyProfile = useCallback((patientId: string) => {
+    setLoyaltyProfiles(prev => prev.filter(p => p.patientId !== patientId));
+    logAudit('DELETE', 'LOYALTY', `حذف كارت مريض وملف ولاء نهائياً للعميل كود ${patientId}`);
+  }, [logAudit]);
+
+  const deleteLoyaltyTransaction = useCallback((patientId: string, transactionId: string) => {
+    setLoyaltyProfiles(prev => prev.map(p => {
+      if (p.patientId === patientId) {
+        const tx = p.transactions.find(t => t.id === transactionId);
+        const filtered = p.transactions.filter(t => t.id !== transactionId);
+        const pointsDiff = tx ? tx.points : 0;
+        const newTotal = Math.max(0, p.totalPoints - pointsDiff);
+        return {
+          ...p,
+          totalPoints: newTotal,
+          tier: getDynamicTier(newTotal),
+          transactions: filtered
+        };
+      }
+      return p;
+    }));
+  }, [getDynamicTier]);
+
+  const retroactiveSyncAllInvoicesToLoyalty = useCallback(() => {
+    let syncedCount = 0;
+    let newProfilesCount = 0;
+
+    setLoyaltyProfiles(prevProfiles => {
+      let currentList = [...prevProfiles];
+
+      incomeRecords.forEach(rec => {
+        if (!rec.patientPhone && !rec.patientName) return;
+        syncedCount++;
+
+        const cleanPhone = (rec.patientPhone || '').trim();
+        const cleanName = (rec.patientName || '').trim();
+
+        const matchIndex = currentList.findIndex(p => 
+          (cleanPhone && p.phone === cleanPhone) || 
+          (cleanName && p.patientName === cleanName)
+        );
+
+        const pts = calculatePointsForAmount(rec.paidAmount || rec.netAmount || 0, rec.visitFee || 0);
+
+        if (matchIndex >= 0) {
+          const matched = currentList[matchIndex];
+          const hasTx = matched.transactions.some(t => t.invoiceNumber === rec.invoiceNumber);
+          if (!hasTx && pts > 0) {
+            const newTx: LoyaltyTransaction = {
+              id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+              date: (rec.createdAt || new Date().toISOString()).substring(0, 10),
+              type: 'earn',
+              points: pts,
+              description: `مزامنة نقاط فاتورة سابقة #${rec.invoiceNumber}`,
+              invoiceNumber: rec.invoiceNumber,
+              amountEGP: rec.paidAmount || rec.netAmount
+            };
+            const newTotal = matched.totalPoints + pts;
+            const newSpent = matched.lifetimeSpent + (rec.paidAmount || rec.netAmount || 0);
+            currentList[matchIndex] = {
+              ...matched,
+              totalPoints: newTotal,
+              lifetimeSpent: newSpent,
+              tier: getDynamicTier(newTotal),
+              transactions: [newTx, ...matched.transactions]
+            };
+          }
+        } else {
+          newProfilesCount++;
+          const cardCode = `RT-GOLD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+          const initialPts = Math.max(pts, 25);
+          const newProf: PatientLoyaltyProfile = {
+            patientId: `pat-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+            patientName: cleanName || 'مريض معمل RT',
+            phone: cleanPhone || '01000000000',
+            cardNumber: cardCode,
+            barcode: cardCode,
+            bloodGroup: 'O+',
+            tier: getDynamicTier(initialPts),
+            totalPoints: initialPts,
+            lifetimeSpent: rec.paidAmount || rec.netAmount || 0,
+            issueDate: (rec.createdAt || new Date().toISOString()).substring(0, 10),
+            transactions: [
+              {
+                id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                date: (rec.createdAt || new Date().toISOString()).substring(0, 10),
+                type: 'earn',
+                points: initialPts,
+                description: `تفعيل كارت الولاء بأثر رجعي مع فاتورة #${rec.invoiceNumber}`,
+                invoiceNumber: rec.invoiceNumber,
+                amountEGP: rec.paidAmount || rec.netAmount
+              }
+            ]
+          };
+          currentList = [newProf, ...currentList];
+        }
+      });
+
+      return currentList;
+    });
+
+    logAudit('UPDATE', 'LOYALTY', `مزامنة كروت ونقاط الولاء بأثر رجعي لجميع الفواتير (${syncedCount} فاتورة)`);
+    return { syncedCount, newProfilesCount };
+  }, [incomeRecords, calculatePointsForAmount, getDynamicTier, logAudit]);
 
   const updateLoyaltyProfile = useCallback((patientId: string, updates: Partial<PatientLoyaltyProfile>) => {
     setLoyaltyProfiles(prev => prev.map(p => {
@@ -1414,6 +1522,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addLoyaltyPoints,
         redeemLoyaltyPoints,
         calculatePointsForAmount,
+        deleteLoyaltyProfile,
+        deleteLoyaltyTransaction,
+        retroactiveSyncAllInvoicesToLoyalty,
         calculateCashForPoints,
         labInfo,
         updateLabInfo,

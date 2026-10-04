@@ -14,7 +14,11 @@ import {
   ChevronDown,
   Download,
   CreditCard,
-  FlaskConical
+  FlaskConical,
+  PhoneCall,
+  MapPin,
+  Building2,
+  X
 } from 'lucide-react';
 import { RTLogo } from './RTLogo';
 import { PWAInstallModal } from './PWAInstallModal';
@@ -35,7 +39,9 @@ export const Header: React.FC = () => {
     githubConfig,
     pullCasesFromDiagnostic,
     isSyncing,
-    financialMetrics
+    financialMetrics,
+    labInfo,
+    updateLabInfo
   } = useApp();
 
   const [notifOpen, setNotifOpen] = useState(false);
@@ -43,6 +49,24 @@ export const Header: React.FC = () => {
   const [installModalOpen, setInstallModalOpen] = useState(false);
   const [catalogModalOpen, setCatalogModalOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState<string>('');
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    labNameAr: labInfo?.labNameAr || "معامل RT للتحاليل الطبية والتشخيصية",
+    hotline: labInfo?.hotline || "01012345678",
+    phone: labInfo?.phone || "0244667788",
+    whatsapp: labInfo?.whatsapp || "01012345678",
+    mainAddress: labInfo?.mainAddress || "ميدان بهتيم برج صيدليه العزبى الدور الثالث امام الأسانسير شبرا الخيمه",
+    vodafoneCash: labInfo?.vodafoneCash || "01098765432",
+    instapay: labInfo?.instapay || "ramirtlab@instapay"
+  });
+
+  const handleSaveLabContactInfo = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateLabInfo(contactForm);
+    setIsContactModalOpen(false);
+    alert('✅ تم حفظ وتحديث أرقام التواصل وعنوان المعمل بنجاح في جميع الفواتير والكروت!');
+  };
+
 
   useEffect(() => {
     const updateTime = () => {
@@ -104,6 +128,26 @@ export const Header: React.FC = () => {
 
           {/* Action Tools & User Profile */}
           <div className="flex items-center gap-2 sm:gap-2.5">
+                        {/* Lab Contact & Address Quick Editor */}
+            <button
+              onClick={() => {
+                setContactForm({
+                  labNameAr: labInfo?.labNameAr || "معامل RT للتحاليل الطبية والتشخيصية",
+                  hotline: labInfo?.hotline || "01012345678",
+                  phone: labInfo?.phone || "0244667788",
+                  whatsapp: labInfo?.whatsapp || "01012345678",
+                  mainAddress: labInfo?.mainAddress || "ميدان بهتيم برج صيدليه العزبى الدور الثالث امام الأسانسير شبرا الخيمه",
+                  vodafoneCash: labInfo?.vodafoneCash || "01098765432",
+                  instapay: labInfo?.instapay || "ramirtlab@instapay"
+                });
+                setIsContactModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg transition-colors border border-amber-200 cursor-pointer"
+              title="تعديل أرقام التواصل وعنوان المعمل الرسمي"
+            >
+              <PhoneCall className="w-3.5 h-3.5 text-amber-700" />
+              <span className="hidden lg:inline">بيانات التواصل والعنوان</span>
+            </button>
             {/* Catalog Manager Quick Trigger */}
             <button
               onClick={() => setCatalogModalOpen(true)}
@@ -307,6 +351,116 @@ export const Header: React.FC = () => {
         isOpen={catalogModalOpen}
         onClose={() => setCatalogModalOpen(false)}
       />
+      {/* Contact & Address Modal */}
+      {isContactModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl text-right animate-in fade-in zoom-in-95 duration-200 border border-slate-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-rose-800" />
+                <h3 className="font-bold text-slate-800 text-sm sm:text-base">تعديل أرقام التواصل وعنوان المعمل</h3>
+              </div>
+              <button onClick={() => setIsContactModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-1">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveLabContactInfo} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">اسم المعمل الرسمي:</label>
+                <input
+                  type="text"
+                  value={contactForm.labNameAr}
+                  onChange={e => setContactForm({ ...contactForm, labNameAr: e.target.value })}
+                  className="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500 font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">الخط الساخن (Hotline):</label>
+                  <input
+                    type="text"
+                    value={contactForm.hotline}
+                    onChange={e => setContactForm({ ...contactForm, hotline: e.target.value })}
+                    className="w-full p-2.5 border border-slate-300 rounded-xl font-mono text-rose-900 font-bold"
+                    placeholder="01012345678"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">هاتف الطوارئ والواتساب:</label>
+                  <input
+                    type="text"
+                    value={contactForm.whatsapp}
+                    onChange={e => setContactForm({ ...contactForm, whatsapp: e.target.value })}
+                    className="w-full p-2.5 border border-slate-300 rounded-xl font-mono font-bold"
+                    placeholder="01012345678"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">الهاتف الأرضي / الاستقبال:</label>
+                <input
+                  type="text"
+                  value={contactForm.phone}
+                  onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
+                  className="w-full p-2.5 border border-slate-300 rounded-xl font-mono"
+                  placeholder="0244667788"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">العنوان والمقر الرئيسي للمعمل:</label>
+                <textarea
+                  rows={2}
+                  value={contactForm.mainAddress}
+                  onChange={e => setContactForm({ ...contactForm, mainAddress: e.target.value })}
+                  className="w-full p-2.5 border border-slate-300 rounded-xl text-slate-800"
+                  placeholder="ميدان بهتيم برج صيدلية العزبي الدور الثالث شبرا الخيمة"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">فودافون كاش للمعمل:</label>
+                  <input
+                    type="text"
+                    value={contactForm.vodafoneCash}
+                    onChange={e => setContactForm({ ...contactForm, vodafoneCash: e.target.value })}
+                    className="w-full p-2.5 border border-slate-300 rounded-xl font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">حساب إنستاباي InstaPay:</label>
+                  <input
+                    type="text"
+                    value={contactForm.instapay}
+                    onChange={e => setContactForm({ ...contactForm, instapay: e.target.value })}
+                    className="w-full p-2.5 border border-slate-300 rounded-xl font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setIsContactModalOpen(false)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-rose-900 hover:bg-rose-800 text-white font-bold rounded-xl shadow-sm"
+                >
+                  حفظ وتطبيق التعديلات ✓
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
