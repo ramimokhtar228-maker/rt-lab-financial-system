@@ -874,6 +874,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, cashValue };
   }, [calculateCashForPoints, getDynamicTier, logAudit, loyaltyProfiles]);
 
+  // Auto-sync existing income records to loyalty profiles on initial load
+  useEffect(() => {
+    if (incomeRecords && incomeRecords.length > 0) {
+      retroactiveSyncAllInvoicesToLoyalty();
+    }
+  }, []);
+
   // Notifications
   useEffect(() => {
     const list: AppNotification[] = [];
