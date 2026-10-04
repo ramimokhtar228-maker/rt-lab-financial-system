@@ -189,8 +189,8 @@ export const TEST_CATALOG: InvoiceTestItem[] = [
   {
     "id": "t-11",
     "code": "CBC",
-    "nameAr": "صورة دم كاملة 5 أجزاء (CBC with 5-Diff)",
-    "nameEn": "Complete Blood Picture",
+    "nameAr": "صورة دم كاملة شاملة الفيلم والمؤشرات والرسومات (CBC with Full Differential & Film)",
+    "nameEn": "Complete Blood Count & Automated Differential Film",
     "price": 160,
     "category": "Hematology",
     "cost": 25,
