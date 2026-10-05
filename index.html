@@ -1,60 +1,29 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
   <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RT Lab Financial & ERP | المنظومة المالية لمعامل RT</title>
+    <meta name="description" content="منظومة معامل RT للتحاليل التشخيصية - معامل رامي مختار - أطباء كلية طب قصر العيني: النظام المالي والفوترة ERP، كروت ونقاط الولاء، وإدارة كتالوج الفحوصات." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script>
-      // RT Lab Emergency PWA Cache Purge
+      // Force kill any old service worker and caches
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(regs) {
           for (var r of regs) { r.unregister(); }
         });
       }
       if ('caches' in window) {
-        caches.keys().then(function(k) {
-          for (var i of k) { caches.delete(i); }
+        caches.keys().then(function(keys) {
+          for (var k of keys) { caches.delete(k); }
         });
       }
     </script>
-
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RT Lab Financial & ERP | المنظومة المالية لمعامل RT</title>
-    <meta name="description" content="منظومة معامل RT للتحاليل التشخيصية - معامل رامي مختار - أطباء كلية طب قصر العيني: النظام المالي والفوترة ERP، كروت ونقاط الولاء، وإدارة كتالوج الفحوصات." />
-    <meta property="og:title" content="RT Lab Financial & ERP | المنظومة المالية لمعامل RT" />
-    <meta property="og:description" content="منظومة معامل RT للتحاليل التشخيصية - معامل رامي مختار - أطباء كلية طب قصر العيني: النظام المالي والفوترة ERP، كروت ونقاط الولاء، وإدارة كتالوج الفحوصات." />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="theme-color" content="#881337" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="RT Financial" />
-    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
-    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
-    <link rel="icon" type="image/png" sizes="192x192" href="./pwa-192x192.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-      <script>
-      // RT Lab Cache Busting & Instant PWA Update Engine v3.3
-      const CURRENT_APP_VERSION = "v3.3-clean-batch-ops";
-      const storedVersion = localStorage.getItem("rt_lab_build_version");
-      if (storedVersion !== CURRENT_APP_VERSION) {
-        localStorage.setItem("rt_lab_build_version", CURRENT_APP_VERSION);
-        if ("caches" in window) {
-          caches.keys().then(function(names) {
-            for (let name of names) { caches.delete(name); }
-          });
-        }
-        if ("serviceWorker" in navigator) {
-          navigator.serviceWorker.getRegistrations().then(function(registrations) {
-            for (let registration of registrations) { registration.unregister(); }
-          });
-        }
-      }
-    </script>
-    <script type="module" crossorigin src="./assets/index-C9G4iIWJ.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-B7NFzBCg.css">
-  <link rel="manifest" href="./manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
+    <script type="module" crossorigin src="./assets/index-w9NKRml1.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BLpHyh5M.css">
+  </head>
   <body class="bg-slate-50 text-slate-900 antialiased font-['Cairo',sans-serif]">
     <div id="root"></div>
   </body>
