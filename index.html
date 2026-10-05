@@ -1,6 +1,20 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
   <head>
+    <script>
+      // RT Lab Emergency PWA Cache Purge
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          for (var r of regs) { r.unregister(); }
+        });
+      }
+      if ('caches' in window) {
+        caches.keys().then(function(k) {
+          for (var i of k) { caches.delete(i); }
+        });
+      }
+    </script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RT Lab Financial & ERP | المنظومة المالية لمعامل RT</title>
