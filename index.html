@@ -20,7 +20,25 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="./assets/index-Duv-7njz.js"></script>
+      <script>
+      // RT Lab Cache Busting & Instant PWA Update Engine v3.3
+      const CURRENT_APP_VERSION = "v3.3-clean-batch-ops";
+      const storedVersion = localStorage.getItem("rt_lab_build_version");
+      if (storedVersion !== CURRENT_APP_VERSION) {
+        localStorage.setItem("rt_lab_build_version", CURRENT_APP_VERSION);
+        if ("caches" in window) {
+          caches.keys().then(function(names) {
+            for (let name of names) { caches.delete(name); }
+          });
+        }
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for (let registration of registrations) { registration.unregister(); }
+          });
+        }
+      }
+    </script>
+    <script type="module" crossorigin src="./assets/index-C9G4iIWJ.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-B7NFzBCg.css">
   <link rel="manifest" href="./manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
   <body class="bg-slate-50 text-slate-900 antialiased font-['Cairo',sans-serif]">
