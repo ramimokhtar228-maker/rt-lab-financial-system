@@ -30,7 +30,8 @@ export const DiagnosticSyncHub: React.FC = () => {
     isSyncing,
     incomeRecords,
     addIncomeRecord,
-    language
+    language,
+    testCatalog
   } = useApp();
 
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
