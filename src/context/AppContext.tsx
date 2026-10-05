@@ -1,3 +1,4 @@
+import { realtimeSync } from '../utils/realtimeMultiDeviceSync';
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Language,
@@ -1065,6 +1066,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
+    // Broadcast to all devices in real-time
+    realtimeSync.broadcast('NEW_INVOICE', newRecord);
+
     // Instant Multi-layer Sync to Diagnostic System (localStorage, BroadcastChannel, and GitHub)
     syncInvoiceToDiagnostic(newRecord, githubConfig).catch(err => {
       console.warn('Sync to diagnostic error:', err);
@@ -1085,6 +1089,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const updated = { ...rec, ...updates, updatedAt: new Date().toISOString() };
         logAudit('UPDATE', 'INCOME', `تعديل بيانات الفاتورة: ${updated.invoiceNumber} للمريض ${updated.patientName}`);
         syncInvoiceToDiagnostic(updated, githubConfig).catch(() => {});
+        realtimeSync.broadcast('UPDATE_INVOICE', updated);
         return updated;
       }
       return rec;

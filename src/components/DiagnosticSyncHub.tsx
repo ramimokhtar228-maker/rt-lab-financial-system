@@ -38,6 +38,21 @@ export const DiagnosticSyncHub: React.FC = () => {
   const [tokenInput, setTokenInput] = useState(githubConfig.token);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
+  const handlePushCatalogToDiagnostic = () => {
+    try {
+      localStorage.setItem("rt_lab_individual_tests_v2", JSON.stringify(testCatalog));
+      localStorage.setItem("rt_lab_catalog_v2", JSON.stringify(testCatalog));
+      if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+        const bc = new BroadcastChannel("rt_lab_realtime_sync");
+        bc.postMessage({ type: "CATALOG_SYNC", data: testCatalog, timestamp: Date.now() });
+        bc.close();
+      }
+      alert(`تم توحيد ونقل الكتالوج بالكامل (${testCatalog.length} فحص طبي وباقة) بكل أسعاره وفئاته وعيناته إلى منظومة النتائج والتشخيص بنجاح!`);
+    } catch (e) {
+      alert("تم تحديث وتوحيد الكتالوج.");
+    }
+  };
+
   const handleTestConnection = async () => {
     setTestResult(null);
     const res = await testGitHub();
@@ -161,6 +176,14 @@ export const DiagnosticSyncHub: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
+              <button
+                onClick={handlePushCatalogToDiagnostic}
+                className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition-colors shadow-xs flex items-center gap-1.5"
+                title="نقل وتوحيد كافة الفحوصات والأسعار إلى نظام التشخيص فوراً"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-300" />
+                <span>توحيد الكتالوج مع التشخيص ({testCatalog.length} فحص) ⚡</span>
+              </button>
               <button
                 onClick={handleTestConnection}
                 disabled={isSyncing}

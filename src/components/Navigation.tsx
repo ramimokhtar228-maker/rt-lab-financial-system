@@ -157,50 +157,70 @@ export const Navigation: React.FC = () => {
               );
             })}
 
-            {/* Collapsible secondary dropdown to eliminate clutter */}
-            <div className="relative group inline-block text-right">
+            {/* Collapsible secondary dropdown with full click & touch support */}
+            <div className="relative inline-block text-right">
               <button
                 type="button"
+                onClick={() => setIsMoreOpen(prev => !prev)}
                 className={
-                  'flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all border ' +
-                  (isSecondaryActive
-                    ? 'bg-slate-800 border-rose-600/50 text-rose-300'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80 border-slate-800')
+                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all border cursor-pointer select-none " +
+                  (isSecondaryActive || isMoreOpen
+                    ? "bg-rose-950/80 border-rose-500 text-rose-200 shadow-md ring-1 ring-rose-500/40"
+                    : "text-slate-300 hover:text-white bg-slate-900/90 hover:bg-slate-800 border-slate-700")
                 }
+                title="فتح الأقسام الإدارية والعمليات المجمعة"
+                aria-expanded={isMoreOpen}
               >
                 <Settings className="w-3.5 h-3.5 text-rose-400" />
-                <span>الأقسام الإدارية والعمليات (مجمعة) ▾</span>
+                <span>الأقسام الإدارية والعمليات (مجمعة)</span>
+                <ChevronDown className={"w-3.5 h-3.5 transition-transform duration-200 text-rose-400 " + (isMoreOpen ? "rotate-180" : "")} />
               </button>
 
-              <div className="hidden group-hover:block absolute right-0 top-full pt-1 z-50 w-56 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl py-1 text-xs">
-                {secondaryItems.map(item => {
-                  const allowed = hasPermission(item.permission);
-                  const isActive = activeTab === item.id;
-                  const Icon = item.icon;
+              {isMoreOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsMoreOpen(false)} />
+                  <div className="absolute right-0 top-full mt-1.5 z-50 w-64 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl py-2 text-xs divide-y divide-slate-800 animate-in fade-in duration-150">
+                    <div className="px-3 py-1.5 text-[10px] font-bold text-rose-400 uppercase tracking-wider flex items-center justify-between">
+                      <span>الأقسام الإدارية والعمليات</span>
+                      <span className="text-slate-500 font-mono text-[9px]">RT LAB ERP</span>
+                    </div>
+                    <div className="py-1">
+                      {secondaryItems.map(item => {
+                        const allowed = hasPermission(item.permission);
+                        const isActive = activeTab === item.id;
+                        const Icon = item.icon;
 
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => allowed && setActiveTab(item.id)}
-                      disabled={!allowed}
-                      className={
-                        'w-full text-right px-3 py-2 flex items-center justify-between hover:bg-slate-800 transition-colors ' +
-                        (isActive ? 'text-rose-400 font-bold bg-slate-800/60' : 'text-slate-300')
-                      }
-                    >
-                      <div className="flex items-center gap-2">
-                        <Icon className="w-3.5 h-3.5 text-rose-400" />
-                        <span>{item.labelAr}</span>
-                      </div>
-                      {item.badge !== null && item.badge !== undefined && (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded-full font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                          {item.badge}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => {
+                              if (allowed) {
+                                setActiveTab(item.id);
+                                setIsMoreOpen(false);
+                              }
+                            }}
+                            disabled={!allowed}
+                            className={
+                              "w-full text-right px-3 py-2 flex items-center justify-between hover:bg-slate-800 transition-colors " +
+                              (isActive ? "text-rose-400 font-bold bg-slate-800/60" : "text-slate-300")
+                            }
+                          >
+                            <div className="flex items-center gap-2">
+                              <Icon className="w-3.5 h-3.5 text-rose-400" />
+                              <span>{item.labelAr}</span>
+                            </div>
+                            {item.badge !== null && item.badge !== undefined && (
+                              <span className="text-[9px] px-1.5 py-0.2 rounded-full font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                {item.badge}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
