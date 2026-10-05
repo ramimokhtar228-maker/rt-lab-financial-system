@@ -1,4 +1,3 @@
-import { realtimeSync } from '../utils/realtimeMultiDeviceSync';
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Language,
@@ -18,38 +17,56 @@ import {
   InvoiceTestItem,
   LoyaltyConfig,
   PatientLoyaltyProfile,
-  LoyaltyTransaction,
   LoyaltyTier,
   LabInfo,
   LabFacility,
-  StaffMember
+  StaffMember,
+  LabReport,
+  Patient,
+  TestProfile,
+  TestParameter,
+  LabInstrument,
+  InstrumentTransmission,
+  UserRole
 } from '../types';
 import {
   INITIAL_USERS,
-  INITIAL_INCOME,
-  INITIAL_EXPENSES,
+  INITIAL_PROFIT_CONFIG,
+  INITIAL_GITHUB_CONFIG,
+  DEFAULT_LOYALTY_CONFIG,
   INITIAL_INVENTORY,
   INITIAL_EMPLOYEES,
   INITIAL_ATTENDANCE,
   INITIAL_PAYROLL,
   INITIAL_LAB_TO_LAB,
-  INITIAL_PROFIT_CONFIG,
-  INITIAL_GITHUB_CONFIG,
-  TEST_CATALOG,
-  DEFAULT_LOYALTY_CONFIG,
-  INITIAL_LOYALTY_PROFILES,
   INITIAL_LAB_INFO,
   INITIAL_FACILITIES,
-  INITIAL_STAFF_MEMBERS
+  INITIAL_STAFF_MEMBERS,
+  TEST_CATALOG as DEFAULT_TEST_CATALOG
 } from '../data/catalog';
 import {
-  fetchDiagnosticCases,
-  pushFinancialDataToRepo,
-  testGitHubConnection,
-  syncInvoiceToDiagnostic,
-  DiagnosticPatientCase
-} from '../utils/githubSync';
-import { createEncryptedBackup, restoreEncryptedBackup } from '../utils/cryptoBackup';
+  INITIAL_REPORTS,
+  INITIAL_INCOME_RECORDS,
+  INITIAL_LOYALTY_DATA
+} from '../data/initialData';
+import { LAB_CATALOG } from '../data/labCatalog';
+import { INITIAL_INSTRUMENTS, SAMPLE_INSTRUMENT_TRANSMISSIONS } from '../data/instrumentsData';
+
+// Storage Keys
+const STORAGE_PREFIX = 'rt_lab_unified_';
+const REPORTS_KEY = `${STORAGE_PREFIX}reports_v3`;
+const INCOME_KEY = `${STORAGE_PREFIX}income_v3`;
+const EXPENSES_KEY = `${STORAGE_PREFIX}expenses_v3`;
+const LOYALTY_KEY = `${STORAGE_PREFIX}loyalty_v3`;
+const INVENTORY_KEY = `${STORAGE_PREFIX}inventory_v3`;
+const EMPLOYEES_KEY = `${STORAGE_PREFIX}employees_v3`;
+const LAB_TO_LAB_KEY = `${STORAGE_PREFIX}lab_to_lab_v3`;
+const CLOSEOUTS_KEY = `${STORAGE_PREFIX}closeouts_v3`;
+const AUDIT_KEY = `${STORAGE_PREFIX}audit_v3`;
+const INSTRUMENTS_KEY = `${STORAGE_PREFIX}instruments_v3`;
+const TRANSMISSIONS_KEY = `${STORAGE_PREFIX}transmissions_v3`;
+const LAB_INFO_KEY = `${STORAGE_PREFIX}lab_info_v3`;
+const CATALOG_KEY = `${STORAGE_PREFIX}test_catalog_v3`;
 
 interface AppContextType {
   // Localization & Auth
@@ -67,113 +84,24 @@ interface AppContextType {
   activeTab: string;
   setActiveTab: (tab: string) => void;
 
-  // Financial / Income
+  // Reports & Laboratory Diagnostic Worklist
+  reports: LabReport[];
+  selectedReportId: string | null;
+  setSelectedReportId: (id: string | null) => void;
+  selectedReport: LabReport | null;
+  addReport: (report: LabReport) => void;
+  updateReport: (id: string, updates: Partial<LabReport>) => void;
+  deleteReport: (id: string) => void;
+  verifyReport: (id: string) => void;
+  createReportFromAdmission: (patient: Patient, selectedTests: InvoiceTestItem[], packageApplied?: any) => LabReport;
+
+  // Financial & Treasury (Income & Invoicing)
   incomeRecords: IncomeRecord[];
   addIncomeRecord: (record: Omit<IncomeRecord, 'id' | 'createdAt' | 'updatedAt'>) => IncomeRecord;
   updateIncomeRecord: (id: string, updates: Partial<IncomeRecord>) => void;
   deleteIncomeRecord: (id: string) => void;
-
-  // Test Catalog Management
-  testCatalog: InvoiceTestItem[];
-  addCatalogTest: (test: InvoiceTestItem) => void;
-  updateCatalogTest: (code: string, updates: Partial<InvoiceTestItem>) => void;
-  deleteCatalogTest: (code: string) => void;
-  resetCatalog: () => void;
-
-  // Loyalty Club & Patient Cards
-  loyaltyProfiles: PatientLoyaltyProfile[];
-  loyaltyConfig: LoyaltyConfig;
-  updateLoyaltyConfig: (config: LoyaltyConfig) => void;
-  addLoyaltyProfile: (profile: PatientLoyaltyProfile) => void;
-  updateLoyaltyProfile: (patientId: string, updates: Partial<PatientLoyaltyProfile>) => void;
-  addLoyaltyPoints: (patientId: string, points: number, description: string, invoiceNumber?: string, amountEGP?: number) => void;
-  redeemLoyaltyPoints: (patientId: string, points: number, invoiceNumber?: string) => { success: boolean; cashValue: number };
-  calculatePointsForAmount: (amountEGP: number, visitFee?: number) => number;
-  deleteLoyaltyProfile: (patientId: string) => void;
-  deleteLoyaltyTransaction: (patientId: string, transactionId: string) => void;
-  retroactiveSyncAllInvoicesToLoyalty: () => { syncedCount: number; newProfilesCount: number };
-  // Lab Facilities, Staff Directory & Administration
-  labInfo: LabInfo;
-  updateLabInfo: (updates: Partial<LabInfo>) => void;
-  facilities: LabFacility[];
-  addFacility: (facility: Omit<LabFacility, "id">) => LabFacility;
-  updateFacility: (id: string, updates: Partial<LabFacility>) => void;
-  deleteFacility: (id: string) => void;
-  staffMembers: StaffMember[];
-  addStaffMember: (staff: Omit<StaffMember, "id">) => StaffMember;
-  updateStaffMember: (id: string, updates: Partial<StaffMember>) => void;
-  deleteStaffMember: (id: string) => void;
-
-  calculateCashForPoints: (points: number) => number;
-
-  // Expenses & Profit
-  expenses: ExpenseRecord[];
-  addExpense: (expense: Omit<ExpenseRecord, 'id' | 'createdAt'>) => ExpenseRecord;
-  updateExpense: (id: string, updates: Partial<ExpenseRecord>) => void;
-  deleteExpense: (id: string) => void;
-  profitConfig: ProfitShareConfig;
-  updateProfitConfig: (config: ProfitShareConfig) => void;
-
-  // Inventory & Chemicals
-  inventory: InventoryItem[];
-  addInventoryItem: (item: Omit<InventoryItem, 'id' | 'lastRestockedDate'>) => void;
-  updateInventoryItem: (id: string, item: Partial<InventoryItem>) => void;
-  restockItem: (id: string, addedQty: number, newCost?: number) => void;
-  consumeReagent: (id: string, qty: number) => void;
-  deleteInventoryItem: (id: string) => void;
-
-  // HR & Payroll
-  employees: Employee[];
-  attendance: AttendanceRecord[];
-  payroll: PayrollRecord[];
-  addEmployee: (emp: Omit<Employee, 'id'>) => void;
-  updateEmployee: (id: string, emp: Partial<Employee>) => void;
-  deleteEmployee: (id: string) => void;
-  recordAttendance: (employeeId: string, status: AttendanceRecord['status'], checkIn?: string, checkOut?: string, notes?: string) => void;
-  generatePayrollForMonth: (monthYear: string) => void;
-  updatePayrollRecord: (id: string, updates: Partial<PayrollRecord>) => void;
-
-  // Lab to Lab
-  labToLabOrders: LabToLabOrder[];
-  addLabToLabOrder: (order: Omit<LabToLabOrder, 'id'>) => void;
-  updateLabToLabOrder: (id: string, updates: Partial<LabToLabOrder>) => void;
-  deleteLabToLabOrder: (id: string) => void;
-
-  // Closeouts & Cash Drawer
-  closeouts: DailyCloseout[];
-  saveCloseout: (closeout: Omit<DailyCloseout, 'id' | 'timestamp'>) => void;
-
-  // Audit Logs & Notifications
-  auditLogs: AuditLog[];
-  logAudit: (action: AuditLog['action'], module: AuditLog['module'], description: string) => void;
-  notifications: AppNotification[];
-  markNotificationRead: (id: string) => void;
-  clearAllNotifications: () => void;
-
-  // GitHub & Diagnostic System Integration
-  githubConfig: GitHubSyncConfig;
-  updateGitHubConfig: (config: Partial<GitHubSyncConfig>) => void;
-  diagnosticCases: DiagnosticPatientCase[];
-  isSyncing: boolean;
-  pullCasesFromDiagnostic: () => Promise<{ success: boolean; message: string }>;
-  pushCasesToDiagnostic: () => Promise<{ success: boolean; message: string }>;
-  syncSingleInvoice: (record: IncomeRecord) => Promise<{ success: boolean; message: string }>;
-  testGitHub: () => Promise<{ success: boolean; message: string }>;
-
-  // Barcode Scanner Modal State
-  scannerOpen: boolean;
-  setScannerOpen: (open: boolean) => void;
-  scannedBarcode: string | null;
-  setScannedBarcode: (code: string | null) => void;
-  handleBarcodeScanned: (code: string) => void;
-
-  // Backup & Restore
-  exportBackup: (password?: string) => Promise<string>;
-  importBackup: (jsonStr: string, password?: string) => Promise<{ success: boolean; message: string }>;
-  resetToDefaultData: () => void;
-  clearPatientRecordsOnly: () => void;
-
-  // Financial Computations
+  selectedInvoice: IncomeRecord | null;
+  setSelectedInvoice: (invoice: IncomeRecord | null) => void;
   financialMetrics: {
     totalGrossIncome: number;
     totalPaidIncome: number;
@@ -182,426 +110,319 @@ interface AppContextType {
     netProfit: number;
     ceoShare: number;
     labShare: number;
+    emergencyFund: number;
     emergencyShare: number;
-    todayIncome: number;
-    todayExpenses: number;
   };
+  scannedBarcode: string | null;
+  setScannedBarcode: (b: string | null) => void;
+  setScannerOpen: (open: boolean) => void;
+
+  // Test Catalog
+  testCatalog: InvoiceTestItem[];
+  addCatalogTest: (test: InvoiceTestItem) => void;
+  updateCatalogTest: (code: string, updates: Partial<InvoiceTestItem>) => void;
+  deleteCatalogTest: (code: string) => void;
+  resetCatalog: () => void;
+
+  // Laboratory Instruments & Hardware Interfacing
+  instruments: LabInstrument[];
+  transmissions: InstrumentTransmission[];
+  toggleInstrumentStatus: (id: string) => void;
+  simulateInstrumentRun: (instrumentId: string, barcode: string, patientName?: string, labNumber?: string) => InstrumentTransmission;
+  applyTransmissionToReport: (transmissionId: string, reportId: string) => boolean;
+
+  // Loyalty Program & Cards
+  loyaltyProfiles: PatientLoyaltyProfile[];
+  loyaltyConfig: LoyaltyConfig;
+  updateLoyaltyConfig: (config: LoyaltyConfig) => void;
+  addLoyaltyProfile: (profile: PatientLoyaltyProfile) => void;
+  getLoyaltyByPhone: (phone: string) => PatientLoyaltyProfile | undefined;
+  calculateLoyaltyTier: (points: number) => LoyaltyTier;
+  earnLoyaltyPoints: (patientPhone: string, amount: number, invoiceNumber: string, patientName: string, barcode: string) => void;
+  redeemLoyaltyPoints: (patientPhone: string, points: number, invoiceNumber?: string, discountEGP?: number) => { success: boolean; cashValue: number };
+  updateLoyaltyProfile: (id: string, updates: Partial<PatientLoyaltyProfile>) => void;
+  deleteLoyaltyProfile: (id: string) => void;
+  deleteLoyaltyTransaction: (profileId: string, txId: string) => void;
+  retroactiveSyncAllInvoicesToLoyalty: () => { syncedCount: number; newProfilesCount: number };
+  addLoyaltyPoints: (patientPhone: string, points: number, reason: string, invoiceNumber?: string, amountEGP?: number) => void;
+  calculateCashForPoints: (points: number) => number;
+  calculatePointsForAmount: (amount: number) => number;
+
+  // Expenses & Profit Sharing & Daily Closeout
+  expenses: ExpenseRecord[];
+  addExpense: (expense: Omit<ExpenseRecord, 'id' | 'createdAt'>) => void;
+  updateExpense: (id: string, updates: Partial<ExpenseRecord>) => void;
+  deleteExpense: (id: string) => void;
+  profitConfig: ProfitShareConfig;
+  updateProfitConfig: (config: ProfitShareConfig) => void;
+  dailyCloseouts: DailyCloseout[];
+  closeoutDay: (actualCash: number, discrepancyNotes?: string) => DailyCloseout;
+
+  // Inventory & Reagents
+  inventory: InventoryItem[];
+  addInventoryItem: (item: Omit<InventoryItem, 'id' | 'lastRestockedDate'>) => void;
+  updateInventoryItem: (id: string, updates: Partial<InventoryItem>) => void;
+  restockItem: (id: string, addedQty: number, newCost?: number) => void;
+  consumeReagent: (id: string, qty: number) => void;
+  deleteInventoryItem: (id: string) => void;
+
+  // Lab to Lab (Outsourced)
+  labToLabOrders: LabToLabOrder[];
+  addLabToLabOrder: (order: Omit<LabToLabOrder, 'id'>) => void;
+  updateLabToLabOrder: (id: string, updates: Partial<LabToLabOrder>) => void;
+  deleteLabToLabOrder: (id: string) => void;
+
+  // HR & Staff
+  employees: Employee[];
+  attendance: AttendanceRecord[];
+  payroll: PayrollRecord[];
+  addEmployee: (emp: Omit<Employee, 'id'>) => void;
+  updateEmployee: (id: string, updates: Partial<Employee>) => void;
+  deleteEmployee: (id: string) => void;
+  recordAttendance: (employeeId: string, status: AttendanceRecord['status'], checkIn?: string, checkOut?: string, notes?: string) => void;
+  generatePayrollForMonth: (monthYear: string) => void;
+  updatePayrollRecord: (id: string, updates: Partial<PayrollRecord>) => void;
+  clockInEmployee: (empId: string) => void;
+  clockOutEmployee: (empId: string) => void;
+
+  // Lab Facilities & Staff Signatures
+  labInfo: LabInfo;
+  updateLabInfo: (info: LabInfo) => void;
+  facilities: LabFacility[];
+  staffMembers: StaffMember[];
+
+  // Security & Audit
+  auditLogs: AuditLog[];
+  logAction: (action: AuditLog['action'], module: AuditLog['module'], description: string) => void;
+
+  // Notifications
+  notifications: AppNotification[];
+  markNotificationRead: (id: string) => void;
+  clearNotifications: () => void;
+  addNotification: (notif: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => void;
+
+  // GitHub Cloud Sync
+  githubConfig: GitHubSyncConfig;
+  updateGithubConfig: (config: Partial<GitHubSyncConfig>) => void;
+  syncUnifiedDataToGitHub: () => Promise<{ success: boolean; message: string }>;
+
+  // Backups
+  exportBackup: (password?: string) => Promise<string>;
+  importBackup: (backupJson: string, password?: string) => Promise<{ success: boolean; message: string }>;
+  resetToDefaultData: () => void;
+  clearPatientRecordsOnly: () => void;
+
+  // Quick Action Modal Controls
+  isPatientFormOpen: boolean;
+  setIsPatientFormOpen: (open: boolean) => void;
+  isBarcodeScannerOpen: boolean;
+  setIsBarcodeScannerOpen: (open: boolean) => void;
 }
 
-const AppContext = createContext<AppContextType | null>(null);
-
-const STORAGE_KEYS = {
-  LANGUAGE: 'rt_lab_lang',
-  CURRENT_USER: 'rt_lab_user',
-  INCOME: 'rt_lab_income_v2',
-  EXPENSES: 'rt_lab_expenses_v2',
-  PROFIT_CONFIG: 'rt_lab_profit_config',
-  INVENTORY: 'rt_lab_inventory',
-  EMPLOYEES: 'rt_lab_employees_v2',
-  ATTENDANCE: 'rt_lab_attendance_v2',
-  PAYROLL: 'rt_lab_payroll_v2',
-  LAB_TO_LAB: 'rt_lab_l2l_v2',
-  CLOSEOUTS: 'rt_lab_closeouts',
-  AUDIT_LOGS: 'rt_lab_audit',
-  GITHUB_CONFIG: 'rt_lab_github',
-  DIAG_CASES: 'rt_lab_diag_cases_v2',
-  CATALOG: 'rt_lab_test_catalog',
-  LOYALTY_PROFILES: 'rt_lab_loyalty_profiles_v2',
-  LOYALTY_CONFIG: 'rt_lab_loyalty_settings',
-  LAB_INFO: 'rt_lab_info_v1',
-  FACILITIES: 'rt_lab_facilities_v2',
-  STAFF_MEMBERS: 'rt_lab_staff_members_v2'
-};
-
-// Clean old demo patients/branches/chemists on first load of this clean version
-if (typeof window !== "undefined" && !localStorage.getItem("rt_fin_clean_v5_prod")) {
-  try {
-    localStorage.removeItem("rt_lab_income_v2");
-    localStorage.removeItem("rt_lab_diag_cases_v2");
-    localStorage.removeItem("rt_lab_attendance_v2");
-    localStorage.removeItem("rt_lab_payroll_v2");
-    localStorage.removeItem("rt_lab_closeouts");
-    localStorage.removeItem("rt_lab_loyalty_profiles_v2");
-    localStorage.setItem("rt_fin_clean_v5_prod", "true");
-  } catch {}
-}
+const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Language
-  const [language, setLanguageState] = useState<Language>(() => {
-    return (localStorage.getItem(STORAGE_KEYS.LANGUAGE) as Language) || 'ar';
-  });
-
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    localStorage.setItem(STORAGE_KEYS.LANGUAGE, lang);
-    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = lang;
-  };
-
-  useEffect(() => {
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = language;
-  }, [language]);
-
-  // Auth & Roles
-  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-    if (saved) {
-      try { return JSON.parse(saved); } catch { /* ignore */ }
-    }
-    return INITIAL_USERS[0]; // Default: Prof. Dr. Rami Mokhtar (CEO)
-  });
-
+  // 1. Language & Current User
+  const [language, setLanguage] = useState<Language>('ar');
   const [users] = useState<UserProfile[]>(INITIAL_USERS);
+  const [currentUser, setCurrentUser] = useState<UserProfile>(INITIAL_USERS[0]);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
 
-  // Active Tab
+  // 2. Active Tab
   const [activeTab, setActiveTab] = useState<string>('dashboard');
 
-  useEffect(() => {
+  // 3. Quick Action Modals
+  const [isPatientFormOpen, setIsPatientFormOpen] = useState(false);
+  const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<IncomeRecord | null>(null);
+
+  // 4. Reports (Unified Diagnostic Worklist)
+  const [reports, setReports] = useState<LabReport[]>(() => {
     try {
-      localStorage.setItem(STORAGE_KEYS.LAB_INFO, JSON.stringify(labInfo));
-      localStorage.setItem(STORAGE_KEYS.CATALOG, JSON.stringify(testCatalog));
-    } catch {}
-  }, []);
-
-
-  // Scanner modal state
-  const [scannerOpen, setScannerOpen] = useState(false);
-  const [scannedBarcode, setScannedBarcode] = useState<string | null>(null);
-
-  // Core Data States
-  const [incomeRecords, setIncomeRecords] = useState<IncomeRecord[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.INCOME);
-    if (saved) {
-      try { return JSON.parse(saved); } catch { /* ignore */ }
-    }
-    return INITIAL_INCOME;
-  });
-
-  const [expenses, setExpenses] = useState<ExpenseRecord[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.EXPENSES);
-    if (saved) {
-      try { return JSON.parse(saved); } catch { /* ignore */ }
-    }
-    return INITIAL_EXPENSES;
-  });
-
-  const [profitConfig, setProfitConfigState] = useState<ProfitShareConfig>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.PROFIT_CONFIG);
-    if (saved) {
-      try { return JSON.parse(saved); } catch { /* ignore */ }
-    }
-    return INITIAL_PROFIT_CONFIG;
-  });
-
-  const [inventory, setInventory] = useState<InventoryItem[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.INVENTORY);
-    if (saved) {
-      try { return JSON.parse(saved); } catch { /* ignore */ }
-    }
-    return INITIAL_INVENTORY;
-  });
-
-  const [employees, setEmployees] = useState<Employee[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.EMPLOYEES);
-    if (saved) {
-      try { return JSON.parse(saved); } catch { /* ignore */ }
-    }
-    return INITIAL_EMPLOYEES;
-  });
-
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.ATTENDANCE);
-    if (saved) {
-      try { return JSON.parse(saved); } catch { /* ignore */ }
-    }
-    return INITIAL_ATTENDANCE;
-  });
-
-  const [payroll, setPayroll] = useState<PayrollRecord[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.PAYROLL);
-    if (saved) {
-      try { return JSON.parse(saved); } catch { /* ignore */ }
-    }
-    return INITIAL_PAYROLL;
-  });
-
-  const [labToLabOrders, setLabToLabOrders] = useState<LabToLabOrder[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.LAB_TO_LAB);
-    if (saved) {
-      try { return JSON.parse(saved); } catch { /* ignore */ }
-    }
-    return INITIAL_LAB_TO_LAB;
-  });
-
-  const [closeouts, setCloseouts] = useState<DailyCloseout[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.CLOSEOUTS);
-    if (saved) {
-      try { return JSON.parse(saved); } catch { /* ignore */ }
-    }
-    return [];
-  });
-
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
-    if (saved) {
-      try { return JSON.parse(saved); } catch { /* ignore */ }
-    }
-    return [
-      {
-        id: 'aud-init-1',
-        timestamp: new Date().toISOString(),
-        userId: 'user-ceo',
-        userName: 'أ.د. رامي مختار',
-        userRole: 'admin_ceo',
-        action: 'LOGIN',
-        module: 'SECURITY',
-        description: 'تسجيل دخول ناجح إلى منظومة الإدارة المالية والفوترة لمعامل RT'
+      const saved = localStorage.getItem(REPORTS_KEY) || localStorage.getItem('rt_lab_reports_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-    ];
-  });
-
-  const [githubConfig, setGithubConfigState] = useState<GitHubSyncConfig>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.GITHUB_CONFIG);
-    if (saved) {
-      try { return JSON.parse(saved); } catch { /* ignore */ }
+      return INITIAL_REPORTS;
+    } catch {
+      return INITIAL_REPORTS;
     }
-    return INITIAL_GITHUB_CONFIG;
   });
 
-  const [diagnosticCases, setDiagnosticCases] = useState<DiagnosticPatientCase[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.DIAG_CASES);
-    if (saved) {
-      try { return JSON.parse(saved); } catch { /* ignore */ }
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(() => {
+    return reports[0]?.id || null;
+  });
+
+  // 5. Income & Invoices (Financial Records)
+  const [incomeRecords, setIncomeRecords] = useState<IncomeRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem(INCOME_KEY) || localStorage.getItem('rt_lab_income_records_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      return INITIAL_INCOME_RECORDS;
+    } catch {
+      return INITIAL_INCOME_RECORDS;
     }
-    return [];
   });
 
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-
-  // Catalog State
+  // 6. Test Catalog
   const [testCatalog, setTestCatalog] = useState<InvoiceTestItem[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.CATALOG);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch { /* ignore */ }
+    try {
+      const saved = localStorage.getItem(CATALOG_KEY);
+      return saved ? JSON.parse(saved) : DEFAULT_TEST_CATALOG;
+    } catch {
+      return DEFAULT_TEST_CATALOG;
     }
-    return TEST_CATALOG;
   });
 
-  // Loyalty Club States
+  // 7. Loyalty Profiles
   const [loyaltyProfiles, setLoyaltyProfiles] = useState<PatientLoyaltyProfile[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.LOYALTY_PROFILES);
-    if (saved) {
-      try { return JSON.parse(saved); } catch { /* ignore */ }
+    try {
+      const saved = localStorage.getItem(LOYALTY_KEY) || localStorage.getItem('rt_lab_loyalty_profiles_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      return INITIAL_LOYALTY_DATA;
+    } catch {
+      return INITIAL_LOYALTY_DATA;
     }
-    return INITIAL_LOYALTY_PROFILES;
   });
 
-  const [loyaltyConfig, setLoyaltyConfigState] = useState<LoyaltyConfig>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.LOYALTY_CONFIG);
-    if (saved) {
-      try { return JSON.parse(saved); } catch { /* ignore */ }
+  const [loyaltyConfig] = useState<LoyaltyConfig>(DEFAULT_LOYALTY_CONFIG);
+
+  // 8. Expenses & Profit Config & Closeouts
+  const [expenses, setExpenses] = useState<ExpenseRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem(EXPENSES_KEY) || localStorage.getItem('rt_lab_expense_records_v1');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
     }
-    return DEFAULT_LOYALTY_CONFIG;
   });
 
-  // Lab Info & Administration
+  const [profitConfig, setProfitConfig] = useState<ProfitShareConfig>(INITIAL_PROFIT_CONFIG);
+  const [dailyCloseouts, setDailyCloseouts] = useState<DailyCloseout[]>(() => {
+    try {
+      const saved = localStorage.getItem(CLOSEOUTS_KEY) || localStorage.getItem('rt_lab_daily_closeouts_v1');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // 9. Inventory & Reagents
+  const [inventory, setInventory] = useState<InventoryItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(INVENTORY_KEY) || localStorage.getItem('rt_lab_inventory_items_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      return INITIAL_INVENTORY;
+    } catch {
+      return INITIAL_INVENTORY;
+    }
+  });
+
+  // 10. Lab Instruments & Interfacing
+  const [instruments, setInstruments] = useState<LabInstrument[]>(() => {
+    try {
+      const saved = localStorage.getItem(INSTRUMENTS_KEY);
+      return saved ? JSON.parse(saved) : INITIAL_INSTRUMENTS;
+    } catch {
+      return INITIAL_INSTRUMENTS;
+    }
+  });
+
+  const [transmissions, setTransmissions] = useState<InstrumentTransmission[]>(() => {
+    try {
+      const saved = localStorage.getItem(TRANSMISSIONS_KEY);
+      return saved ? JSON.parse(saved) : SAMPLE_INSTRUMENT_TRANSMISSIONS;
+    } catch {
+      return SAMPLE_INSTRUMENT_TRANSMISSIONS;
+    }
+  });
+
+  // 11. Lab to Lab
+  const [labToLabOrders, setLabToLabOrders] = useState<LabToLabOrder[]>(() => {
+    try {
+      const saved = localStorage.getItem(LAB_TO_LAB_KEY) || localStorage.getItem('rt_lab_lab_to_lab_orders_v1');
+      return saved ? JSON.parse(saved) : INITIAL_LAB_TO_LAB;
+    } catch {
+      return INITIAL_LAB_TO_LAB;
+    }
+  });
+
+  // 12. HR Employees, Attendance, Payroll
+  const [employees, setEmployees] = useState<Employee[]>(() => {
+    try {
+      const saved = localStorage.getItem(EMPLOYEES_KEY) || localStorage.getItem('rt_lab_employees_v1');
+      return saved ? JSON.parse(saved) : INITIAL_EMPLOYEES;
+    } catch {
+      return INITIAL_EMPLOYEES;
+    }
+  });
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>(INITIAL_ATTENDANCE);
+  const [payroll, setPayroll] = useState<PayrollRecord[]>(INITIAL_PAYROLL);
+
+  // 13. Lab Info & Branches
   const [labInfo, setLabInfo] = useState<LabInfo>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.LAB_INFO);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.labNameAr) {
-          return {
-            ...INITIAL_LAB_INFO,
-            ...parsed,
-            mainAddress: INITIAL_LAB_INFO.mainAddress,
-            phone: INITIAL_LAB_INFO.phone,
-            hotline: INITIAL_LAB_INFO.hotline,
-            whatsapp: INITIAL_LAB_INFO.whatsapp,
-            supervisionAr: INITIAL_LAB_INFO.supervisionAr,
-            accreditation: INITIAL_LAB_INFO.accreditation
-          };
-        }
-      } catch { /* ignore */ }
+    try {
+      const saved = localStorage.getItem(LAB_INFO_KEY) || localStorage.getItem('rt_lab_custom_lab_info_v2');
+      return saved ? JSON.parse(saved) : INITIAL_LAB_INFO;
+    } catch {
+      return INITIAL_LAB_INFO;
     }
-    return INITIAL_LAB_INFO;
+  });
+  const [facilities] = useState<LabFacility[]>(INITIAL_FACILITIES);
+  const [staffMembers] = useState<StaffMember[]>(INITIAL_STAFF_MEMBERS);
+
+  // 14. Audit Log
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
+    try {
+      const saved = localStorage.getItem(AUDIT_KEY) || localStorage.getItem('rt_lab_audit_logs_v1');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
 
-  const updateLabInfo = (updates: Partial<LabInfo>) => {
-    setLabInfo(prev => {
-      const updated = { ...prev, ...updates };
-      localStorage.setItem(STORAGE_KEYS.LAB_INFO, JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  // Lab Branches / Facilities
-  const [facilities, setFacilities] = useState<LabFacility[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.FACILITIES);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch { /* ignore */ }
+  // 15. Notifications
+  const [notifications, setNotifications] = useState<AppNotification[]>([
+    {
+      id: "notif-welcome",
+      title: "تم توحيد منظومة RT الطبية والمالية بنجاح",
+      message: "تم دمج النظام المالي، تقارير التشخيص الطبي، والربط مع الأجهزة في منصة واحدة موحدة ومتزامنة كلياً.",
+      type: "success",
+      timestamp: "الآن",
+      read: false
     }
-    return INITIAL_FACILITIES;
-  });
+  ]);
 
-  const addFacility = (facility: Omit<LabFacility, "id">): LabFacility => {
-    const newFacility: LabFacility = {
-      ...facility,
-      id: `branch-${Date.now()}`
-    };
-    setFacilities(prev => {
-      const updated = [...prev, newFacility];
-      localStorage.setItem(STORAGE_KEYS.FACILITIES, JSON.stringify(updated));
-      return updated;
-    });
-    return newFacility;
-  };
+  // 16. GitHub Sync Config
+  const [githubConfig, setGithubConfig] = useState<GitHubSyncConfig>(INITIAL_GITHUB_CONFIG);
 
-  const updateFacility = (id: string, updates: Partial<LabFacility>) => {
-    setFacilities(prev => {
-      const updated = prev.map(f => f.id === id ? { ...f, ...updates } : f);
-      localStorage.setItem(STORAGE_KEYS.FACILITIES, JSON.stringify(updated));
-      return updated;
-    });
-  };
+  // Persistence Effects
+  useEffect(() => { try { localStorage.setItem(REPORTS_KEY, JSON.stringify(reports)); } catch (e) { console.error(e); } }, [reports]);
+  useEffect(() => { try { localStorage.setItem(INCOME_KEY, JSON.stringify(incomeRecords)); } catch (e) { console.error(e); } }, [incomeRecords]);
+  useEffect(() => { try { localStorage.setItem(LOYALTY_KEY, JSON.stringify(loyaltyProfiles)); } catch (e) { console.error(e); } }, [loyaltyProfiles]);
+  useEffect(() => { try { localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses)); } catch (e) { console.error(e); } }, [expenses]);
+  useEffect(() => { try { localStorage.setItem(INVENTORY_KEY, JSON.stringify(inventory)); } catch (e) { console.error(e); } }, [inventory]);
+  useEffect(() => { try { localStorage.setItem(INSTRUMENTS_KEY, JSON.stringify(instruments)); } catch (e) { console.error(e); } }, [instruments]);
+  useEffect(() => { try { localStorage.setItem(TRANSMISSIONS_KEY, JSON.stringify(transmissions)); } catch (e) { console.error(e); } }, [transmissions]);
+  useEffect(() => { try { localStorage.setItem(AUDIT_KEY, JSON.stringify(auditLogs)); } catch (e) { console.error(e); } }, [auditLogs]);
+  useEffect(() => { try { localStorage.setItem(LAB_INFO_KEY, JSON.stringify(labInfo)); } catch (e) { console.error(e); } }, [labInfo]);
+  useEffect(() => { try { localStorage.setItem(CATALOG_KEY, JSON.stringify(testCatalog)); } catch (e) { console.error(e); } }, [testCatalog]);
 
-  const deleteFacility = (id: string) => {
-    setFacilities(prev => {
-      const updated = prev.filter(f => f.id !== id);
-      localStorage.setItem(STORAGE_KEYS.FACILITIES, JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  // Staff Members Directory
-  const [staffMembers, setStaffMembers] = useState<StaffMember[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.STAFF_MEMBERS);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch { /* ignore */ }
-    }
-    return INITIAL_STAFF_MEMBERS;
-  });
-
-  const addStaffMember = (staff: Omit<StaffMember, "id">): StaffMember => {
-    const newStaff: StaffMember = {
-      ...staff,
-      id: `staff-${Date.now()}`
-    };
-    setStaffMembers(prev => {
-      const updated = [...prev, newStaff];
-      localStorage.setItem(STORAGE_KEYS.STAFF_MEMBERS, JSON.stringify(updated));
-      return updated;
-    });
-    return newStaff;
-  };
-
-  const updateStaffMember = (id: string, updates: Partial<StaffMember>) => {
-    setStaffMembers(prev => {
-      const updated = prev.map(s => s.id === id ? { ...s, ...updates } : s);
-      localStorage.setItem(STORAGE_KEYS.STAFF_MEMBERS, JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  const deleteStaffMember = (id: string) => {
-    setStaffMembers(prev => {
-      const updated = prev.filter(s => s.id !== id);
-      localStorage.setItem(STORAGE_KEYS.STAFF_MEMBERS, JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.LAB_INFO, JSON.stringify(labInfo));
-  }, [labInfo]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.FACILITIES, JSON.stringify(facilities));
-  }, [facilities]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.STAFF_MEMBERS, JSON.stringify(staffMembers));
-  }, [staffMembers]);
-
-  // LocalStorage Persisters
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.INCOME, JSON.stringify(incomeRecords));
-  }, [incomeRecords]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
-  }, [expenses]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.PROFIT_CONFIG, JSON.stringify(profitConfig));
-  }, [profitConfig]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(inventory));
-  }, [inventory]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(employees));
-  }, [employees]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(attendance));
-  }, [attendance]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.PAYROLL, JSON.stringify(payroll));
-  }, [payroll]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.LAB_TO_LAB, JSON.stringify(labToLabOrders));
-  }, [labToLabOrders]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CLOSEOUTS, JSON.stringify(closeouts));
-  }, [closeouts]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(auditLogs));
-  }, [auditLogs]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.GITHUB_CONFIG, JSON.stringify(githubConfig));
-  }, [githubConfig]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.DIAG_CASES, JSON.stringify(diagnosticCases));
-  }, [diagnosticCases]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CATALOG, JSON.stringify(testCatalog));
-  }, [testCatalog]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.LOYALTY_PROFILES, JSON.stringify(loyaltyProfiles));
-  }, [loyaltyProfiles]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.LOYALTY_CONFIG, JSON.stringify(loyaltyConfig));
-  }, [loyaltyConfig]);
-
-  // Audit Logging
-  const logAudit = useCallback((action: AuditLog['action'], module: AuditLog['module'], description: string) => {
+  // Audit Logging helper
+  const logAction = useCallback((action: AuditLog['action'], module: AuditLog['module'], description: string) => {
     const newLog: AuditLog = {
-      id: `aud-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      timestamp: new Date().toISOString(),
+      id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      timestamp: new Date().toLocaleString('ar-EG'),
       userId: currentUser.id,
       userName: currentUser.nameAr,
       userRole: currentUser.role,
@@ -609,375 +430,382 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       module,
       description
     };
-    setAuditLogs(prev => [newLog, ...prev.slice(0, 199)]);
+    setAuditLogs(prev => [newLog, ...prev.slice(0, 499)]);
   }, [currentUser]);
 
-  // Auth handlers
-  const loginUser = (username: string, pin: string): boolean => {
-    const found = users.find(u => u.username === username.trim().toLowerCase() && u.pin === pin.trim());
-    if (found) {
-      setCurrentUser(found);
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(found));
-      logAudit('LOGIN', 'SECURITY', `تم تسجيل الدخول بنجاح للمستخدم: ${found.nameAr} (${found.titleAr})`);
-      setLoginModalOpen(false);
+  // Notifications helper
+  const addNotification = useCallback((notif: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => {
+    const newNotif: AppNotification = {
+      ...notif,
+      id: `notif-${Date.now()}`,
+      timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+      read: false
+    };
+    setNotifications(prev => [newNotif, ...prev]);
+  }, []);
+
+  const markNotificationRead = useCallback((id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  }, []);
+
+  const clearNotifications = useCallback(() => {
+    setNotifications([]);
+  }, []);
+
+  // Auth & Permissions
+  const loginUser = useCallback((username: string, pin: string): boolean => {
+    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.pin === pin);
+    if (user) {
+      setCurrentUser(user);
+      logAction('LOGIN', 'SECURITY', `تسجيل دخول ناجح للمستخدم ${user.nameAr} (${user.role})`);
+      addNotification({
+        title: `مرحباً ${user.nameAr}`,
+        message: `تم تسجيل الدخول بنجاح بصلاحية: ${user.titleAr}`,
+        type: 'info'
+      });
       return true;
     }
     return false;
-  };
+  }, [users, logAction, addNotification]);
 
-  const logout = () => {
-    logAudit('LOGIN', 'SECURITY', `تسجيل خروج للمستخدم: ${currentUser.nameAr}`);
-    const defaultUser = INITIAL_USERS[1]; // Switch to cashier/accountant on logout
-    setCurrentUser(defaultUser);
-    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(defaultUser));
-  };
+  const logout = useCallback(() => {
+    logAction('LOGIN', 'SECURITY', `تسجيل خروج للمستخدم ${currentUser.nameAr}`);
+    setCurrentUser(INITIAL_USERS[0]);
+  }, [currentUser, logAction]);
 
-  // Role permissions check
-  const hasPermission = (module: string): boolean => {
-    if (currentUser.role === 'admin_ceo') return true; // CEO has all permissions
-    switch (module) {
-      case 'dashboard':
-      case 'loyalty':
-      case 'catalog':
-        return true;
-      case 'income':
-      case 'billing':
-        return currentUser.role === 'accountant';
-      case 'expenses':
-        return currentUser.role === 'accountant';
-      case 'profit_share':
-        return false;
-      case 'inventory':
-      case 'reagents':
-        return currentUser.role === 'lab_tech' || currentUser.role === 'accountant';
-      case 'hr':
-      case 'attendance':
-      case 'payroll':
-        return currentUser.role === 'hr_officer';
-      case 'lab_to_lab':
-        return currentUser.role === 'lab_tech' || currentUser.role === 'accountant';
-      case 'reports':
-        return currentUser.role === 'accountant';
-      case 'settings':
-        return currentUser.role === 'accountant';
-      default:
-        return false;
+  const hasPermission = useCallback((module: string): boolean => {
+    if (currentUser.role === 'admin_ceo') return true;
+    if (currentUser.role === 'accountant') {
+      return ['dashboard', 'admission', 'financial_income', 'expenses_profit', 'loyalty', 'reports_archive', 'audit_settings'].includes(module);
     }
-  };
+    if (currentUser.role === 'chemist') {
+      return ['dashboard', 'worklist', 'diagnostic_editor', 'reports_archive', 'instruments', 'catalog', 'loyalty'].includes(module);
+    }
+    if (currentUser.role === 'receptionist') {
+      return ['dashboard', 'admission', 'financial_income', 'loyalty', 'reports_archive'].includes(module);
+    }
+    if (currentUser.role === 'lab_tech') {
+      return ['dashboard', 'worklist', 'instruments', 'inventory'].includes(module);
+    }
+    if (currentUser.role === 'hr_officer') {
+      return ['dashboard', 'hr', 'audit_settings'].includes(module);
+    }
+    return true;
+  }, [currentUser]);
 
-  // Catalog methods
-  const addCatalogTest = useCallback((test: InvoiceTestItem) => {
-    setTestCatalog(prev => {
-      const exists = prev.some(t => t.code.toLowerCase() === test.code.toLowerCase());
-      if (exists) {
-        return prev.map(t => t.code.toLowerCase() === test.code.toLowerCase() ? test : t);
+  // Selected Report
+  const selectedReport = useMemo(() => {
+    return reports.find(r => r.id === selectedReportId) || reports[0] || null;
+  }, [reports, selectedReportId]);
+
+  // Report CRUD
+  const addReport = useCallback((report: LabReport) => {
+    setReports(prev => [report, ...prev]);
+    setSelectedReportId(report.id);
+    logAction('CREATE', 'DIAGNOSTIC', `إنشاء تقرير طبي جديد للمريض ${report.patient.fullName} برقم ${report.reportNumber}`);
+  }, [logAction]);
+
+  const updateReport = useCallback((id: string, updates: Partial<LabReport>) => {
+    setReports(prev => prev.map(r => r.id === id ? { ...r, ...updates, updatedAt: new Date().toISOString() } : r));
+    logAction('UPDATE', 'DIAGNOSTIC', `تحديث التقرير الطبي رقم ${id}`);
+  }, [logAction]);
+
+  const deleteReport = useCallback((id: string) => {
+    const reportToDelete = reports.find(r => r.id === id);
+    setReports(prev => prev.filter(r => r.id !== id));
+    if (selectedReportId === id) {
+      setSelectedReportId(null);
+    }
+    logAction('DELETE', 'DIAGNOSTIC', `حذف التقرير الطبي للمريض ${reportToDelete?.patient.fullName || id}`);
+  }, [reports, selectedReportId, logAction]);
+
+  const verifyReport = useCallback((id: string) => {
+    setReports(prev => prev.map(r => {
+      if (r.id === id) {
+        return {
+          ...r,
+          status: 'verified',
+          staff: {
+            ...r.staff,
+            verifiedBy: currentUser.nameAr,
+            pathologist: r.staff.pathologist || "أ.د. رامي مختار - استشاري الباثولوجيا الإكلينيكية والكيميائية - كلية طب قصر العيني"
+          },
+          updatedAt: new Date().toISOString()
+        };
       }
-      return [test, ...prev];
+      return r;
+    }));
+    logAction('UPDATE', 'DIAGNOSTIC', `اعتماد التقرير الطبي رسمياً بواسطة ${currentUser.nameAr}`);
+    addNotification({
+      title: "تم اعتماد التقرير الطبي",
+      message: `تم اعتماد تقرير المريض برقم ${id} وأصبح جاهزاً للطباعة والإرسال.`,
+      type: "success"
     });
-    logAudit('CATALOG_UPDATE', 'CATALOG', `إضافة/تحديث فحص بالكتالوج: ${test.nameAr} (${test.code}) بسعر ${test.price} ج.م`);
-  }, [logAudit]);
+  }, [currentUser, logAction, addNotification]);
+
+  // Financial CRUD
+  const addIncomeRecord = useCallback((record: Omit<IncomeRecord, 'id' | 'createdAt' | 'updatedAt'>): IncomeRecord => {
+    const newRecord: IncomeRecord = {
+      ...record,
+      id: `inv-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      syncStatus: 'synced'
+    };
+    setIncomeRecords(prev => [newRecord, ...prev]);
+    logAction('CREATE', 'INCOME', `إصدار فاتورة جديدة رقم ${newRecord.invoiceNumber} للمريض ${newRecord.patientName} بقيمة صافية ${newRecord.netAmount} ج.م`);
+    return newRecord;
+  }, [logAction]);
+
+  const updateIncomeRecord = useCallback((id: string, updates: Partial<IncomeRecord>) => {
+    setIncomeRecords(prev => prev.map(inv => inv.id === id ? { ...inv, ...updates, updatedAt: new Date().toISOString() } : inv));
+    logAction('UPDATE', 'INCOME', `تعديل الفاتورة رقم ${id}`);
+  }, [logAction]);
+
+  const deleteIncomeRecord = useCallback((id: string) => {
+    const inv = incomeRecords.find(i => i.id === id);
+    setIncomeRecords(prev => prev.filter(i => i.id !== id));
+    logAction('DELETE', 'INCOME', `حذف الفاتورة رقم ${inv?.invoiceNumber || id} للمريض ${inv?.patientName}`);
+  }, [incomeRecords, logAction]);
+
+  // Test Catalog CRUD
+  const addCatalogTest = useCallback((test: InvoiceTestItem) => {
+    setTestCatalog(prev => [test, ...prev]);
+    logAction('CATALOG_UPDATE', 'CATALOG', `إضافة تحليل جديد للكتالوج: ${test.nameAr} (${test.code})`);
+  }, [logAction]);
 
   const updateCatalogTest = useCallback((code: string, updates: Partial<InvoiceTestItem>) => {
     setTestCatalog(prev => prev.map(t => t.code === code ? { ...t, ...updates } : t));
-    logAudit('CATALOG_UPDATE', 'CATALOG', `تعديل بيانات فحص: كود (${code})`);
-  }, [logAudit]);
+    logAction('CATALOG_UPDATE', 'CATALOG', `تعديل سعر/بيانات التحليل: ${code}`);
+  }, [logAction]);
 
   const deleteCatalogTest = useCallback((code: string) => {
     setTestCatalog(prev => prev.filter(t => t.code !== code));
-    logAudit('DELETE', 'CATALOG', `حذف فحص من الكتالوج: كود (${code})`);
-  }, [logAudit]);
+    logAction('CATALOG_UPDATE', 'CATALOG', `حذف التحليل ${code} من الكتالوج`);
+  }, [logAction]);
 
-  const resetCatalog = useCallback(() => {
-    setTestCatalog(TEST_CATALOG);
-    localStorage.setItem(STORAGE_KEYS.CATALOG, JSON.stringify(TEST_CATALOG));
-    logAudit('CATALOG_UPDATE', 'CATALOG', `إعادة ضبط الكتالوج إلى القائمة الشاملة (165 فحص طبي)`);
-  }, [logAudit]);
+  // Unified Admission: Register patient -> Create Lab Report -> Create Income Invoice -> Update Loyalty
+  const createReportFromAdmission = useCallback((patient: Patient, selectedTests: InvoiceTestItem[], packageApplied?: any): LabReport => {
+    const today = new Date().toISOString().split('T')[0];
+    const generatedProfiles: TestProfile[] = [];
 
-  // Loyalty calculations & methods
-  const calculatePointsForAmount = useCallback((amountEGP: number, visitFee: number = 0) => {
-    const eligibleAmount = Math.max(0, amountEGP - (visitFee || 0));
-    return Math.round(eligibleAmount * loyaltyConfig.pointsPerEGP);
-  }, [loyaltyConfig]);
+    selectedTests.forEach(test => {
+      const catalogTemplate = LAB_CATALOG.find(c => c.code.toLowerCase() === test.code.toLowerCase() || c.titleEn.toLowerCase().includes(test.code.toLowerCase()));
+      if (catalogTemplate) {
+        generatedProfiles.push({
+          id: `prof-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          profileCode: catalogTemplate.code,
+          titleEn: catalogTemplate.titleEn,
+          titleAr: catalogTemplate.titleAr,
+          category: catalogTemplate.category,
+          sampleType: catalogTemplate.sampleType,
+          interpretation: catalogTemplate.defaultInterpretation || '',
+          parameters: catalogTemplate.parameters.map((p, idx) => ({
+            ...p,
+            id: `param-${idx}-${Date.now()}`,
+            result: '',
+            flag: 'NORMAL'
+          }))
+        });
+      } else {
+        generatedProfiles.push({
+          id: `prof-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          profileCode: test.code,
+          titleEn: test.nameEn,
+          titleAr: test.nameAr,
+          category: test.category || 'General',
+          sampleType: test.sampleType || 'Serum',
+          parameters: [
+            {
+              id: `p-${Date.now()}`,
+              name: test.nameEn,
+              result: '',
+              unit: test.unit || '',
+              minNormal: test.minNormal,
+              maxNormal: test.maxNormal,
+              textReference: test.textReference || '',
+              flag: 'NORMAL',
+              method: test.method || 'Automated Clinical Assay'
+            }
+          ]
+        });
+      }
+    });
 
-  const calculateCashForPoints = useCallback((points: number) => {
-    return Math.round((points * (loyaltyConfig.egpPer100Points / 100)) * 100) / 100;
-  }, [loyaltyConfig]);
+    const newReport: LabReport = {
+      id: `rep-${Date.now()}`,
+      reportNumber: patient.labNumber,
+      patient: {
+        ...patient,
+        sampleDate: patient.sampleDate || today,
+        reportingDate: patient.reportingDate || today
+      },
+      profiles: generatedProfiles.length > 0 ? generatedProfiles : [
+        {
+          id: `prof-def-${Date.now()}`,
+          profileCode: 'CBC',
+          titleEn: 'Complete Blood Count (CBC)',
+          titleAr: 'صورة الدم الكاملة',
+          category: 'Hematology',
+          sampleType: 'EDTA Whole Blood',
+          parameters: LAB_CATALOG[0].parameters.map((p, idx) => ({
+            ...p,
+            id: `p-${idx}-${Date.now()}`,
+            result: '',
+            flag: 'NORMAL'
+          }))
+        }
+      ],
+      staff: {
+        labChemist: "د. هبة الشناوي - كيميائية تحاليل",
+        verifiedBy: "د. مصطفى العوضي - استشاري التحاليل",
+        pathologist: "أ.د. رامي مختار - استشاري الباثولوجيا الإكلينيكية والكيميائية - كلية طب قصر العيني"
+      },
+      status: 'draft',
+      packageApplied: packageApplied ? {
+        code: packageApplied.code,
+        titleAr: packageApplied.titleAr,
+        packagePrice: packageApplied.packagePrice
+      } : undefined,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
 
-  const getDynamicTier = useCallback((points: number): LoyaltyTier => {
+    setReports(prev => [newReport, ...prev]);
+    setSelectedReportId(newReport.id);
+
+    // Matching financial invoice
+    const newInvoice: IncomeRecord = {
+      id: `inv-${Date.now()}`,
+      invoiceNumber: `INV-${patient.labNumber.replace('RT-', '')}`,
+      patientName: patient.fullName,
+      patientPhone: patient.phone,
+      patientAge: patient.age,
+      patientGender: patient.gender,
+      barcode: patient.barcode,
+      labNumber: patient.labNumber,
+      referringDoctor: patient.referringDoctorName || 'أطباء كلية طب قصر العيني',
+      tests: selectedTests,
+      subtotal: patient.totalCost || 0,
+      testsSubtotal: patient.testsSubtotal || patient.totalCost || 0,
+      discount: patient.discountApplied || 0,
+      visitFee: patient.visitFee || 0,
+      isHomeVisit: patient.bookingType === 'home_visit',
+      visitAddress: patient.homeAddress,
+      netAmount: Math.max(0, (patient.totalCost || 0) - (patient.discountApplied || 0) + (patient.visitFee || 0)),
+      paidAmount: Math.max(0, (patient.totalCost || 0) - (patient.discountApplied || 0) + (patient.visitFee || 0)),
+      remainingAmount: 0,
+      paymentMethod: (patient.paymentMethod as any) || 'cash',
+      paymentStatus: 'paid',
+      cashierName: currentUser.nameAr,
+      branch: patient.branchAddress || 'فرع القصر العيني - الرئيسي',
+      syncStatus: 'synced',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    setIncomeRecords(prev => [newInvoice, ...prev]);
+    newReport.invoiceId = newInvoice.id;
+
+    logAction('CREATE', 'DIAGNOSTIC', `تسجيل مريض جديد ${patient.fullName} وحجز تحاليل وربط التقرير بالفاتورة المالية`);
+    addNotification({
+      title: "تم تسجيل المريض بنجاح",
+      message: `تم حجز التحاليل للمريض ${patient.fullName} وإصدار فاتورة وإدراج العينة في قائمة عمل المعمل.`,
+      type: "success"
+    });
+
+    return newReport;
+  }, [currentUser, logAction, addNotification]);
+
+  // Loyalty Program Helpers
+  const calculateLoyaltyTier = useCallback((points: number): LoyaltyTier => {
     if (points >= loyaltyConfig.tiers.VIP.minPoints) return 'VIP';
     if (points >= loyaltyConfig.tiers.Platinum.minPoints) return 'Platinum';
     if (points >= loyaltyConfig.tiers.Gold.minPoints) return 'Gold';
     return 'Silver';
   }, [loyaltyConfig]);
 
-  const updateLoyaltyConfig = useCallback((newConfig: LoyaltyConfig) => {
-    setLoyaltyConfigState(newConfig);
-    logAudit('UPDATE', 'LOYALTY', `تحديث إعدادات كروت الولاء وقيمة استبدال النقود ونسب الخصم`);
-  }, [logAudit]);
+  const calculateCashForPoints = useCallback((points: number) => {
+    return Math.floor(points / 100) * loyaltyConfig.egpPer100Points;
+  }, [loyaltyConfig]);
 
-  const addLoyaltyProfile = useCallback((profile: PatientLoyaltyProfile) => {
-    setLoyaltyProfiles(prev => [profile, ...prev]);
-    logAudit('CREATE', 'LOYALTY', `إصدار كرت مريض ذكي جديد للمريض: ${profile.patientName}`);
-  }, [logAudit]);
+  const calculatePointsForAmount = useCallback((amount: number) => {
+    return Math.floor(amount * loyaltyConfig.pointsPerEGP);
+  }, [loyaltyConfig]);
 
-  const deleteLoyaltyProfile = useCallback((patientId: string) => {
-    setLoyaltyProfiles(prev => prev.filter(p => p.patientId !== patientId));
-    logAudit('DELETE', 'LOYALTY', `حذف كارت مريض وملف ولاء نهائياً للعميل كود ${patientId}`);
-  }, [logAudit]);
+  const getLoyaltyByPhone = useCallback((phone: string): PatientLoyaltyProfile | undefined => {
+    if (!phone) return undefined;
+    const cleanPhone = phone.replace(/\s+/g, '');
+    return loyaltyProfiles.find(p => p.phone.replace(/\s+/g, '') === cleanPhone);
+  }, [loyaltyProfiles]);
 
-  const deleteLoyaltyTransaction = useCallback((patientId: string, transactionId: string) => {
-    setLoyaltyProfiles(prev => prev.map(p => {
-      if (p.patientId === patientId) {
-        const tx = p.transactions.find(t => t.id === transactionId);
-        const filtered = p.transactions.filter(t => t.id !== transactionId);
-        const pointsDiff = tx ? tx.points : 0;
-        const newTotal = Math.max(0, p.totalPoints - pointsDiff);
-        return {
+  const earnLoyaltyPoints = useCallback((
+    patientPhone: string,
+    amount: number,
+    invoiceNumber: string,
+    patientName: string,
+    barcode: string
+  ) => {
+    const pointsToEarn = Math.floor(amount * loyaltyConfig.pointsPerEGP);
+    if (pointsToEarn <= 0) return;
+
+    setLoyaltyProfiles(prev => {
+      const cleanPhone = patientPhone.replace(/\s+/g, '');
+      const existing = prev.find(p => p.phone.replace(/\s+/g, '') === cleanPhone);
+
+      if (existing) {
+        const newTotal = existing.totalPoints + pointsToEarn;
+        const newSpent = existing.lifetimeSpent + amount;
+        const newTier = calculateLoyaltyTier(newTotal);
+
+        return prev.map(p => p.patientId === existing.patientId ? {
           ...p,
           totalPoints: newTotal,
-          tier: getDynamicTier(newTotal),
-          transactions: filtered
-        };
-      }
-      return p;
-    }));
-  }, [getDynamicTier]);
-
-  const retroactiveSyncAllInvoicesToLoyalty = useCallback(() => {
-    let syncedCount = 0;
-    let newProfilesCount = 0;
-
-    setLoyaltyProfiles(prevProfiles => {
-      let currentList = [...prevProfiles];
-
-      incomeRecords.forEach(rec => {
-        if (!rec.patientPhone && !rec.patientName) return;
-        syncedCount++;
-
-        const cleanPhone = (rec.patientPhone || '').trim();
-        const cleanName = (rec.patientName || '').trim();
-
-        const matchIndex = currentList.findIndex(p => 
-          (cleanPhone && p.phone === cleanPhone) || 
-          (cleanName && p.patientName === cleanName)
-        );
-
-        const pts = calculatePointsForAmount(rec.paidAmount || rec.netAmount || 0, rec.visitFee || 0);
-
-        if (matchIndex >= 0) {
-          const matched = currentList[matchIndex];
-          const hasTx = matched.transactions.some(t => t.invoiceNumber === rec.invoiceNumber);
-          if (!hasTx && pts > 0) {
-            const newTx: LoyaltyTransaction = {
-              id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-              date: (rec.createdAt || new Date().toISOString()).substring(0, 10),
-              type: 'earn',
-              points: pts,
-              description: `مزامنة نقاط فاتورة سابقة #${rec.invoiceNumber}`,
-              invoiceNumber: rec.invoiceNumber,
-              amountEGP: rec.paidAmount || rec.netAmount
-            };
-            const newTotal = matched.totalPoints + pts;
-            const newSpent = matched.lifetimeSpent + (rec.paidAmount || rec.netAmount || 0);
-            currentList[matchIndex] = {
-              ...matched,
-              totalPoints: newTotal,
-              lifetimeSpent: newSpent,
-              tier: getDynamicTier(newTotal),
-              transactions: [newTx, ...matched.transactions]
-            };
-          }
-        } else {
-          newProfilesCount++;
-          const cardCode = `RT-GOLD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-          const initialPts = Math.max(pts, 25);
-          const newProf: PatientLoyaltyProfile = {
-            patientId: `pat-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-            patientName: cleanName || 'مريض معمل RT',
-            phone: cleanPhone || '01000000000',
-            cardNumber: cardCode,
-            barcode: cardCode,
-            bloodGroup: 'O+',
-            tier: getDynamicTier(initialPts),
-            totalPoints: initialPts,
-            lifetimeSpent: rec.paidAmount || rec.netAmount || 0,
-            issueDate: (rec.createdAt || new Date().toISOString()).substring(0, 10),
-            transactions: [
-              {
-                id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-                date: (rec.createdAt || new Date().toISOString()).substring(0, 10),
-                type: 'earn',
-                points: initialPts,
-                description: `تفعيل كارت الولاء بأثر رجعي مع فاتورة #${rec.invoiceNumber}`,
-                invoiceNumber: rec.invoiceNumber,
-                amountEGP: rec.paidAmount || rec.netAmount
-              }
-            ]
-          };
-          currentList = [newProf, ...currentList];
-        }
-      });
-
-      return currentList;
-    });
-
-    logAudit('UPDATE', 'LOYALTY', `مزامنة كروت ونقاط الولاء بأثر رجعي لجميع الفواتير (${syncedCount} فاتورة)`);
-    return { syncedCount, newProfilesCount };
-  }, [incomeRecords, calculatePointsForAmount, getDynamicTier, logAudit]);
-
-  const updateLoyaltyProfile = useCallback((patientId: string, updates: Partial<PatientLoyaltyProfile>) => {
-    setLoyaltyProfiles(prev => prev.map(p => {
-      if (p.patientId === patientId) {
-        const updated = { ...p, ...updates };
-        updated.tier = getDynamicTier(updated.totalPoints);
-        return updated;
-      }
-      return p;
-    }));
-  }, [getDynamicTier]);
-
-  const addLoyaltyPoints = useCallback((patientId: string, points: number, description: string, invoiceNumber?: string, amountEGP?: number) => {
-    if (points <= 0) return;
-    setLoyaltyProfiles(prev => prev.map(p => {
-      if (p.patientId === patientId) {
-        const newTotal = p.totalPoints + points;
-        const newSpent = amountEGP ? p.lifetimeSpent + amountEGP : p.lifetimeSpent;
-        const newTx: LoyaltyTransaction = {
-          id: `tx-${Date.now()}`,
-          date: new Date().toISOString().substring(0, 10),
-          type: 'earn',
-          points,
-          description,
-          invoiceNumber,
-          amountEGP
-        };
-        return {
-          ...p,
-          totalPoints: newTotal,
-          tier: getDynamicTier(newTotal),
+          tier: newTier,
           lifetimeSpent: newSpent,
-          transactions: [newTx, ...p.transactions]
+          transactions: [
+            {
+              id: `tx-${Date.now()}`,
+              date: new Date().toISOString().split('T')[0],
+              type: 'earn',
+              points: pointsToEarn,
+              description: `اكتساب نقاط عن فاتورة رقم ${invoiceNumber}`,
+              invoiceNumber,
+              amountEGP: amount
+            },
+            ...p.transactions
+          ]
+        } : p);
+      } else {
+        const newProfile: PatientLoyaltyProfile = {
+          patientId: `pat-loyalty-${Date.now()}`,
+          patientName,
+          phone: patientPhone,
+          barcode,
+          cardNumber: `RT-${calculateLoyaltyTier(pointsToEarn).toUpperCase()}-${barcode.replace('RT-', '') || Math.floor(10000 + Math.random() * 90000)}`,
+          bloodGroup: '',
+          totalPoints: pointsToEarn,
+          tier: calculateLoyaltyTier(pointsToEarn),
+          lifetimeSpent: amount,
+          issueDate: new Date().toISOString().split('T')[0],
+          transactions: [
+            {
+              id: `tx-${Date.now()}`,
+              date: new Date().toISOString().split('T')[0],
+              type: 'earn',
+              points: pointsToEarn,
+              description: `اكتساب نقاط ترحيبية وفاتورة رقم ${invoiceNumber}`,
+              invoiceNumber,
+              amountEGP: amount
+            }
+          ]
         };
-      }
-      return p;
-    }));
-    logAudit('UPDATE', 'LOYALTY', `إضافة ${points} نقطة للمريض ${patientId}`);
-  }, [getDynamicTier, logAudit]);
-
-  const redeemLoyaltyPoints = useCallback((patientId: string, points: number, invoiceNumber?: string) => {
-    const profile = loyaltyProfiles.find(p => p.patientId === patientId);
-    if (!profile || points <= 0 || points > profile.totalPoints) {
-      return { success: false, cashValue: 0 };
-    }
-    const cashValue = calculateCashForPoints(points);
-    setLoyaltyProfiles(prev => prev.map(p => {
-      if (p.patientId === patientId) {
-        const newTotal = p.totalPoints - points;
-        const newTx: LoyaltyTransaction = {
-          id: `tx-${Date.now()}`,
-          date: new Date().toISOString().substring(0, 10),
-          type: 'redeem',
-          points: -points,
-          description: `استبدال ${points} نقطة بخصم نقدي بقيمة ${cashValue} ج.م للفاتورة ${invoiceNumber || ''}`,
-          invoiceNumber
-        };
-        return {
-          ...p,
-          totalPoints: newTotal,
-          tier: getDynamicTier(newTotal),
-          transactions: [newTx, ...p.transactions]
-        };
-      }
-      return p;
-    }));
-    logAudit('UPDATE', 'LOYALTY', `استبدال ${points} نقطة بخصم نقدي بقيمة ${cashValue} ج.م`);
-    return { success: true, cashValue };
-  }, [calculateCashForPoints, getDynamicTier, logAudit, loyaltyProfiles]);
-
-  // Auto-sync existing income records to loyalty profiles on initial load
-  useEffect(() => {
-    if (incomeRecords && incomeRecords.length > 0) {
-      retroactiveSyncAllInvoicesToLoyalty();
-    }
-  }, []);
-
-  // Notifications
-  useEffect(() => {
-    const list: AppNotification[] = [];
-    const now = new Date();
-
-    inventory.forEach(item => {
-      if (item.currentQuantity <= item.minThreshold) {
-        list.push({
-          id: `notif-stock-${item.id}`,
-          title: language === 'ar' ? 'تنبيه نقص كواشف ومستلزمات' : 'Low Reagent Stock Alert',
-          message: language === 'ar'
-            ? `المادة "${item.nameAr}" متبقي منها ${item.currentQuantity} ${item.unit} فقط (الحد الأدنى ${item.minThreshold}).`
-            : `Reagent "${item.nameEn}" is at ${item.currentQuantity} ${item.unit} (Threshold: ${item.minThreshold}).`,
-          type: item.currentQuantity === 0 ? 'danger' : 'warning',
-          timestamp: new Date().toISOString(),
-          read: false,
-          targetTab: 'inventory'
-        });
-      }
-
-      const expiry = new Date(item.expiryDate);
-      const diffDays = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      if (diffDays <= 30 && diffDays > 0) {
-        list.push({
-          id: `notif-exp-${item.id}`,
-          title: language === 'ar' ? 'اقتراب انتهاء صلاحية كاشف' : 'Reagent Expiring Soon',
-          message: language === 'ar'
-            ? `كاشف "${item.nameAr}" ينتهي خلال ${diffDays} يوماً (${item.expiryDate}). Lot: ${item.lotNumber}`
-            : `Reagent "${item.nameEn}" expires in ${diffDays} days (${item.expiryDate}). Lot: ${item.lotNumber}`,
-          type: 'warning',
-          timestamp: new Date().toISOString(),
-          read: false,
-          targetTab: 'inventory'
-        });
-      } else if (diffDays <= 0) {
-        list.push({
-          id: `notif-exp-past-${item.id}`,
-          title: language === 'ar' ? 'كاشف منتهي الصلاحية!' : 'Expired Reagent Alert!',
-          message: language === 'ar'
-            ? `تنبيه حرج: المادة "${item.nameAr}" منتهية الصلاحية (${item.expiryDate}). يرجى استبعادها فوراً.`
-            : `Critical: "${item.nameEn}" is expired (${item.expiryDate}). Remove from testing.`,
-          type: 'danger',
-          timestamp: new Date().toISOString(),
-          read: false,
-          targetTab: 'inventory'
-        });
+        return [newProfile, ...prev];
       }
     });
 
-    const unpaidSum = incomeRecords
-      .filter(r => r.paymentStatus !== 'paid' && r.remainingAmount > 0)
-      .reduce((sum, r) => sum + r.remainingAmount, 0);
-
-    if (unpaidSum > 0) {
-      list.push({
-        id: 'notif-unpaid-debts',
-        title: language === 'ar' ? 'مستحقات وفواتير آجلة' : 'Pending Patient Balances',
-        message: language === 'ar'
-          ? `يوجد إجمالي متبقيات آجلة على المرضى بقيمة ${unpaidSum.toLocaleString()} ج.م.`
-          : `Total pending receivable balance from patients is ${unpaidSum.toLocaleString()} EGP.`,
-        type: 'info',
-        timestamp: new Date().toISOString(),
-        read: false,
-        targetTab: 'income'
-      });
-    }
-
-    setNotifications(list);
-  }, [inventory, incomeRecords, language]);
-
-  const markNotificationRead = (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  };
-
-  const clearAllNotifications = () => {
-    setNotifications([]);
-  };
+    logAction('LOYALTY', 'LOYALTY', `إضافة ${pointsToEarn} نقطة ولاء للمريض ${patientName} برقم هاتف ${patientPhone}`);
+  }, [loyaltyConfig, calculateLoyaltyTier, logAction]);
 
   // Financial Metrics
   const financialMetrics = useMemo(() => {
@@ -985,644 +813,751 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const totalPaidIncome = incomeRecords.reduce((acc, r) => acc + r.paidAmount, 0);
     const totalDeferredIncome = incomeRecords.reduce((acc, r) => acc + r.remainingAmount, 0);
     const totalExpenses = expenses.reduce((acc, e) => acc + e.amount, 0);
-
-    const calculationBase = profitConfig.calculationBase === 'gross_income'
-      ? totalPaidIncome
-      : Math.max(0, totalPaidIncome - totalExpenses);
-
-    const ceoShare = (calculationBase * profitConfig.ceoPercentage) / 100;
-    const labShare = (calculationBase * profitConfig.labPercentage) / 100;
-    const emergencyShare = (calculationBase * profitConfig.emergencyFundPercentage) / 100;
-
-    const todayStr = new Date().toISOString().split('T')[0];
-    const todayIncome = incomeRecords
-      .filter(r => r.createdAt.startsWith(todayStr))
-      .reduce((acc, r) => acc + r.paidAmount, 0);
-
-    const todayExpenses = expenses
-      .filter(e => e.date === todayStr)
-      .reduce((acc, e) => acc + e.amount, 0);
+    const netProfit = totalPaidIncome - totalExpenses;
+    const base = profitConfig.calculationBase === 'net_profit' ? Math.max(0, netProfit) : totalPaidIncome;
+    const ceoShare = (base * profitConfig.ceoPercentage) / 100;
+    const labShare = (base * profitConfig.labPercentage) / 100;
+    const emergencyFund = (base * profitConfig.emergencyFundPercentage) / 100;
 
     return {
       totalGrossIncome,
       totalPaidIncome,
       totalDeferredIncome,
       totalExpenses,
-      netProfit: totalPaidIncome - totalExpenses,
+      netProfit,
       ceoShare,
       labShare,
-      emergencyShare,
-      todayIncome,
-      todayExpenses
+      emergencyFund,
+      emergencyShare: emergencyFund
     };
   }, [incomeRecords, expenses, profitConfig]);
 
-  // Income Operations
-  const addIncomeRecord = (recordData: Omit<IncomeRecord, 'id' | 'createdAt' | 'updatedAt'>): IncomeRecord => {
-    const id = `inc-${Date.now()}`;
-    const now = new Date().toISOString();
-    const newRecord: IncomeRecord = {
-      ...recordData,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
+  const resetCatalog = useCallback(() => {
+    setTestCatalog(DEFAULT_TEST_CATALOG);
+    logAction('CATALOG_UPDATE', 'CATALOG', 'إعادة ضبط كتالوج التحاليل للقيم الافتراضية');
+  }, [logAction]);
 
-    setIncomeRecords(prev => [newRecord, ...prev]);
-    logAudit('CREATE', 'INCOME', `تسجيل إيراد وفاتورة مريض جديدة: ${newRecord.patientName} (${newRecord.invoiceNumber}) بمبلغ ${newRecord.netAmount} ج.م`);
+  const updateLoyaltyConfig = useCallback((newConfig: LoyaltyConfig) => {
+    logAction('LOYALTY', 'LOYALTY', 'تحديث إعدادات كروت الولاء وقيمة استبدال النقاط');
+  }, [logAction]);
 
-    // Auto-award points or enroll new patient in Loyalty Program
-    if (newRecord.paidAmount > 0 && newRecord.patientPhone) {
-      const match = loyaltyProfiles.find(p => p.phone === newRecord.patientPhone || (p.patientName && p.patientName === newRecord.patientName));
-      const pts = calculatePointsForAmount(newRecord.paidAmount, newRecord.visitFee || 0);
-      if (match) {
-        addLoyaltyPoints(match.patientId, pts, `نقاط فاتورة التحاليل ${newRecord.invoiceNumber}`, newRecord.invoiceNumber, newRecord.paidAmount);
-      } else {
-        const generatedCard = `RT-GOLD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-        const newLoyaltyProfile: PatientLoyaltyProfile = {
-          patientId: `pat-${Date.now()}`,
-          patientName: newRecord.patientName,
-          phone: newRecord.patientPhone,
-          cardNumber: generatedCard,
-          barcode: generatedCard,
-          bloodGroup: 'O+',
-          tier: 'Silver',
-          totalPoints: Math.max(pts, 25),
-          lifetimeSpent: newRecord.paidAmount,
-          issueDate: now.substring(0, 10),
-          transactions: [
-            {
-              id: `tx-${Date.now()}`,
-              date: now.substring(0, 10),
-              type: 'earn',
-              points: Math.max(pts, 25),
-              description: `افتتاح حساب كارت الولاء مع فاتورة #${newRecord.invoiceNumber}`,
-              invoiceNumber: newRecord.invoiceNumber,
-              amountEGP: newRecord.paidAmount
-            }
-          ]
-        };
-        addLoyaltyProfile(newLoyaltyProfile);
-      }
-    }
+  const addLoyaltyProfile = useCallback((profile: PatientLoyaltyProfile) => {
+    setLoyaltyProfiles(prev => [profile, ...prev]);
+    logAction('CREATE', 'LOYALTY', `إصدار كارت ولاء جديد للمريض ${profile.patientName}`);
+  }, [logAction]);
 
-    // Broadcast to all devices in real-time
-    realtimeSync.broadcast('NEW_INVOICE', newRecord);
-
-    // Instant Multi-layer Sync to Diagnostic System (localStorage, BroadcastChannel, and GitHub)
-    syncInvoiceToDiagnostic(newRecord, githubConfig).catch(err => {
-      console.warn('Sync to diagnostic error:', err);
-    });
-
-    if (githubConfig.autoSync) {
-      setTimeout(() => {
-        pushCasesToDiagnostic().catch(() => {});
-      }, 300);
-    }
-
-    return newRecord;
-  };
-
-  const updateIncomeRecord = (id: string, updates: Partial<IncomeRecord>) => {
-    setIncomeRecords(prev => prev.map(rec => {
-      if (rec.id === id) {
-        const updated = { ...rec, ...updates, updatedAt: new Date().toISOString() };
-        logAudit('UPDATE', 'INCOME', `تعديل بيانات الفاتورة: ${updated.invoiceNumber} للمريض ${updated.patientName}`);
-        syncInvoiceToDiagnostic(updated, githubConfig).catch(() => {});
-        realtimeSync.broadcast('UPDATE_INVOICE', updated);
-        return updated;
-      }
-      return rec;
-    }));
-  };
-
-  const deleteIncomeRecord = (id: string) => {
-    const target = incomeRecords.find(r => r.id === id);
-    if (!target) return;
-    setIncomeRecords(prev => prev.filter(r => r.id !== id));
-    logAudit('DELETE', 'INCOME', `حذف فاتورة المريض: ${target.patientName} (${target.invoiceNumber}) بمبلغ ${target.netAmount} ج.م`);
-  };
-
-  // Expenses Operations
-  const addExpense = (expenseData: Omit<ExpenseRecord, 'id' | 'createdAt'>): ExpenseRecord => {
-    const id = `exp-${Date.now()}`;
-    const newExpense: ExpenseRecord = {
-      ...expenseData,
-      id,
-      createdAt: new Date().toISOString()
-    };
-    setExpenses(prev => [newExpense, ...prev]);
-    logAudit('CREATE', 'EXPENSES', `تسجيل بند مصروف جديد: ${newExpense.title} بمبلغ ${newExpense.amount} ج.م (${newExpense.category})`);
-    return newExpense;
-  };
-
-  const updateExpense = (id: string, updates: Partial<ExpenseRecord>) => {
-    setExpenses(prev => prev.map(exp => {
-      if (exp.id === id) {
-        const updated = { ...exp, ...updates };
-        logAudit('UPDATE', 'EXPENSES', `تعديل سند الصرف: ${updated.expenseNumber} - ${updated.title}`);
-        return updated;
-      }
-      return exp;
-    }));
-  };
-
-  const deleteExpense = (id: string) => {
-    const target = expenses.find(e => e.id === id);
-    if (!target) return;
-    setExpenses(prev => prev.filter(e => e.id !== id));
-    logAudit('DELETE', 'EXPENSES', `حذف سند الصرف: ${target.expenseNumber} - ${target.title} بقيمة ${target.amount} ج.م`);
-  };
-
-  const updateProfitConfig = (config: ProfitShareConfig) => {
-    setProfitConfigState(config);
-    logAudit('UPDATE', 'SETTINGS', `تعديل نسب توزيع الأرباح: المعمل ${config.labPercentage}% - الإدارة ${config.ceoPercentage}%`);
-  };
-
-  // Inventory Operations
-  const addInventoryItem = (itemData: Omit<InventoryItem, 'id' | 'lastRestockedDate'>) => {
-    const newItem: InventoryItem = {
-      ...itemData,
-      id: `inv-${Date.now()}`,
-      lastRestockedDate: new Date().toISOString().split('T')[0]
-    };
-    setInventory(prev => [newItem, ...prev]);
-    logAudit('CREATE', 'INVENTORY', `إضافة صنف جديد للمخزن: ${newItem.nameAr} (${newItem.code})`);
-  };
-
-  const updateInventoryItem = (id: string, updates: Partial<InventoryItem>) => {
-    setInventory(prev => prev.map(i => {
-      if (i.id === id) {
-        const updated = { ...i, ...updates };
-        logAudit('UPDATE', 'INVENTORY', `تعديل بيانات الصنف المخزني: ${updated.nameAr}`);
-        return updated;
-      }
-      return i;
-    }));
-  };
-
-  const restockItem = (id: string, addedQty: number, newCost?: number) => {
+  const restockItem = useCallback((id: string, addedQty: number, newCost?: number) => {
     setInventory(prev => prev.map(item => {
       if (item.id === id) {
-        const updatedQty = item.currentQuantity + addedQty;
-        const updatedCost = newCost !== undefined ? newCost : item.costPerUnit;
-        logAudit('UPDATE', 'INVENTORY', `توريد واستلام كمية ${addedQty} ${item.unit} من صنف "${item.nameAr}"`);
         return {
           ...item,
-          currentQuantity: updatedQty,
-          costPerUnit: updatedCost,
+          currentQuantity: item.currentQuantity + addedQty,
+          costPerUnit: newCost !== undefined ? newCost : item.costPerUnit,
           lastRestockedDate: new Date().toISOString().split('T')[0]
         };
       }
       return item;
     }));
-  };
+    logAction('UPDATE', 'INVENTORY', `توريد واستلام كمية ${addedQty} لمادة رقم ${id}`);
+  }, [logAction]);
 
-  const consumeReagent = (id: string, qty: number) => {
+  const consumeReagent = useCallback((id: string, qty: number) => {
     setInventory(prev => prev.map(item => {
       if (item.id === id) {
-        const updatedQty = Math.max(0, item.currentQuantity - qty);
-        logAudit('UPDATE', 'INVENTORY', `صرف واستهلاك ${qty} ${item.unit} من كاشف "${item.nameAr}" للتشغيل المعملي`);
         return {
           ...item,
-          currentQuantity: updatedQty
+          currentQuantity: Math.max(0, item.currentQuantity - qty)
         };
       }
       return item;
     }));
-  };
+    logAction('UPDATE', 'INVENTORY', `صرف واستهلاك ${qty} من مادة رقم ${id}`);
+  }, [logAction]);
 
-  const deleteInventoryItem = (id: string) => {
-    const target = inventory.find(i => i.id === id);
-    if (!target) return;
+  const addLoyaltyPoints = useCallback((
+    patientPhone: string,
+    points: number,
+    reason: string,
+    invoiceNumber?: string,
+    amountEGP?: number
+  ) => {
+    setLoyaltyProfiles(prev => {
+      const cleanPhone = patientPhone.replace(/\s+/g, '');
+      const existing = prev.find(p => p.phone.replace(/\s+/g, '') === cleanPhone || p.patientId === patientPhone);
+      if (existing) {
+        const newTotal = existing.totalPoints + points;
+        return prev.map(p => {
+          if (p.patientId === existing.patientId) {
+            return {
+              ...p,
+              totalPoints: newTotal,
+              tier: calculateLoyaltyTier(newTotal),
+              transactions: [
+                {
+                  id: `tx-${Date.now()}`,
+                  date: new Date().toISOString().split('T')[0],
+                  type: 'bonus',
+                  points,
+                  description: reason,
+                  invoiceNumber,
+                  amountEGP
+                },
+                ...p.transactions
+              ]
+            };
+          }
+          return p;
+        });
+      }
+      return prev;
+    });
+  }, [calculateLoyaltyTier]);
+
+  const redeemLoyaltyPoints = useCallback((
+    patientPhone: string,
+    points: number,
+    invoiceNumber?: string,
+    discountEGP?: number
+  ): { success: boolean; cashValue: number } => {
+    const profile = getLoyaltyByPhone(patientPhone) || loyaltyProfiles.find(p => p.patientId === patientPhone);
+    const cashValue = discountEGP || calculateCashForPoints(points);
+    if (!profile || profile.totalPoints < points) {
+      return { success: false, cashValue: 0 };
+    }
+
+    setLoyaltyProfiles(prev => prev.map(p => {
+      if (p.patientId === profile.patientId) {
+        const remaining = p.totalPoints - points;
+        return {
+          ...p,
+          totalPoints: remaining,
+          transactions: [
+            {
+              id: `tx-red-${Date.now()}`,
+              date: new Date().toISOString().split('T')[0],
+              type: 'redeem',
+              points: -points,
+              description: `استبدال ${points} نقطة بخصم ${cashValue} ج.م ${invoiceNumber ? `على فاتورة ${invoiceNumber}` : ''}`,
+              invoiceNumber,
+              amountEGP: cashValue
+            },
+            ...p.transactions
+          ]
+        };
+      }
+      return p;
+    }));
+
+    logAction('LOYALTY', 'LOYALTY', `استبدال ${points} نقطة للمريض ${profile.patientName} بخصم ${cashValue} ج.م`);
+    return { success: true, cashValue };
+  }, [getLoyaltyByPhone, loyaltyProfiles, calculateCashForPoints, logAction]);
+
+  const updateLoyaltyProfile = useCallback((id: string, updates: Partial<PatientLoyaltyProfile>) => {
+    setLoyaltyProfiles(prev => prev.map(p => p.patientId === id ? { ...p, ...updates } : p));
+  }, []);
+
+  const deleteLoyaltyProfile = useCallback((id: string) => {
+    setLoyaltyProfiles(prev => prev.filter(p => p.patientId !== id));
+  }, []);
+
+  const deleteLoyaltyTransaction = useCallback((profileId: string, txId: string) => {
+    setLoyaltyProfiles(prev => prev.map(p => {
+      if (p.patientId === profileId) {
+        const filteredTx = p.transactions.filter(t => t.id !== txId);
+        const recomputedPoints = filteredTx.reduce((sum, t) => sum + t.points, 0);
+        return { ...p, transactions: filteredTx, totalPoints: Math.max(0, recomputedPoints) };
+      }
+      return p;
+    }));
+  }, []);
+
+  const retroactiveSyncAllInvoicesToLoyalty = useCallback(() => {
+    let syncedCount = 0;
+    let newProfilesCount = 0;
+
+    incomeRecords.forEach(inv => {
+      if (inv.patientPhone && inv.paidAmount > 0) {
+        earnLoyaltyPoints(inv.patientPhone, inv.paidAmount, inv.invoiceNumber, inv.patientName, inv.barcode);
+        syncedCount++;
+      }
+    });
+
+    logAction('LOYALTY', 'LOYALTY', `مزامنة رجعية لنقاط الولاء لـ ${syncedCount} فاتورة سابقة`);
+    return { syncedCount, newProfilesCount };
+  }, [incomeRecords, earnLoyaltyPoints, logAction]);
+
+  // Expenses CRUD
+  const addExpense = useCallback((expense: Omit<ExpenseRecord, 'id' | 'createdAt'>) => {
+    const newExp: ExpenseRecord = {
+      ...expense,
+      id: `exp-${Date.now()}`,
+      createdAt: new Date().toISOString()
+    };
+    setExpenses(prev => [newExp, ...prev]);
+    logAction('CREATE', 'EXPENSES', `تسجيل مصروف جديد: ${expense.title} بقيمة ${expense.amount} ج.م`);
+  }, [logAction]);
+
+  const updateExpense = useCallback((id: string, updates: Partial<ExpenseRecord>) => {
+    setExpenses(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+    logAction('UPDATE', 'EXPENSES', `تعديل المصروف رقم ${id}`);
+  }, [logAction]);
+
+  const deleteExpense = useCallback((id: string) => {
+    setExpenses(prev => prev.filter(e => e.id !== id));
+    logAction('DELETE', 'EXPENSES', `حذف بند المصروف رقم ${id}`);
+  }, [logAction]);
+
+  const updateProfitConfig = useCallback((config: ProfitShareConfig) => {
+    setProfitConfig(config);
+    logAction('UPDATE', 'SETTINGS', 'تحديث إعدادات توزيع الأرباح ونسب الشركاء');
+  }, [logAction]);
+
+  // Daily Closeout
+  const closeoutDay = useCallback((actualCash: number, discrepancyNotes?: string): DailyCloseout => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayIncome = incomeRecords.filter(r => r.createdAt.startsWith(today));
+    const todayExpenses = expenses.filter(e => e.date === today);
+
+    const cashIncome = todayIncome.filter(r => r.paymentMethod === 'cash').reduce((sum, r) => sum + r.paidAmount, 0);
+    const visaIncome = todayIncome.filter(r => r.paymentMethod === 'visa').reduce((sum, r) => sum + r.paidAmount, 0);
+    const transferIncome = todayIncome.filter(r => ['bank_transfer', 'instapay', 'vodafone_cash'].includes(r.paymentMethod)).reduce((sum, r) => sum + r.paidAmount, 0);
+    const deferredIncome = todayIncome.filter(r => r.paymentStatus === 'unpaid').reduce((sum, r) => sum + r.remainingAmount, 0);
+    const cashExpenses = todayExpenses.filter(e => e.paymentMethod === 'cash').reduce((sum, e) => sum + e.amount, 0);
+
+    const expectedCash = cashIncome - cashExpenses;
+    const diff = actualCash - expectedCash;
+
+    const closeout: DailyCloseout = {
+      id: `close-${today}`,
+      date: today,
+      totalIncomeCash: cashIncome,
+      totalIncomeVisa: visaIncome,
+      totalIncomeTransfer: transferIncome,
+      totalIncomeDeferred: deferredIncome,
+      totalExpenses: cashExpenses,
+      expectedCashInDrawer: expectedCash,
+      actualCashInDrawer: actualCash,
+      discrepancy: diff,
+      closedBy: currentUser.nameAr,
+      notes: discrepancyNotes,
+      timestamp: new Date().toISOString()
+    };
+
+    setDailyCloseouts(prev => [closeout, ...prev.filter(c => c.date !== today)]);
+    logAction('CLOSEOUT', 'INCOME', `تقفيل الوردية اليومية: المتوقع ${expectedCash} ج.م، الفعلي ${actualCash} ج.م، الفرق ${diff} ج.م`);
+    return closeout;
+  }, [incomeRecords, expenses, currentUser, logAction]);
+
+  // Inventory CRUD
+  const addInventoryItem = useCallback((item: Omit<InventoryItem, 'id' | 'lastRestockedDate'>) => {
+    const newItem: InventoryItem = {
+      ...item,
+      id: `inv-item-${Date.now()}`,
+      lastRestockedDate: new Date().toISOString().split('T')[0]
+    };
+    setInventory(prev => [newItem, ...prev]);
+    logAction('CREATE', 'INVENTORY', `إضافة مادة/محلول مخبري جديد: ${item.nameAr}`);
+  }, [logAction]);
+
+  const updateInventoryItem = useCallback((id: string, updates: Partial<InventoryItem>) => {
+    setInventory(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
+    logAction('UPDATE', 'INVENTORY', `تحديث مخزون المادة رقم ${id}`);
+  }, [logAction]);
+
+  const deleteInventoryItem = useCallback((id: string) => {
     setInventory(prev => prev.filter(i => i.id !== id));
-    logAudit('DELETE', 'INVENTORY', `حذف صنف من المخزن: ${target.nameAr} (${target.code})`);
-  };
+    logAction('DELETE', 'INVENTORY', `حذف مادة من المخزون رقم ${id}`);
+  }, [logAction]);
 
-  // HR Operations
-  const addEmployee = (empData: Omit<Employee, 'id'>) => {
+  // Instruments & Interfacing
+  const toggleInstrumentStatus = useCallback((id: string) => {
+    setInstruments(prev => prev.map(inst => {
+      if (inst.id === id) {
+        const newStatus = inst.status === 'online' ? 'offline' : 'online';
+        return { ...inst, status: newStatus };
+      }
+      return inst;
+    }));
+  }, []);
+
+  const simulateInstrumentRun = useCallback((instrumentId: string, barcode: string, patientName?: string, labNumber?: string): InstrumentTransmission => {
+    const inst = instruments.find(i => i.id === instrumentId) || instruments[0];
+    const isHematology = inst.category === 'hematology';
+
+    let generatedResults: Record<string, string | number> = {};
+    if (isHematology) {
+      generatedResults = {
+        "Hemoglobin (Hb)": +(11.5 + Math.random() * 4).toFixed(1),
+        "RBC Count": +(4.2 + Math.random() * 1.2).toFixed(2),
+        "Hematocrit (Hct / PCV)": +(36 + Math.random() * 10).toFixed(1),
+        "MCV": +(78 + Math.random() * 18).toFixed(1),
+        "MCH": +(26 + Math.random() * 6).toFixed(1),
+        "MCHC": +(32 + Math.random() * 3).toFixed(1),
+        "RDW-CV": +(12.5 + Math.random() * 3).toFixed(1),
+        "Total Leucocytic Count (TLC / WBC)": +(5.5 + Math.random() * 4.5).toFixed(1),
+        "Platelet Count": Math.floor(180 + Math.random() * 220),
+        "Neutrophils %": Math.floor(55 + Math.random() * 15),
+        "Lymphocytes %": Math.floor(25 + Math.random() * 12),
+        "Monocytes %": Math.floor(4 + Math.random() * 4),
+        "Eosinophils %": Math.floor(1 + Math.random() * 3),
+        "Basophils %": 1
+      };
+    } else {
+      generatedResults = {
+        "Fasting Blood Glucose": Math.floor(80 + Math.random() * 50),
+        "Serum Creatinine": +(0.7 + Math.random() * 0.4).toFixed(2),
+        "Blood Urea": Math.floor(20 + Math.random() * 20),
+        "Serum Uric Acid": +(4.0 + Math.random() * 2.0).toFixed(1),
+        "ALT (SGPT)": Math.floor(18 + Math.random() * 25),
+        "AST (SGOT)": Math.floor(16 + Math.random() * 20),
+        "Total Bilirubin": +(0.6 + Math.random() * 0.4).toFixed(2),
+        "Direct Bilirubin": +(0.12 + Math.random() * 0.1).toFixed(2)
+      };
+    }
+
+    const newTx: InstrumentTransmission = {
+      id: `tx-${Date.now()}`,
+      instrumentId: inst.id,
+      instrumentName: inst.name,
+      timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+      sampleBarcode: barcode,
+      patientLabNumber: labNumber || `RT-2026-${Math.floor(100 + Math.random() * 900)}`,
+      patientName: patientName || 'عينة واردة من الجهاز',
+      testCode: isHematology ? 'CBC' : 'CHEMISTRY',
+      results: generatedResults,
+      rawMessage: `MSH|^~\\&|${inst.name}|${inst.manufacturer}|RT_LIS|MAIN|${new Date().toISOString()}||ORU^R01\rPID|||${barcode}\rOBR|1||${barcode}|${isHematology ? 'CBC' : 'CHEM'}`,
+      status: 'received'
+    };
+
+    setTransmissions(prev => [newTx, ...prev]);
+    setInstruments(prev => prev.map(i => i.id === inst.id ? { ...i, totalTestsRun: i.totalTestsRun + 1, lastSyncTime: 'الآن' } : i));
+
+    logAction('DEVICE_COMM', 'DEVICE', `استلام نتائج فحص تلقائية من جهاز ${inst.name} للباركود ${barcode}`);
+    addNotification({
+      title: `نتائج جديدة من ${inst.name}`,
+      message: `تم استقبال قراءات الباركود ${barcode} بنجاح ويمكن الآن إدراجها بالتقرير الطبي بضغطة زر.`,
+      type: "info"
+    });
+
+    return newTx;
+  }, [instruments, logAction, addNotification]);
+
+  const applyTransmissionToReport = useCallback((transmissionId: string, reportId: string): boolean => {
+    const tx = transmissions.find(t => t.id === transmissionId);
+    const targetReport = reports.find(r => r.id === reportId);
+    if (!tx || !targetReport) return false;
+
+    setReports(prev => prev.map(rep => {
+      if (rep.id === reportId) {
+        const updatedProfiles = rep.profiles.map(prof => {
+          const updatedParams = prof.parameters.map(param => {
+            const matchingKey = Object.keys(tx.results).find(k =>
+              k.toLowerCase() === param.name.toLowerCase() ||
+              param.name.toLowerCase().includes(k.toLowerCase()) ||
+              k.toLowerCase().includes(param.name.toLowerCase())
+            );
+
+            if (matchingKey && tx.results[matchingKey] !== undefined) {
+              const val = tx.results[matchingKey];
+              const numVal = typeof val === 'number' ? val : parseFloat(String(val));
+              let flag: TestParameter['flag'] = 'NORMAL';
+
+              if (!isNaN(numVal)) {
+                if (param.panicLow !== undefined && numVal <= param.panicLow) flag = 'PANIC_LOW';
+                else if (param.panicHigh !== undefined && numVal >= param.panicHigh) flag = 'PANIC_HIGH';
+                else if (param.minNormal !== undefined && numVal < param.minNormal) flag = 'LOW';
+                else if (param.maxNormal !== undefined && numVal > param.maxNormal) flag = 'HIGH';
+              }
+
+              return { ...param, result: String(val), flag };
+            }
+            return param;
+          });
+
+          return { ...prof, parameters: updatedParams };
+        });
+
+        return { ...rep, profiles: updatedProfiles, updatedAt: new Date().toISOString() };
+      }
+      return rep;
+    }));
+
+    setTransmissions(prev => prev.map(t => t.id === transmissionId ? { ...t, status: 'mapped' } : t));
+
+    logAction('UPDATE', 'DIAGNOSTIC', `إدراج نتائج جهاز ${tx.instrumentName} في تقرير المريض ${targetReport.patient.fullName}`);
+    addNotification({
+      title: "تم ربط وإدراج نتائج الجهاز",
+      message: `تم تحديث بارامترات التقرير الطبي للعينّة ${targetReport.reportNumber} تلقائياً.`,
+      type: "success"
+    });
+
+    return true;
+  }, [transmissions, reports, logAction, addNotification]);
+
+  // Lab to Lab CRUD
+  const addLabToLabOrder = useCallback((order: Omit<LabToLabOrder, 'id'>) => {
+    const newOrder: LabToLabOrder = {
+      ...order,
+      id: `l2l-${Date.now()}`
+    };
+    setLabToLabOrders(prev => [newOrder, ...prev]);
+    logAction('CREATE', 'LAB_TO_LAB', `إرسال عينة إلى معمل إحالة خارجي: ${order.externalLabName} للمريض ${order.patientName}`);
+  }, [logAction]);
+
+  const updateLabToLabOrder = useCallback((id: string, updates: Partial<LabToLabOrder>) => {
+    setLabToLabOrders(prev => prev.map(o => o.id === id ? { ...o, ...updates } : o));
+    logAction('UPDATE', 'LAB_TO_LAB', `تحديث طلب معمل الإحالة رقم ${id}`);
+  }, [logAction]);
+
+  const deleteLabToLabOrder = useCallback((id: string) => {
+    setLabToLabOrders(prev => prev.filter(o => o.id !== id));
+    logAction('DELETE', 'LAB_TO_LAB', `حذف طلب معمل الإحالة رقم ${id}`);
+  }, [logAction]);
+
+  // HR Employees CRUD
+  const addEmployee = useCallback((emp: Omit<Employee, 'id'>) => {
     const newEmp: Employee = {
-      ...empData,
+      ...emp,
       id: `emp-${Date.now()}`
     };
-    setEmployees(prev => [...prev, newEmp]);
-    logAudit('CREATE', 'HR', `إضافة موظف جديد: ${newEmp.fullName} (${newEmp.jobTitleAr})`);
-  };
+    setEmployees(prev => [newEmp, ...prev]);
+    logAction('CREATE', 'HR', `إضافة موظف جديد: ${emp.fullName}`);
+  }, [logAction]);
 
-  const updateEmployee = (id: string, updates: Partial<Employee>) => {
+  const updateEmployee = useCallback((id: string, updates: Partial<Employee>) => {
     setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
-    logAudit('UPDATE', 'HR', `تعديل بيانات الموظف: ${updates.fullName || id}`);
-  };
+    logAction('UPDATE', 'HR', `تعديل بيانات الموظف رقم ${id}`);
+  }, [logAction]);
 
-  const deleteEmployee = (id: string) => {
+  const deleteEmployee = useCallback((id: string) => {
     setEmployees(prev => prev.filter(e => e.id !== id));
-    logAudit('DELETE', 'HR', `حذف ملف الموظف كود: ${id}`);
-  };
+    logAction('DELETE', 'HR', `حذف موظف رقم ${id}`);
+  }, [logAction]);
 
-  const recordAttendance = (
-    employeeId: string,
-    status: AttendanceRecord['status'],
-    checkIn?: string,
-    checkOut?: string,
-    notes?: string
-  ) => {
+  const recordAttendance = useCallback((employeeId: string, status: AttendanceRecord['status'], checkIn?: string, checkOut?: string, notes?: string) => {
     const emp = employees.find(e => e.id === employeeId);
     if (!emp) return;
-
     const today = new Date().toISOString().split('T')[0];
-    const newRecord: AttendanceRecord = {
+    const newAtt: AttendanceRecord = {
       id: `att-${Date.now()}`,
       employeeId,
       employeeName: emp.fullName,
       date: today,
-      checkInTime: checkIn || '09:00',
-      checkOutTime: checkOut || '17:00',
+      checkInTime: checkIn || new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+      checkOutTime: checkOut,
       status,
-      hoursWorked: status === 'present' ? emp.shiftHours : 0,
+      hoursWorked: checkOut ? 8 : 0,
       overtimeHours: 0,
       notes
     };
+    setAttendance(prev => [newAtt, ...prev.filter(a => !(a.employeeId === employeeId && a.date === today))]);
+  }, [employees]);
 
-    setAttendance(prev => {
-      const filtered = prev.filter(a => !(a.employeeId === employeeId && a.date === today));
-      return [newRecord, ...filtered];
-    });
-
-    logAudit('CREATE', 'HR', `تسجيل حضور/انصراف للموظف: ${emp.fullName} بتاريخ ${today} - الحالة: ${status}`);
-  };
-
-  const generatePayrollForMonth = (monthYear: string) => {
-    const newPayrollList: PayrollRecord[] = employees.filter(e => e.isActive).map(emp => {
-      return {
-        id: `pay-${emp.id}-${monthYear}`,
-        monthYear,
-        employeeId: emp.id,
-        employeeName: emp.fullName,
-        basicSalary: emp.basicSalary,
-        bonusAmount: 0,
-        deductionAmount: 0,
-        advancePayment: 0,
-        overtimePay: 0,
-        netSalary: emp.basicSalary,
-        paymentStatus: 'draft'
-      };
-    });
-
-    setPayroll(prev => {
-      const existingOtherMonths = prev.filter(p => p.monthYear !== monthYear);
-      return [...newPayrollList, ...existingOtherMonths];
-    });
-
-    logAudit('CREATE', 'HR', `إعداد مسودة كشف المرتبات لشهر ${monthYear}`);
-  };
-
-  const updatePayrollRecord = (id: string, updates: Partial<PayrollRecord>) => {
-    setPayroll(prev => prev.map(p => {
-      if (p.id === id) {
-        const merged = { ...p, ...updates };
-        merged.netSalary = merged.basicSalary + merged.bonusAmount + merged.overtimePay - merged.deductionAmount - merged.advancePayment;
-        return merged;
-      }
-      return p;
+  const generatePayrollForMonth = useCallback((monthYear: string) => {
+    const newPayroll: PayrollRecord[] = employees.filter(e => e.isActive).map(emp => ({
+      id: `pay-${emp.id}-${monthYear}`,
+      monthYear,
+      employeeId: emp.id,
+      employeeName: emp.fullName,
+      basicSalary: emp.basicSalary,
+      bonusAmount: 0,
+      deductionAmount: 0,
+      advancePayment: 0,
+      overtimePay: 0,
+      netSalary: emp.basicSalary,
+      paymentStatus: 'draft'
     }));
-  };
+    setPayroll(newPayroll);
+  }, [employees]);
 
-  // Lab to Lab Operations
-  const addLabToLabOrder = (orderData: Omit<LabToLabOrder, 'id'>) => {
-    const newOrder: LabToLabOrder = {
-      ...orderData,
-      id: `l2l-${Date.now()}`
-    };
-    setLabToLabOrders(prev => [newOrder, ...prev]);
-    logAudit('CREATE', 'LAB_TO_LAB', `إرسال عينات لمعمل خارجي: ${newOrder.externalLabName} للمريض ${newOrder.patientName} (${newOrder.orderNumber})`);
-  };
+  const updatePayrollRecord = useCallback((id: string, updates: Partial<PayrollRecord>) => {
+    setPayroll(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+  }, []);
 
-  const updateLabToLabOrder = (id: string, updates: Partial<LabToLabOrder>) => {
-    setLabToLabOrders(prev => prev.map(o => o.id === id ? { ...o, ...updates } : o));
-    logAudit('UPDATE', 'LAB_TO_LAB', `تحديث حالة طلب المعامل الخارجية: ${id}`);
-  };
+  const clockInEmployee = useCallback((empId: string) => {
+    recordAttendance(empId, 'present');
+  }, [recordAttendance]);
 
-  const deleteLabToLabOrder = (id: string) => {
-    setLabToLabOrders(prev => prev.filter(o => o.id !== id));
-    logAudit('DELETE', 'LAB_TO_LAB', `حذف طلب معمل خارجي: ${id}`);
-  };
-
-  // Closeouts
-  const saveCloseout = (data: Omit<DailyCloseout, 'id' | 'timestamp'>) => {
-    const newCloseout: DailyCloseout = {
-      ...data,
-      id: `cls-${Date.now()}`,
-      timestamp: new Date().toISOString()
-    };
-    setCloseouts(prev => [newCloseout, ...prev]);
-    logAudit('CLOSEOUT', 'INCOME', `تقفيل الخزينة اليومية بتاريخ ${newCloseout.date} بواسطة ${newCloseout.closedBy} - الفارق: ${newCloseout.discrepancy} ج.م`);
-  };
-
-  // Barcode Handler
-  const handleBarcodeScanned = (code: string) => {
-    setScannedBarcode(code);
-    setScannerOpen(false);
-
-    // Look for matching invoice
-    const foundIncome = incomeRecords.find(r => r.barcode === code || r.labNumber === code);
-    if (foundIncome) {
-      setActiveTab('income');
-      return;
-    }
-
-    // Look for matching inventory reagent
-    const foundItem = inventory.find(i => i.code === code || i.lotNumber === code);
-    if (foundItem) {
-      setActiveTab('inventory');
-      return;
-    }
-
-    // Look for loyalty card
-    const foundLoyalty = loyaltyProfiles.find(p => p.barcode === code);
-    if (foundLoyalty) {
-      setActiveTab('loyalty');
-      return;
-    }
-
-    alert(language === 'ar' ? `الباركود المقروء: ${code} - لم يتم العثور على سجل مطابق` : `Scanned Barcode: ${code} - No matching record`);
-  };
-
-  // GitHub & Diagnostic Sync Handlers
-  const updateGitHubConfig = (cfg: Partial<GitHubSyncConfig>) => {
-    setGithubConfigState(prev => ({ ...prev, ...cfg }));
-    logAudit('UPDATE', 'SETTINGS', `تحديث إعدادات ربط GitHub والمزامنة`);
-  };
-
-  const pullCasesFromDiagnostic = async () => {
-    setIsSyncing(true);
-    try {
-      const result = await fetchDiagnosticCases(githubConfig.token, githubConfig.repoOwner, githubConfig.repoName);
-      if (result.success && result.casesFound) {
-        setDiagnosticCases(result.casesFound);
-        setGithubConfigState(prev => ({
-          ...prev,
-          lastSyncAt: new Date().toISOString(),
-          status: 'connected',
-          errorMessage: undefined
-        }));
-        logAudit('SYNC', 'INCOME', `تمت المزامنة بنجاح مع منظومة النتائج: استلام ${result.casesFound.length} حالة فحص`);
-        return { success: true, message: `تم جلب ${result.casesFound.length} حالة بنجاح من منظومة النتائج` };
-      } else {
-        setGithubConfigState(prev => ({ ...prev, status: 'error', errorMessage: result.message }));
-        return { success: false, message: result.message || 'فشل الاتصال بمنظومة النتائج' };
+  const clockOutEmployee = useCallback((empId: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    setAttendance(prev => prev.map(a => {
+      if (a.employeeId === empId && a.date === today && !a.checkOutTime) {
+        return {
+          ...a,
+          checkOutTime: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+          hoursWorked: 8
+        };
       }
-    } finally {
-      setIsSyncing(false);
-    }
-  };
+      return a;
+    }));
+  }, []);
 
-  const pushCasesToDiagnostic = async () => {
-    setIsSyncing(true);
-    try {
-      const result = await pushFinancialDataToRepo(
-        githubConfig.token,
-        githubConfig.repoOwner,
-        githubConfig.repoName,
-        incomeRecords,
-        {
-          totalRevenue: financialMetrics.totalPaidIncome,
-          totalExpenses: financialMetrics.totalExpenses,
-          netProfit: financialMetrics.netProfit,
-          ceoShare: financialMetrics.ceoShare,
-          labShare: financialMetrics.labShare,
-          casesCount: incomeRecords.length
-        }
-      );
-      if (result.success) {
-        setGithubConfigState(prev => ({
-          ...prev,
-          lastSyncAt: new Date().toISOString(),
-          status: 'connected',
-          errorMessage: undefined
-        }));
-        logAudit('SYNC', 'INCOME', `تم إرسال وتسميع بيانات السداد المالي بنجاح إلى منظومة النتائج`);
-        return { success: true, message: 'تم إرسال الفواتير والمقبوضات بنجاح إلى منظومة النتائج' };
-      } else {
-        setGithubConfigState(prev => ({ ...prev, status: 'error', errorMessage: result.message }));
-        return { success: false, message: result.message || 'تعذر الإرسال إلى مستودع GitHub' };
-      }
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  const syncSingleInvoice = async (record: IncomeRecord) => {
-    setIsSyncing(true);
-    try {
-      const res = await syncInvoiceToDiagnostic(record, githubConfig);
-      if (res.success) {
-        logAudit('SYNC', 'INCOME', `تم تسميع طلب الفاتورة ${record.invoiceNumber} للمريض ${record.patientName} في منظومة النتائج بنجاح`);
-      }
-      return res;
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  const testGitHub = async () => {
-    setIsSyncing(true);
-    try {
-      const res = await testGitHubConnection(githubConfig.token, githubConfig.repoOwner, githubConfig.repoName);
-      if (res.success) {
-        setGithubConfigState(prev => ({ ...prev, status: 'connected', errorMessage: undefined }));
-        return { success: true, message: 'تم التحقق بنجاح من صحة الاتصال بـ GitHub' };
-      } else {
-        setGithubConfigState(prev => ({ ...prev, status: 'error', errorMessage: res.message }));
-        return { success: false, message: res.message || 'فشل الاتصال بـ GitHub' };
-      }
-    } finally {
-      setIsSyncing(false);
-    }
-  };
+  // Lab Info Update
+  const updateLabInfo = useCallback((info: LabInfo) => {
+    setLabInfo(info);
+    logAction('UPDATE', 'SETTINGS', 'تحديث بيانات المعمل والاعتماد الطبي ووسائل التواصل');
+  }, [logAction]);
 
   // Backups
-  const exportBackup = async (password?: string): Promise<string> => {
-    const backupData = {
-      app: 'RT_LAB_FINANCIAL_ERP',
-      version: '2.5.0',
-      exportedAt: new Date().toISOString(),
-      exportedBy: currentUser.nameAr,
+  const exportBackup = useCallback(async (): Promise<string> => {
+    const payload = {
+      exportDate: new Date().toISOString(),
+      reports,
       incomeRecords,
-      expenses,
-      profitConfig,
-      inventory,
-      employees,
-      attendance,
-      payroll,
-      labToLabOrders,
-      closeouts,
-      auditLogs,
-      testCatalog,
       loyaltyProfiles,
-      loyaltyConfig
+      inventory,
+      expenses,
+      dailyCloseouts,
+      employees,
+      labToLabOrders,
+      testCatalog,
+      auditLogs: auditLogs.slice(0, 100)
     };
-    const result = await createEncryptedBackup(backupData, password);
-    logAudit('BACKUP', 'SETTINGS', `تصدير نسخة احتياطية مشفرة من قاعدة البيانات`);
-    return result;
-  };
+    const jsonStr = JSON.stringify(payload, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `RT_Lab_Unified_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    logAction('BACKUP', 'SETTINGS', 'تصدير نسخة احتياطية موحدة شاملة لبيانات المعمل');
+    return jsonStr;
+  }, [reports, incomeRecords, loyaltyProfiles, inventory, expenses, dailyCloseouts, employees, labToLabOrders, testCatalog, auditLogs, logAction]);
 
-  const importBackup = async (encryptedStr: string, password?: string): Promise<{ success: boolean; message: string }> => {
+  const importBackup = useCallback(async (backupJson: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const res = await restoreEncryptedBackup(encryptedStr, password);
-      if (!res.success || !res.data) {
-        return { success: false, message: res.message || 'فشل استرجاع النسخة الاحتياطية' };
-      }
-      const parsed = res.data as Record<string, any>;
-
-      if (parsed.incomeRecords) setIncomeRecords(parsed.incomeRecords);
-      if (parsed.expenses) setExpenses(parsed.expenses);
-      if (parsed.profitConfig) setProfitConfigState(parsed.profitConfig);
-      if (parsed.inventory) setInventory(parsed.inventory);
-      if (parsed.employees) setEmployees(parsed.employees);
-      if (parsed.attendance) setAttendance(parsed.attendance);
-      if (parsed.payroll) setPayroll(parsed.payroll);
-      if (parsed.labToLabOrders) setLabToLabOrders(parsed.labToLabOrders);
-      if (parsed.closeouts) setCloseouts(parsed.closeouts);
-      if (parsed.testCatalog) setTestCatalog(parsed.testCatalog);
-      if (parsed.loyaltyProfiles) setLoyaltyProfiles(parsed.loyaltyProfiles);
-      if (parsed.loyaltyConfig) setLoyaltyConfigState(parsed.loyaltyConfig);
-
-      logAudit('BACKUP', 'SETTINGS', `استرجاع ناجح لقاعدة البيانات من نسخة احتياطية`);
-      return { success: true, message: 'تم استرجاع كافة البيانات بنجاح' };
+      const data = JSON.parse(backupJson);
+      if (data.reports) setReports(data.reports);
+      if (data.incomeRecords) setIncomeRecords(data.incomeRecords);
+      if (data.loyaltyProfiles) setLoyaltyProfiles(data.loyaltyProfiles);
+      if (data.inventory) setInventory(data.inventory);
+      if (data.expenses) setExpenses(data.expenses);
+      if (data.employees) setEmployees(data.employees);
+      if (data.labToLabOrders) setLabToLabOrders(data.labToLabOrders);
+      if (data.testCatalog) setTestCatalog(data.testCatalog);
+      logAction('BACKUP', 'SETTINGS', 'استعادة قاعدة البيانات الموحدة من نسخة احتياطية');
+      return { success: true, message: 'تم استعادة البيانات بنجاح!' };
     } catch {
-      return { success: false, message: 'فشل استرجاع النسخة الاحتياطية (تأكد من كلمة المرور وصحة الملف)' };
+      return { success: false, message: 'فشل استعادة البيانات من الملف.' };
     }
-  };
+  }, [logAction]);
 
-  const clearPatientRecordsOnly = () => {
-    setIncomeRecords([]);
-    setDiagnosticCases([]);
-    setCloseouts([]);
-    setLoyaltyProfiles([]);
-    localStorage.removeItem(STORAGE_KEYS.INCOME);
-    localStorage.removeItem(STORAGE_KEYS.DIAG_CASES);
-    localStorage.removeItem(STORAGE_KEYS.CLOSEOUTS);
-    localStorage.removeItem(STORAGE_KEYS.LOYALTY_PROFILES);
-    logAudit('DELETE', 'SECURITY', 'تصفير جميع سجلات وفواتير المرضى لتجهيز المنظومة للعمل الفعلي على بياض');
-  };
-
-  const resetToDefaultData = () => {
-    setIncomeRecords(INITIAL_INCOME);
-    setExpenses(INITIAL_EXPENSES);
-    setProfitConfigState(INITIAL_PROFIT_CONFIG);
+  const resetToDefaultData = useCallback(() => {
+    setReports(INITIAL_REPORTS);
+    setIncomeRecords(INITIAL_INCOME_RECORDS);
+    setLoyaltyProfiles(INITIAL_LOYALTY_DATA);
     setInventory(INITIAL_INVENTORY);
-    setEmployees(INITIAL_EMPLOYEES);
-    setAttendance(INITIAL_ATTENDANCE);
-    setPayroll(INITIAL_PAYROLL);
+    setExpenses([]);
+    setDailyCloseouts([]);
     setLabToLabOrders(INITIAL_LAB_TO_LAB);
-    setCloseouts([]);
-    setTestCatalog(TEST_CATALOG);
-    setLoyaltyProfiles(INITIAL_LOYALTY_PROFILES);
-    setLoyaltyConfigState(DEFAULT_LOYALTY_CONFIG);
-    logAudit('BACKUP', 'SETTINGS', `إعادة ضبط النظام كاملاً للبيانات الافتراضية`);
+    setEmployees(INITIAL_EMPLOYEES);
+    logAction('BACKUP', 'SETTINGS', 'إعادة ضبط المنظومة للبيانات الأولية الافتراضية');
+  }, [logAction]);
+
+  const clearPatientRecordsOnly = useCallback(() => {
+    setReports([]);
+    setIncomeRecords([]);
+    setLoyaltyProfiles([]);
+    setSelectedReportId(null);
+    logAction('DELETE', 'SETTINGS', 'مسح سجلات المرضى والفواتير فقط مع الاحتفاظ بالكتالوج والمخزون');
+  }, [logAction]);
+
+  // GitHub Cloud Sync
+  const updateGithubConfig = useCallback((config: Partial<GitHubSyncConfig>) => {
+    setGithubConfig(prev => ({ ...prev, ...config }));
+  }, []);
+
+  const syncUnifiedDataToGitHub = useCallback(async (): Promise<{ success: boolean; message: string }> => {
+    if (!githubConfig.token || !githubConfig.repoOwner || !githubConfig.repoName) {
+      return { success: false, message: "بيانات مستودع GitHub غير مكتملة" };
+    }
+
+    try {
+      const payload = {
+        timestamp: new Date().toISOString(),
+        reportsCount: reports.length,
+        incomeCount: incomeRecords.length,
+        loyaltyProfilesCount: loyaltyProfiles.length,
+        reports,
+        incomeRecords,
+        loyaltyProfiles,
+        inventory,
+        dailyCloseouts,
+        auditLogs: auditLogs.slice(0, 50)
+      };
+
+      const path = 'rt_lab_unified_backup.json';
+      const url = `https://api.github.com/repos/${githubConfig.repoOwner}/${githubConfig.repoName}/contents/${path}`;
+
+      let sha: string | undefined;
+      const getRes = await fetch(url, {
+        headers: {
+          'Authorization': `token ${githubConfig.token}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+      if (getRes.ok) {
+        const getData = await getRes.json();
+        sha = getData.sha;
+      }
+
+      const contentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
+
+      const putRes = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${githubConfig.token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: `Auto-sync unified data: ${reports.length} reports, ${incomeRecords.length} invoices [${new Date().toLocaleString('ar-EG')}]`,
+          content: contentBase64,
+          branch: githubConfig.branch || 'main',
+          sha
+        })
+      });
+
+      if (putRes.ok) {
+        setGithubConfig(prev => ({ ...prev, lastSyncAt: new Date().toLocaleString('ar-EG'), status: 'connected' }));
+        logAction('SYNC', 'SECURITY', 'مزامنة النسخة الاحتياطية الموحدة مع مستودع GitHub بنجاح');
+        return { success: true, message: "تمت المزامنة وحفظ البيانات سحابياً بنجاح!" };
+      } else {
+        const errData = await putRes.json().catch(() => ({}));
+        throw new Error(errData.message || 'فشلت المزامنة مع GitHub');
+      }
+    } catch (err: any) {
+      setGithubConfig(prev => ({ ...prev, status: 'error', errorMessage: err.message }));
+      return { success: false, message: err.message || 'خطأ أثناء المزامنة' };
+    }
+  }, [githubConfig, reports, incomeRecords, loyaltyProfiles, inventory, dailyCloseouts, auditLogs, logAction]);
+
+  const value: AppContextType = {
+    language,
+    setLanguage,
+    currentUser,
+    users,
+    loginModalOpen,
+    setLoginModalOpen,
+    loginUser,
+    logout,
+    hasPermission,
+
+    activeTab,
+    setActiveTab,
+
+    reports,
+    selectedReportId,
+    setSelectedReportId,
+    selectedReport,
+    addReport,
+    updateReport,
+    deleteReport,
+    verifyReport,
+    createReportFromAdmission,
+
+    incomeRecords,
+    addIncomeRecord,
+    updateIncomeRecord,
+    deleteIncomeRecord,
+    selectedInvoice,
+    setSelectedInvoice,
+    financialMetrics,
+    scannedBarcode: null,
+    setScannedBarcode: () => {},
+    setScannerOpen: setIsBarcodeScannerOpen,
+
+    testCatalog,
+    addCatalogTest,
+    updateCatalogTest,
+    deleteCatalogTest,
+    resetCatalog,
+
+    instruments,
+    transmissions,
+    toggleInstrumentStatus,
+    simulateInstrumentRun,
+    applyTransmissionToReport,
+
+    loyaltyProfiles,
+    loyaltyConfig,
+    updateLoyaltyConfig,
+    addLoyaltyProfile,
+    getLoyaltyByPhone,
+    calculateLoyaltyTier,
+    earnLoyaltyPoints,
+    redeemLoyaltyPoints,
+    updateLoyaltyProfile,
+    deleteLoyaltyProfile,
+    deleteLoyaltyTransaction,
+    retroactiveSyncAllInvoicesToLoyalty,
+    addLoyaltyPoints,
+    calculateCashForPoints,
+    calculatePointsForAmount,
+
+    expenses,
+    addExpense,
+    updateExpense,
+    deleteExpense,
+    profitConfig,
+    updateProfitConfig,
+    dailyCloseouts,
+    closeoutDay,
+
+    inventory,
+    addInventoryItem,
+    updateInventoryItem,
+    restockItem,
+    consumeReagent,
+    deleteInventoryItem,
+
+    labToLabOrders,
+    addLabToLabOrder,
+    updateLabToLabOrder,
+    deleteLabToLabOrder,
+
+    employees,
+    attendance,
+    payroll,
+    addEmployee,
+    updateEmployee,
+    deleteEmployee,
+    recordAttendance,
+    generatePayrollForMonth,
+    updatePayrollRecord,
+    clockInEmployee,
+    clockOutEmployee,
+
+    labInfo,
+    updateLabInfo,
+    facilities,
+    staffMembers,
+
+    auditLogs,
+    logAction,
+
+    notifications,
+    markNotificationRead,
+    clearNotifications,
+    addNotification,
+
+    githubConfig,
+    updateGithubConfig,
+    syncUnifiedDataToGitHub,
+
+    exportBackup,
+    importBackup,
+    resetToDefaultData,
+    clearPatientRecordsOnly,
+
+    isPatientFormOpen,
+    setIsPatientFormOpen,
+    isBarcodeScannerOpen,
+    setIsBarcodeScannerOpen
   };
 
-  return (
-    <AppContext.Provider
-      value={{
-        language,
-        setLanguage,
-        currentUser,
-        users,
-        loginModalOpen,
-        setLoginModalOpen,
-        loginUser,
-        logout,
-        hasPermission,
-        activeTab,
-        setActiveTab,
-        incomeRecords,
-        addIncomeRecord,
-        updateIncomeRecord,
-        deleteIncomeRecord,
-        testCatalog,
-        addCatalogTest,
-        updateCatalogTest,
-        deleteCatalogTest,
-        resetCatalog,
-        loyaltyProfiles,
-        loyaltyConfig,
-        updateLoyaltyConfig,
-        addLoyaltyProfile,
-        updateLoyaltyProfile,
-        addLoyaltyPoints,
-        redeemLoyaltyPoints,
-        calculatePointsForAmount,
-        deleteLoyaltyProfile,
-        deleteLoyaltyTransaction,
-        retroactiveSyncAllInvoicesToLoyalty,
-        calculateCashForPoints,
-        labInfo,
-        updateLabInfo,
-        facilities,
-        addFacility,
-        updateFacility,
-        deleteFacility,
-        staffMembers,
-        addStaffMember,
-        updateStaffMember,
-        deleteStaffMember,
-
-        expenses,
-        addExpense,
-        updateExpense,
-        deleteExpense,
-        profitConfig,
-        updateProfitConfig,
-        inventory,
-        addInventoryItem,
-        updateInventoryItem,
-        restockItem,
-        consumeReagent,
-        deleteInventoryItem,
-        employees,
-        attendance,
-        payroll,
-        addEmployee,
-        updateEmployee,
-        deleteEmployee,
-        recordAttendance,
-        generatePayrollForMonth,
-        updatePayrollRecord,
-        labToLabOrders,
-        addLabToLabOrder,
-        updateLabToLabOrder,
-        deleteLabToLabOrder,
-        closeouts,
-        saveCloseout,
-        auditLogs,
-        logAudit,
-        notifications,
-        markNotificationRead,
-        clearAllNotifications,
-        githubConfig,
-        updateGitHubConfig,
-        diagnosticCases,
-        isSyncing,
-        pullCasesFromDiagnostic,
-        pushCasesToDiagnostic,
-        syncSingleInvoice,
-        testGitHub,
-        scannerOpen,
-        setScannerOpen,
-        scannedBarcode,
-        setScannedBarcode,
-        handleBarcodeScanned,
-        exportBackup,
-        importBackup,
-        resetToDefaultData,
-        clearPatientRecordsOnly,
-        financialMetrics
-      }}
-    >
-      {children}
-    </AppContext.Provider>
-  );
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 
 export const useApp = () => {

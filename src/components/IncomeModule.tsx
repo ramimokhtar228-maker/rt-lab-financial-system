@@ -1,33 +1,28 @@
-import { BookingAppointmentsModal } from './BookingAppointmentsModal';
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
-import { IncomeRecord, InvoiceTestItem, PaymentMethod, PaymentStatus } from '../types';
-import { TestCatalogManagerModal } from './TestCatalogManagerModal';
-import { Award, Sparkles, Gift } from 'lucide-react';
 import {
-  Plus,
+  Wallet,
   Search,
   Filter,
   Printer,
   Calendar,
-  DollarSign,
   CreditCard,
   Building,
   CheckCircle2,
   Clock,
   AlertCircle,
-  ScanLine,
-  User,
-  Phone,
-  Tag,
+  PlusCircle,
   Trash2,
   Edit2,
-  RefreshCw,
-  Zap,
-  Download
+  Eye,
+  FileText,
+  DollarSign,
+  ArrowRight,
+  TrendingUp,
+  Receipt
 } from 'lucide-react';
+import { IncomeRecord, PaymentStatus, PaymentMethod } from '../types';
 import { InvoicePrintModal } from './InvoicePrintModal';
-import { generateBarcodeSVG, playScanSuccessSound } from '../utils/barcode';
 
 export const IncomeModule: React.FC = () => {
   const {
@@ -36,787 +31,313 @@ export const IncomeModule: React.FC = () => {
     updateIncomeRecord,
     deleteIncomeRecord,
     currentUser,
-    language,
-    scannedBarcode,
-    setScannedBarcode,
-    setScannerOpen,
-    githubConfig,
-    testCatalog,
-    loyaltyProfiles,
-    loyaltyConfig,
-    redeemLoyaltyPoints,
-    calculatePointsForAmount,
-    calculateCashForPoints,
-    syncSingleInvoice,
-    facilities,
-    staffMembers
+    setIsPatientFormOpen,
+    setActiveTab,
+    setSelectedReportId,
+    reports
   } = useApp();
-  const [catalogModalOpen, setCatalogModalOpen] = useState(false);
-  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
-  // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRecordIds, setSelectedRecordIds] = useState<string[]>([]);
-
-  const toggleSelectRecord = (id: string) => {
-    setSelectedRecordIds(prev => 
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-    );
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedRecordIds.length === filteredRecords.length) {
-      setSelectedRecordIds([]);
-    } else {
-      setSelectedRecordIds(filteredRecords.map(r => r.id));
-    }
-  };
-
-  const handleBulkDelete = () => {
-    if (selectedRecordIds.length === 0) return;
-    if (window.confirm(`هل أنت متأكد من حذف ${selectedRecordIds.length} فاتورة محددة نهائياً؟`)) {
-      selectedRecordIds.forEach(id => deleteIncomeRecord(id));
-      setSelectedRecordIds([]);
-    }
-  };
-
-  const handleBulkMarkPaid = () => {
-    if (selectedRecordIds.length === 0) return;
-    selectedRecordIds.forEach(id => {
-      const rec = incomeRecords.find(r => r.id === id);
-      if (rec && rec.paymentStatus !== 'paid') {
-        updateIncomeRecord(id, {
-          paymentStatus: 'paid',
-          paidAmount: rec.netAmount,
-          remainingAmount: 0
-        });
-      }
-    });
-    alert(`تم تحويل حالة ${selectedRecordIds.length} فاتورة إلى مسدد بالكامل بنجاح`);
-    setSelectedRecordIds([]);
-  };
-
-  const handleBulkExportJson = () => {
-    const selected = incomeRecords.filter(r => selectedRecordIds.includes(r.id));
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(selected, null, 2));
-    const a = document.createElement("a");
-    a.setAttribute("href", dataStr);
-    a.setAttribute("download", `rt-lab-invoices-export-${Date.now()}.json`);
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };
-
-  const [dateFilter, setDateFilter] = useState<'today' | 'yesterday' | 'month' | 'all'>('today');
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'partial' | 'unpaid'>('all');
-  const [methodFilter, setMethodFilter] = useState<'all' | PaymentMethod>('all');
+  const [methodFilter, setMethodFilter] = useState<string>('all');
+  const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState<IncomeRecord | null>(null);
 
-  // Modal States
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editRecord, setEditRecord] = useState<IncomeRecord | null>(null);
-  const [editPatientName, setEditPatientName] = useState('');
-  const [editPatientPhone, setEditPatientPhone] = useState('');
-  const [editDoctor, setEditDoctor] = useState('');
-  const [editBranch, setEditBranch] = useState('');
-  const [editPaid, setEditPaid] = useState<number>(0);
-  const [editDiscount, setEditDiscount] = useState<number>(0);
-  const [editMethod, setEditMethod] = useState<PaymentMethod>('cash');
-  const [editNotes, setEditNotes] = useState('');
-  const [printInvoice, setPrintInvoice] = useState<IncomeRecord | null>(null);
+  // Filtered Invoices
+  const filteredInvoices = useMemo(() => {
+    return incomeRecords.filter(inv => {
+      const matchesSearch =
+        inv.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        inv.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        inv.barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        inv.patientPhone.includes(searchTerm) ||
+        inv.labNumber.toLowerCase().includes(searchTerm.toLowerCase());
 
-  // New Invoice Form State
-  const [patientName, setPatientName] = useState('');
-  const [patientPhone, setPatientPhone] = useState('');
-  const [patientAge, setPatientAge] = useState<number>(30);
-  const [patientGender, setPatientGender] = useState<'male' | 'female'>('male');
-  const [referringDoctor, setReferringDoctor] = useState('');
-  const [branch, setBranch] = useState(facilities[0]?.nameAr || 'الفرع الرئيسي - بهتيم');
-  const [isHomeVisit, setIsHomeVisit] = useState(false);
-  const [visitFee, setVisitFee] = useState<number>(70);
-  const [visitAddress, setVisitAddress] = useState('');
-  const [visitSpecialist, setVisitSpecialist] = useState(
-    staffMembers.find(s => s.department === 'phlebotomists' || s.department === 'chemists')?.name || 'أ/ يوسف طارق (سحب زيارات منزلية)'
-  );
-  const [selectedTests, setSelectedTests] = useState<InvoiceTestItem[]>([]);
-  const [discount, setDiscount] = useState<number>(0);
-  const [redeemedPointsAmount, setRedeemedPointsAmount] = useState<number>(0);
-  const [paidAmount, setPaidAmount] = useState<number>(0);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
-  const [notes, setNotes] = useState('');
-  const [customTestSearch, setCustomTestSearch] = useState('');
-  const [catalogCategory, setCatalogCategory] = useState<string>('all');
+      const matchesStatus = statusFilter === 'all' ? true : inv.paymentStatus === statusFilter;
+      const matchesMethod = methodFilter === 'all' ? true : inv.paymentMethod === methodFilter;
 
-  // Next auto generated numbers
-  const nextLabNumber = useMemo(() => {
-    const year = new Date().getFullYear();
-    const count = incomeRecords.length + 896;
-    return `RT-${year}-${count.toString().padStart(4, '0')}`;
-  }, [incomeRecords.length]);
-
-  const nextBarcode = useMemo(() => {
-    return `982736${(1834 + incomeRecords.length).toString()}`;
-  }, [incomeRecords.length]);
-
-  // Handle barcode scanned from camera/laser
-  React.useEffect(() => {
-    if (scannedBarcode) {
-      setSearchTerm(scannedBarcode);
-      setScannedBarcode(null);
-    }
-  }, [scannedBarcode, setScannedBarcode]);
-
-  // Date Filtering Calculation
-  const filteredRecords = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    const yesterdayDate = new Date();
-    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-    const yesterday = yesterdayDate.toISOString().split('T')[0];
-    const currentMonth = today.substring(0, 7);
-
-    return incomeRecords.filter(record => {
-      // Date filter
-      if (dateFilter === 'today' && !record.createdAt.startsWith(today)) return false;
-      if (dateFilter === 'yesterday' && !record.createdAt.startsWith(yesterday)) return false;
-      if (dateFilter === 'month' && !record.createdAt.startsWith(currentMonth)) return false;
-
-      // Status filter
-      if (statusFilter !== 'all' && record.paymentStatus !== statusFilter) return false;
-
-      // Payment Method filter
-      if (methodFilter !== 'all' && record.paymentMethod !== methodFilter) return false;
-
-      // Search term
-      if (searchTerm.trim()) {
-        const term = searchTerm.toLowerCase();
-        const matchesName = record.patientName.toLowerCase().includes(term);
-        const matchesPhone = record.patientPhone.includes(term);
-        const matchesBarcode = record.barcode.includes(term);
-        const matchesLabNo = record.labNumber.toLowerCase().includes(term);
-        const matchesInvoice = record.invoiceNumber.toLowerCase().includes(term);
-        if (!matchesName && !matchesPhone && !matchesBarcode && !matchesLabNo && !matchesInvoice) {
-          return false;
-        }
-      }
-
-      return true;
+      return matchesSearch && matchesStatus && matchesMethod;
     });
-  }, [incomeRecords, dateFilter, statusFilter, methodFilter, searchTerm]);
+  }, [incomeRecords, searchTerm, statusFilter, methodFilter]);
 
-  // Summary Metrics of filtered data
-  const summaryMetrics = useMemo(() => {
-    const totalGross = filteredRecords.reduce((acc, r) => acc + r.subtotal, 0);
-    const totalNet = filteredRecords.reduce((acc, r) => acc + r.netAmount, 0);
-    const totalPaid = filteredRecords.reduce((acc, r) => acc + r.paidAmount, 0);
-    const totalRemaining = filteredRecords.reduce((acc, r) => acc + r.remainingAmount, 0);
+  // Aggregate Metrics
+  const totalBilled = filteredInvoices.reduce((sum, i) => sum + i.netAmount, 0);
+  const totalCollected = filteredInvoices.reduce((sum, i) => sum + i.paidAmount, 0);
+  const totalRemaining = filteredInvoices.reduce((sum, i) => sum + i.remainingAmount, 0);
 
-    const cashPaid = filteredRecords
-      .filter(r => r.paymentMethod === 'cash')
-      .reduce((acc, r) => acc + r.paidAmount, 0);
-
-    const visaPaid = filteredRecords
-      .filter(r => r.paymentMethod === 'visa')
-      .reduce((acc, r) => acc + r.paidAmount, 0);
-
-    const transferPaid = filteredRecords
-      .filter(r => r.paymentMethod === 'bank_transfer')
-      .reduce((acc, r) => acc + r.paidAmount, 0);
-
-    return {
-      count: filteredRecords.length,
-      totalGross,
-      totalNet,
-      totalPaid,
-      totalRemaining,
-      cashPaid,
-      visaPaid,
-      transferPaid
-    };
-  }, [filteredRecords]);
-
-  // Test catalog search
-  const filteredCatalog = useMemo(() => {
-    return testCatalog.filter(test => {
-      if (catalogCategory !== 'all' && test.category !== catalogCategory) return false;
-      if (customTestSearch.trim()) {
-        const term = customTestSearch.toLowerCase();
-        return (
-          test.nameAr.toLowerCase().includes(term) ||
-          test.nameEn.toLowerCase().includes(term) ||
-          test.code.toLowerCase().includes(term)
-        );
-      }
-      return true;
-    });
-  }, [catalogCategory, customTestSearch]);
-
-  const effectiveVisitFee = isHomeVisit ? (Number(visitFee) || 0) : 0;
-  const subtotalNew = selectedTests.reduce((sum, t) => sum + t.price, 0);
-  // Discount applies strictly to tests subtotal!
-  const testsNetAmount = Math.max(0, subtotalNew - discount);
-  const netAmountNew = testsNetAmount + effectiveVisitFee;
-  const remainingNew = Math.max(0, netAmountNew - paidAmount);
-
-  // Auto set paidAmount to netAmount when tests change
-  const handleAddTest = (test: InvoiceTestItem) => {
-    if (!selectedTests.some(t => t.id === test.id)) {
-      const updated = [...selectedTests, test];
-      setSelectedTests(updated);
-      const newSub = updated.reduce((s, t) => s + t.price, 0);
-      const newNet = Math.max(0, newSub - discount) + effectiveVisitFee;
-      setPaidAmount(newNet);
-    }
-  };
-
-  const handleRemoveTest = (id: string) => {
-    const updated = selectedTests.filter(t => t.id !== id);
-    setSelectedTests(updated);
-    const newSub = updated.reduce((s, t) => s + t.price, 0);
-    const newNet = Math.max(0, newSub - discount);
-    setPaidAmount(newNet);
-  };
-
-  const handleSaveInvoice = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!patientName.trim()) {
-      alert(language === 'ar' ? 'يرجى إدخال اسم المريض' : 'Please enter patient name');
-      return;
-    }
-    if (selectedTests.length === 0) {
-      alert(language === 'ar' ? 'يرجى اختيار تحليل واحد على الأقل' : 'Please select at least one test');
-      return;
-    }
-
-    let status: PaymentStatus = 'paid';
-    if (paidAmount === 0) {
-      status = 'unpaid';
-    } else if (paidAmount < netAmountNew) {
-      status = 'partial';
-    }
-
-    const invNum = `INV-${new Date().getFullYear()}-${(incomeRecords.length + 896).toString().padStart(4, '0')}`;
-    
-    // If patient redeemed points
-    if (redeemedPointsAmount > 0 && matchingLoyalty) {
-      redeemLoyaltyPoints(matchingLoyalty.patientId, redeemedPointsAmount, invNum);
-    }
-
-    const newRecord = addIncomeRecord({
-      invoiceNumber: invNum,
-      patientName: patientName.trim(),
-      patientPhone: patientPhone.trim() || '01000000000',
-      patientAge: Number(patientAge) || 30,
-      patientGender,
-      barcode: nextBarcode,
-      labNumber: nextLabNumber,
-      referringDoctor: isHomeVisit ? `زيارة منزلية - ${visitSpecialist}` : (referringDoctor.trim() || (language === 'ar' ? 'فحص ذاتي / كشف معمل' : 'Self Referral')),
-      tests: selectedTests,
-      subtotal: subtotalNew + effectiveVisitFee,
-      testsSubtotal: subtotalNew,
-      discount,
-      visitFee: effectiveVisitFee,
-      isHomeVisit,
-      visitAddress: isHomeVisit ? visitAddress : undefined,
-      visitSpecialist: isHomeVisit ? visitSpecialist : undefined,
-      loyaltyPointsRedeemed: redeemedPointsAmount,
-      // Visit fee excluded from loyalty points!
-      loyaltyPointsEarned: calculatePointsForAmount(paidAmount, effectiveVisitFee),
-      netAmount: netAmountNew,
-      paidAmount,
-      remainingAmount: remainingNew,
-      paymentMethod,
-      paymentStatus: status,
-      cashierName: currentUser.nameAr,
-      branch: isHomeVisit ? 'زيارة منزلية' : branch,
-      notes: isHomeVisit 
-        ? `زيارة منزلية: ${visitAddress || 'عنوان مسجل'} (رسوم زيارة: ${effectiveVisitFee} ج) • المسؤول: ${visitSpecialist}${notes ? ' • ' + notes : ''}`
-        : (redeemedPointsAmount > 0 ? `${notes ? notes + ' | ' : ''}تم استبدال ${redeemedPointsAmount} نقطة ولاء` : notes),
-      syncStatus: githubConfig.token ? 'synced' : 'local_only',
-      syncDate: new Date().toISOString()
-    });
-
-    // Guaranteed instant multi-channel push to Diagnostic System
-    try {
-      syncSingleInvoice(newRecord).catch(err => console.warn("Sync err:", err));
-    } catch {}
-
-    playScanSuccessSound();
-    setIsAddModalOpen(false);
-
-    // Reset fields
-    setPatientName('');
-    setPatientPhone('');
-    setSelectedTests([]);
-    setDiscount(0);
-    setPaidAmount(0);
-    setNotes('');
-    setIsHomeVisit(false);
-    setVisitAddress('');
-
-    // Open print preview immediately
-    setPrintInvoice(newRecord);
-  };
-
-    const handleOpenEdit = (rec: IncomeRecord) => {
-    setEditRecord(rec);
-    setEditPatientName(rec.patientName);
-    setEditPatientPhone(rec.patientPhone);
-    setEditDoctor(rec.referringDoctor || "");
-    setEditBranch(rec.branch);
-    setEditPaid(rec.paidAmount);
-    setEditDiscount(rec.discount || 0);
-    setEditMethod(rec.paymentMethod);
-    setEditNotes(rec.notes || "");
-  };
-
-  const handleSaveEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editRecord) return;
-    const subtotal = editRecord.subtotal || editRecord.netAmount;
-    const finalNet = Math.max(0, subtotal - editDiscount);
-    const remaining = Math.max(0, finalNet - editPaid);
-    const status: PaymentStatus = remaining === 0 ? "paid" : editPaid > 0 ? "partial" : "unpaid";
-
-    updateIncomeRecord(editRecord.id, {
-      patientName: editPatientName,
-      patientPhone: editPatientPhone,
-      referringDoctor: editDoctor,
-      branch: editBranch,
-      discount: editDiscount,
-      netAmount: finalNet,
-      paidAmount: editPaid,
-      remainingAmount: remaining,
-      paymentMethod: editMethod,
-      paymentStatus: status,
-      notes: editNotes,
-      updatedAt: new Date().toISOString()
-    });
-    setEditRecord(null);
-  };
-
-  const handleQuickPayRemainder = (record: IncomeRecord) => {
-    if (record.remainingAmount <= 0) return;
-    updateIncomeRecord(record.id, {
-      paidAmount: record.netAmount,
+  const handleMarkAsPaid = (inv: IncomeRecord) => {
+    updateIncomeRecord(inv.id, {
+      paidAmount: inv.netAmount,
       remainingAmount: 0,
       paymentStatus: 'paid'
     });
-    playScanSuccessSound();
   };
 
-  const matchingLoyalty = useMemo(() => {
-    if (!patientPhone && !patientName) return null;
-    return loyaltyProfiles.find(p => (patientPhone && p.phone === patientPhone.trim()) || (patientName && p.patientName.trim().toLowerCase() === patientName.trim().toLowerCase()));
-  }, [patientPhone, patientName, loyaltyProfiles]);
-
-  const categories = useMemo(() => {
-    const set = new Set(testCatalog.map(t => t.category));
-    return ['all', ...Array.from(set)];
-  }, []);
+  const handleOpenDiagnosticReport = (labNumber: string) => {
+    const report = reports.find(r => r.reportNumber === labNumber || r.patient.barcode === labNumber);
+    if (report) {
+      setSelectedReportId(report.id);
+      setActiveTab('diagnostic_editor');
+    }
+  };
 
   return (
     <div className="space-y-6">
-      
-      {/* Top Controls & Financial Daily Bar */}
-      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-rose-900" />
-              <span>{language === 'ar' ? 'سجل الدخل اليومي وحسابات المرضى' : 'Daily Patient Income & Billing'}</span>
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {language === 'ar'
-                ? 'تسجيل تحصيل الفواتير، طرق الدفع، العينات، والربط اللحظي مع منظومة النتائج.'
-                : 'Manage patient billing, sample barcodes, and payment statuses.'}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setScannerOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-            >
-              <ScanLine className="w-4 h-4 text-rose-900" />
-              <span>{language === 'ar' ? 'مسح باركود' : 'Scan'}</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setPaidAmount(0);
-                setSelectedTests([]);
-                setIsAddModalOpen(true);
-              }}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-900 hover:bg-rose-800 rounded-lg transition-colors shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              <span>{language === 'ar' ? 'تسجيل كشف / فاتورة جديدة' : 'New Invoice'}</span>
-            </button>
-            <button type="button" onClick={() => setIsBookingModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg transition-colors shadow-sm cursor-pointer">
-              <Calendar className="w-4 h-4 text-emerald-200" />
-              <span>{language === 'ar' ? 'حجز مريض ومواعيد (الفرع والزيارات)' : 'Patient Booking & Visits'}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Financial Highlights */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 pt-2 border-t border-slate-100">
-          <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-            <div className="text-[11px] text-slate-500 font-medium">
-              {language === 'ar' ? 'إجمالي المحصل' : 'Total Collected'}
-            </div>
-            <div className="text-base font-black text-emerald-700 font-mono mt-0.5">
-              {summaryMetrics.totalPaid.toLocaleString()} {language === 'ar' ? 'ج.م' : 'EGP'}
-            </div>
-            <div className="text-[10px] text-slate-400 mt-0.5">{summaryMetrics.count} {language === 'ar' ? 'فاتورة' : 'cases'}</div>
-          </div>
-
-          <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-            <div className="text-[11px] text-slate-500 font-medium">
-              {language === 'ar' ? 'نقدي (كاش بالخزينة)' : 'Cash in Drawer'}
-            </div>
-            <div className="text-base font-black text-slate-900 font-mono mt-0.5">
-              {summaryMetrics.cashPaid.toLocaleString()} {language === 'ar' ? 'ج.م' : 'EGP'}
-            </div>
-            <div className="text-[10px] text-rose-900 mt-0.5">جاهز للتقفيل</div>
-          </div>
-
-          <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-            <div className="text-[11px] text-slate-500 font-medium">
-              {language === 'ar' ? 'فيزا وبطاقات' : 'Visa / Cards'}
-            </div>
-            <div className="text-base font-black text-blue-700 font-mono mt-0.5">
-              {summaryMetrics.visaPaid.toLocaleString()} {language === 'ar' ? 'ج.م' : 'EGP'}
-            </div>
-            <div className="text-[10px] text-slate-400 mt-0.5">POS محصل إلكترونياً</div>
-          </div>
-
-          <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-            <div className="text-[11px] text-slate-500 font-medium">
-              {language === 'ar' ? 'إنستاباي / تحويلات' : 'Bank / InstaPay'}
-            </div>
-            <div className="text-base font-black text-purple-700 font-mono mt-0.5">
-              {summaryMetrics.transferPaid.toLocaleString()} {language === 'ar' ? 'ج.م' : 'EGP'}
-            </div>
-            <div className="text-[10px] text-slate-400 mt-0.5">تحويلات الحساب</div>
-          </div>
-
-          <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-            <div className="text-[11px] text-slate-500 font-medium">
-              {language === 'ar' ? 'متبقيات آجلة على المرضى' : 'Deferred Balances'}
-            </div>
-            <div className={`text-base font-black font-mono mt-0.5 ${summaryMetrics.totalRemaining > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
-              {summaryMetrics.totalRemaining.toLocaleString()} {language === 'ar' ? 'ج.م' : 'EGP'}
-            </div>
-            <div className="text-[10px] text-slate-400 mt-0.5">عند استلام النتائج</div>
-          </div>
-
-          <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-            <div className="text-[11px] text-slate-500 font-medium">
-              {language === 'ar' ? 'إجمالي القيمة قبل الخصم' : 'Gross Value'}
-            </div>
-            <div className="text-base font-bold text-slate-700 font-mono mt-0.5">
-              {summaryMetrics.totalGross.toLocaleString()} {language === 'ar' ? 'ج.م' : 'EGP'}
-            </div>
-            <div className="text-[10px] text-slate-400 mt-0.5">
-              خصومات: {(summaryMetrics.totalGross - summaryMetrics.totalNet).toLocaleString()} ج.م
+      {/* Top Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-rose-950 to-slate-900 text-white rounded-2xl p-6 shadow-xl border border-rose-900/40">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-rose-600/30 rounded-xl border border-rose-500/40 text-rose-300">
+                <Wallet className="w-7 h-7" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black tracking-tight">إدارة الخزينة والفوترة والتحصيل (Treasury & Income)</h1>
+                <p className="text-slate-300 text-xs sm:text-sm font-medium">
+                  سجل فواتير المرضى، التحصيلات النقدية والإلكترونية، ومتابعة المديونيات المعلقة
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Filter & Search Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-          {/* Search Input */}
-          <div className="relative flex-1 min-w-[240px] max-w-md">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              placeholder={language === 'ar' ? 'ابحث باسم المريض، رقم الهاتف، الباركود، كود المعمل...' : 'Search by name, phone, barcode...'}
-              className="w-full text-xs pr-8 pl-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-700"
-            />
-            <Search className="w-4 h-4 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" />
-          </div>
-
-          {/* Quick Date Tabs */}
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg text-xs">
-            <button
-              onClick={() => setDateFilter('today')}
-              className={`px-3 py-1.5 rounded-md font-semibold transition-colors ${
-                dateFilter === 'today' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {language === 'ar' ? 'اليوم' : 'Today'}
-            </button>
-            <button
-              onClick={() => setDateFilter('yesterday')}
-              className={`px-3 py-1.5 rounded-md font-semibold transition-colors ${
-                dateFilter === 'yesterday' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {language === 'ar' ? 'أمس' : 'Yesterday'}
-            </button>
-            <button
-              onClick={() => setDateFilter('month')}
-              className={`px-3 py-1.5 rounded-md font-semibold transition-colors ${
-                dateFilter === 'month' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {language === 'ar' ? 'هذا الشهر' : 'This Month'}
-            </button>
-            <button
-              onClick={() => setDateFilter('all')}
-              className={`px-3 py-1.5 rounded-md font-semibold transition-colors ${
-                dateFilter === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {language === 'ar' ? 'كل السجلات' : 'All'}
-            </button>
-          </div>
-
-          {/* Status Dropdown */}
-          <div className="flex items-center gap-2">
-            <select
-              value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value as 'all' | 'paid' | 'partial' | 'unpaid')}
-              className="text-xs py-2 px-3 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-rose-700 font-medium"
-            >
-              <option value="all">{language === 'ar' ? 'جميع حالات السداد' : 'All Payment Statuses'}</option>
-              <option value="paid">{language === 'ar' ? 'مسدد بالكامل' : 'Fully Paid'}</option>
-              <option value="partial">{language === 'ar' ? 'مسدد جزئياً (متبقي)' : 'Partial / Balance Due'}</option>
-              <option value="unpaid">{language === 'ar' ? 'غير مسدد (آجل)' : 'Unpaid'}</option>
-            </select>
-
-            <select
-              value={methodFilter}
-              onChange={e => setMethodFilter(e.target.value as 'all' | PaymentMethod)}
-              className="text-xs py-2 px-3 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-rose-700 font-medium"
-            >
-              <option value="all">{language === 'ar' ? 'جميع طرق الدفع' : 'All Methods'}</option>
-              <option value="cash">{language === 'ar' ? 'نقدي (كاش)' : 'Cash'}</option>
-              <option value="visa">{language === 'ar' ? 'فيزا / ماستركارد' : 'Visa'}</option>
-              <option value="bank_transfer">{language === 'ar' ? 'إنستاباي / تحويل' : 'InstaPay / Transfer'}</option>
-            </select>
-          </div>
+          <button
+            onClick={() => setIsPatientFormOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-700 hover:bg-rose-600 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>تسجيل مريض وفاتورة جديدة</span>
+          </button>
         </div>
       </div>
 
-      {/* Main Invoices Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* Aggregate Financial Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-1">
+          <span className="text-xs font-bold text-slate-500">إجمالي الفواتير الصادرة</span>
+          <div className="text-2xl font-black text-slate-900 font-mono">
+            {totalBilled.toLocaleString('ar-EG')} <span className="text-xs font-normal">ج.م</span>
+          </div>
+          <span className="text-[11px] text-slate-400 block">{filteredInvoices.length} فاتورة مسجلة</span>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-1">
+          <span className="text-xs font-bold text-emerald-700">المحصل فعلياً بالخزينة</span>
+          <div className="text-2xl font-black text-emerald-700 font-mono">
+            {totalCollected.toLocaleString('ar-EG')} <span className="text-xs font-normal">ج.م</span>
+          </div>
+          <span className="text-[11px] text-slate-400 block">نسبة التحصيل: {totalBilled > 0 ? Math.round((totalCollected / totalBilled) * 100) : 100}%</span>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-1">
+          <span className="text-xs font-bold text-amber-700">المديونيات والمتبقي المعلق</span>
+          <div className="text-2xl font-black text-amber-700 font-mono">
+            {totalRemaining.toLocaleString('ar-EG')} <span className="text-xs font-normal">ج.م</span>
+          </div>
+          <span className="text-[11px] text-slate-400 block">{filteredInvoices.filter(i => i.remainingAmount > 0).length} فاتورة غير مكتملة السداد</span>
+        </div>
+      </div>
+
+      {/* Filters & Search */}
+      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 text-slate-400 absolute right-3 top-3" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="بحث برقم الفاتورة، اسم المريض، رقم المعمل، أو الباركود..."
+            className="w-full text-xs pr-9 pl-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500"
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Status Filter */}
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                statusFilter === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              الكل
+            </button>
+            <button
+              onClick={() => setStatusFilter('paid')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                statusFilter === 'paid' ? 'bg-white text-emerald-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              مسدد بالكامل
+            </button>
+            <button
+              onClick={() => setStatusFilter('unpaid')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                statusFilter === 'unpaid' ? 'bg-white text-amber-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              متبقي مديونية
+            </button>
+          </div>
+
+          {/* Payment Method Filter */}
+          <select
+            value={methodFilter}
+            onChange={(e) => setMethodFilter(e.target.value)}
+            className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-rose-500"
+          >
+            <option value="all">كل طرق الدفع</option>
+            <option value="cash">نقداً (Cash)</option>
+            <option value="visa">فيزا (Visa)</option>
+            <option value="instapay">إنستاباي (InstaPay)</option>
+            <option value="vodafone_cash">فودافون كاش / محافظ</option>
+            <option value="deferred">آجل / غير مسدد</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Invoices Table */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-right">
-            <thead>
-              <tr className="bg-slate-100/75 text-slate-700 font-bold border-b border-slate-200">
-                <th className="py-3 px-3 text-center w-10">
-                  <input
-                    type="checkbox"
-                    checked={filteredRecords.length > 0 && selectedRecordIds.length === filteredRecords.length}
-                    onChange={toggleSelectAll}
-                    className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 cursor-pointer"
-                    title="تحديد الكل للعمليات المجمعة"
-                  />
-                </th>
-                <th className="py-3 px-4">رقم الفاتورة / العينة</th>
-                <th className="py-3 px-4">الباركود</th>
-                <th className="py-3 px-4">بيانات المريض</th>
-                <th className="py-3 px-4">التحاليل والفحوصات</th>
-                <th className="py-3 px-4">الطبيب المحول</th>
-                <th className="py-3 px-4">الإجمالي والخصم</th>
-                <th className="py-3 px-4">المدفوع / المتبقي</th>
-                <th className="py-3 px-4">طريقة الدفع</th>
-                <th className="py-3 px-4">حالة السداد</th>
-                <th className="py-3 px-4 text-center">إجراءات</th>
+          <table className="w-full text-right text-xs">
+            <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+              <tr>
+                <th className="p-3.5">رقم الفاتورة والمعمل</th>
+                <th className="p-3.5">اسم المريض</th>
+                <th className="p-3.5">التحاليل المسجلة</th>
+                <th className="p-3.5">الإجمالي والخصم</th>
+                <th className="p-3.5">الصافي والمدفوع</th>
+                <th className="p-3.5">طريقة الدفع</th>
+                <th className="p-3.5">الحالة</th>
+                <th className="p-3.5 text-center">إجراءات</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredRecords.length === 0 ? (
+              {filteredInvoices.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="py-12 text-center text-slate-400">
-                    <p className="text-sm font-semibold">
-                      {language === 'ar' ? 'لا توجد فواتير مطابقة للشروط المحددة' : 'No matching invoice records found'}
-                    </p>
-                    <p className="text-xs mt-1">
-                      {language === 'ar' ? 'اضغط على "تسجيل كشف / فاتورة جديدة" لإضافة أول مريض اليوم' : 'Click "New Invoice" to bill a patient.'}
-                    </p>
+                  <td colSpan={8} className="p-8 text-center text-slate-400">
+                    لا توجد فواتير مطابقة لمعايير البحث.
                   </td>
                 </tr>
               ) : (
-                filteredRecords.map(record => {
+                filteredInvoices.map(inv => {
+                  const isFullyPaid = inv.paymentStatus === 'paid' && inv.remainingAmount === 0;
+
                   return (
-                    <tr key={record.id} className={`hover:bg-slate-50/80 transition-colors ${selectedRecordIds.includes(record.id) ? "bg-rose-50/40" : ""}`}>
-                      {/* Row Checkbox */}
-                      <td className="py-3 px-3 text-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedRecordIds.includes(record.id)}
-                          onChange={() => toggleSelectRecord(record.id)}
-                          className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 cursor-pointer"
-                        />
+                    <tr key={inv.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="p-3.5">
+                        <div className="font-mono font-bold text-slate-900">{inv.invoiceNumber}</div>
+                        <div className="font-mono text-[10px] text-rose-900 font-bold">{inv.labNumber}</div>
+                        <div className="font-mono text-[10px] text-slate-400">{inv.barcode}</div>
                       </td>
-                      {/* Invoice & Lab No */}
-                      <td className="py-3 px-4">
-                        <div className="font-mono font-bold text-slate-900">{record.invoiceNumber}</div>
-                        <div className="text-[11px] font-mono text-rose-950">{record.labNumber}</div>
-                        <div className="text-[10px] text-slate-400 mt-0.5">
-                          {new Date(record.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+
+                      <td className="p-3.5">
+                        <div className="font-bold text-slate-900">{inv.patientName}</div>
+                        <div className="text-[11px] text-slate-500 font-mono">{inv.patientPhone || 'بدون هاتف'}</div>
+                        <div className="text-[10px] text-slate-400">{inv.patientAge} سنة · {inv.patientGender === 'male' ? 'ذكر' : 'أنثى'}</div>
+                      </td>
+
+                      <td className="p-3.5 max-w-[200px]">
+                        <div className="truncate font-semibold text-slate-700">
+                          {inv.tests.map(t => t.nameAr).join('، ')}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          {inv.tests.length} تحاليل مسجلة
                         </div>
                       </td>
 
-                      {/* Barcode visual preview */}
-                      <td className="py-3 px-4">
-                        <div className="font-mono font-bold text-slate-800">{record.barcode}</div>
-                        <div className="text-[10px] text-slate-500">
-     {(record.branch || 'الفرع الرئيسي').replace('فرع ', '')}
-     {record.isHomeVisit && (
-       <span className="inline-block bg-indigo-100 text-indigo-800 text-[9px] font-bold px-1.5 py-0.2 rounded mr-1">
-         🏠 زيارة (+{record.visitFee || 0}ج)
-       </span>
-     )}
-   </div>
+                      <td className="p-3.5 font-mono">
+                        <div className="text-slate-500 line-through text-[11px]">
+                          {inv.subtotal} ج.م
+                        </div>
+                        {inv.discount > 0 && (
+                          <div className="text-rose-700 font-bold text-[11px]">
+                            خصم: -{inv.discount} ج.م
+                          </div>
+                        )}
+                        {inv.visitFee && inv.visitFee > 0 ? (
+                          <div className="text-blue-700 text-[10px]">زيارة: +{inv.visitFee} ج.م</div>
+                        ) : null}
                       </td>
 
-                      {/* Patient Details */}
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-slate-900 text-sm">{record.patientName}</div>
-                        <div className="text-[11px] text-slate-500 mt-0.5">
-                          <span>{record.patientAge} سنة</span>
-                          <span className="mx-1">·</span>
-                          <span>{record.patientGender === 'male' ? 'ذكر' : 'أنثى'}</span>
-                          <span className="mx-1">·</span>
-                          <span className="font-mono">{record.patientPhone}</span>
+                      <td className="p-3.5 font-mono">
+                        <div className="font-black text-slate-900 text-sm">
+                          {inv.netAmount} ج.م
                         </div>
-                      </td>
-
-                      {/* Tests List */}
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-800 max-w-[220px] truncate" title={record.tests.map(t => t.nameAr).join(' + ')}>
-                          {record.tests.map(t => t.code).join(' · ')}
+                        <div className="text-[11px] text-emerald-700 font-bold">
+                          مدفوع: {inv.paidAmount} ج.م
                         </div>
-                        <div className="text-[11px] text-slate-500">
-                          {record.tests.length} {record.tests.length === 1 ? 'تحليل' : 'تحاليل'}
-                        </div>
-                      </td>
-
-                      {/* Referring Doctor */}
-                      <td className="py-3 px-4">
-                        <div className="text-slate-800 font-medium truncate max-w-[150px]" title={record.referringDoctor}>
-                          {record.referringDoctor || 'فحص ذاتي'}
-                        </div>
-                      </td>
-
-                      {/* Subtotal & Discount */}
-                      <td className="py-3 px-4">
-                        <div className="font-mono font-bold text-slate-900">
-                          {record.netAmount.toFixed(2)} ج.م
-                        </div>
-                        {record.discount > 0 && (
-                          <div className="text-[10px] text-rose-600 font-mono">
-                            خصم: -{record.discount} ج
+                        {inv.remainingAmount > 0 && (
+                          <div className="text-[11px] text-red-600 font-bold">
+                            متبقي: {inv.remainingAmount} ج.م
                           </div>
                         )}
                       </td>
 
-                      {/* Paid & Remaining */}
-                      <td className="py-3 px-4">
-                        <div className="font-mono font-bold text-emerald-700">
-                          {record.paidAmount.toFixed(2)} ج.م
-                        </div>
-                        {record.remainingAmount > 0 ? (
-                          <div className="text-[11px] text-rose-600 font-bold font-mono">
-                            متبقي: {record.remainingAmount.toFixed(2)} ج
-                          </div>
-                        ) : (
-                          <div className="text-[10px] text-slate-400">خالص</div>
-                        )}
-                      </td>
-
-                      {/* Method */}
-                      <td className="py-3 px-4">
-                        <span className="font-medium text-slate-700">
-                          {record.paymentMethod === 'cash' ? 'نقدي (خزينة)' :
-                           record.paymentMethod === 'visa' ? 'فيزا إلكتروني' :
-                           record.paymentMethod === 'bank_transfer' ? 'إنستاباي' : 'آجل'}
+                      <td className="p-3.5">
+                        <span className="font-bold text-slate-700 text-xs block">
+                          {inv.paymentMethod === 'cash' ? 'نقداً (Cash)' :
+                           inv.paymentMethod === 'visa' ? 'فيزا (Visa)' :
+                           inv.paymentMethod === 'instapay' ? 'إنستاباي' :
+                           inv.paymentMethod === 'vodafone_cash' ? 'فودافون كاش' :
+                           inv.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : 'آجل'}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {inv.createdAt.split('T')[0]}
                         </span>
                       </td>
 
-                      {/* Status */}
-                      <td className="py-3 px-4">
-                        {record.paymentStatus === 'paid' ? (
-                          <span className="inline-flex items-center gap-1 font-bold text-emerald-700">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>مسدد</span>
-                          </span>
-                        ) : record.paymentStatus === 'partial' ? (
-                          <span className="inline-flex items-center gap-1 font-bold text-amber-700">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>جزئي</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 font-bold text-rose-600">
-                            <AlertCircle className="w-3.5 h-3.5" />
-                            <span>آجل</span>
-                          </span>
-                        )}
+                      <td className="p-3.5">
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          isFullyPaid
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {isFullyPaid ? 'مسدد بالكامل' : `متبقي ${inv.remainingAmount} ج.م`}
+                        </span>
                       </td>
 
-                      {/* Actions */}
-                      <td className="py-3 px-4 text-center">
+                      <td className="p-3.5">
                         <div className="flex items-center justify-center gap-1.5">
-                          {/* Quick Pay Remainder */}
-                          {record.remainingAmount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedInvoiceForPrint(inv)}
+                            title="طباعة الفاتورة أو إيصال السداد"
+                            className="p-1.5 rounded-lg bg-rose-50 text-rose-900 hover:bg-rose-100 transition-colors cursor-pointer"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDiagnosticReport(inv.labNumber)}
+                            title="فتح التقرير الطبي المخبري"
+                            className="p-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </button>
+
+                          {!isFullyPaid && (
                             <button
-                              onClick={() => handleQuickPayRemainder(record)}
-                              className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-bold rounded border border-emerald-200 transition-colors"
-                              title="تحصيل المتبقي نقداً"
+                              type="button"
+                              onClick={() => handleMarkAsPaid(inv)}
+                              title="تسوية وسداد المتبقي"
+                              className="px-2 py-1 rounded-lg bg-emerald-600 text-white font-bold text-[10px] hover:bg-emerald-700 transition-colors cursor-pointer"
                             >
                               سداد
                             </button>
                           )}
 
-                          {/* Sync to Diagnostic Button */}
                           <button
                             type="button"
-                            onClick={async () => {
-                              const res = await syncSingleInvoice(record);
-                              alert(res.message);
+                            onClick={() => {
+                              if (confirm(`هل أنت متأكد من حذف فاتورة المريض ${inv.patientName}؟`)) {
+                                deleteIncomeRecord(inv.id);
+                              }
                             }}
-                            className="p-1.5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded transition-colors"
-                            title="تسميع فوري لطلب الفحص إلى منظومة النتائج والتشخيص"
+                            title="حذف الفاتورة"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                           >
-                            <Zap className="w-4 h-4 text-emerald-600" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
-
-                          {/* Edit Invoice Button */}
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEdit(record)}
-                            className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
-                            title="تعديل بيانات الفاتورة والحالة"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          {/* Print Invoice */}
-                          <button
-                            onClick={() => setPrintInvoice(record)}
-                            className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors"
-                            title="طباعة الفاتورة والباركود"
-                          >
-                            <Printer className="w-4 h-4" />
-                          </button>
-
-                          {/* Delete (CEO only) */}
-                          {currentUser.role === 'admin_ceo' && (
-                            <button
-                              onClick={() => {
-                                if (confirm(`هل أنت متأكد من حذف فاتورة المريض ${record.patientName}؟`)) {
-                                  deleteIncomeRecord(record.id);
-                                }
-                              }}
-                              className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors"
-                              title="حذف الفاتورة (صلاحية الإدارة)"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -826,613 +347,15 @@ export const IncomeModule: React.FC = () => {
             </tbody>
           </table>
         </div>
-
-        {/* Floating / Sticky Batch Operations Bar in Financial System */}
-        {selectedRecordIds.length > 0 && (
-          <div className="p-3 bg-slate-900 text-white border-t border-rose-900/60 flex flex-wrap items-center justify-between gap-3 animate-in fade-in duration-150">
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-rose-600 text-white flex items-center justify-center font-bold font-mono text-xs">
-                {selectedRecordIds.length}
-              </span>
-              <span className="text-xs font-bold text-white">العمليات المجمعة على الفواتير المحددة</span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <button
-                type="button"
-                onClick={handleBulkMarkPaid}
-                className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold flex items-center gap-1.5 transition-colors shadow-xs"
-                title="تسجيل سداد كامل لكافة الفواتير المحددة"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
-                <span>سداد مجمع</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const first = incomeRecords.find(r => r.id === selectedRecordIds[0]);
-                  if (first) setPrintInvoice(first);
-                }}
-                className="px-3 py-1.5 bg-rose-800 hover:bg-rose-700 text-white rounded-lg font-bold flex items-center gap-1.5 transition-colors shadow-xs"
-                title="طباعة الفواتير المحددة"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span>طباعة أولية</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleBulkExportJson}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-medium flex items-center gap-1.5 transition-colors border border-slate-700"
-                title="تصدير بيانات الفواتير المحددة JSON"
-              >
-                <Download className="w-3.5 h-3.5 text-slate-400" />
-                <span>تصدير JSON</span>
-              </button>
-              {currentUser.role === 'admin_ceo' && (
-                <button
-                  type="button"
-                  onClick={handleBulkDelete}
-                  className="px-3 py-1.5 bg-rose-950 hover:bg-rose-900 text-rose-300 rounded-lg font-medium flex items-center gap-1.5 transition-colors border border-rose-800"
-                  title="حذف الفواتير المحددة"
-                >
-                  <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                  <span>حذف مجمع</span>
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setSelectedRecordIds([])}
-                className="px-2.5 py-1.5 text-slate-400 hover:text-white text-xs transition-colors"
-              >
-                إلغاء
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* MODAL: NEW INTAKE & INVOICE REGISTRATION */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-4xl w-full my-auto overflow-hidden">
-            
-            {/* Modal Header */}
-            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-base flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-rose-400" />
-                  <span>{language === 'ar' ? 'تسجيل حالة ومريض جديد وإصدار فاتورة' : 'New Patient Intake & Billing'}</span>
-                </h3>
-                <div className="text-xs text-slate-400 mt-0.5">
-                  معامل RT للتشخيص · كود التحليل التلقائي: <span className="font-mono text-rose-300 font-bold">{nextLabNumber}</span> · باركود: <span className="font-mono text-rose-300 font-bold">{nextBarcode}</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsAddModalOpen(false)}
-                className="text-slate-400 hover:text-white transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Modal Form */}
-            <form onSubmit={handleSaveInvoice} className="p-6 space-y-6">
-              
-              {/* Row 1: Patient Information */}
-              <div>
-                <h4 className="text-xs font-bold text-slate-900 border-b border-slate-200 pb-1.5 mb-3 flex items-center gap-1.5">
-                  <User className="w-4 h-4 text-rose-900" />
-                  <span>بيانات المريض الأساسية:</span>
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-                  <div>
-                    <label className="block text-slate-700 font-bold mb-1">اسم المريض ثلاثي / رباعي *</label>
-                    <input
-                      type="text"
-                      required
-                      value={patientName}
-                      onChange={e => setPatientName(e.target.value)}
-                      placeholder="مثال: أحمد عبد الله حسين"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-700 font-medium"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 font-bold mb-1">رقم الهاتف (واتساب) *</label>
-                    <input
-                      type="text"
-                      value={patientPhone}
-                      onChange={e => setPatientPhone(e.target.value)}
-                      placeholder="01012345678"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-700 font-mono"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-slate-700 font-bold mb-1">السن (بالسنوات)</label>
-                      <input
-                        type="number"
-                        min={0}
-                        max={120}
-                        value={patientAge}
-                        onChange={e => setPatientAge(Number(e.target.value))}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-700 font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-700 font-bold mb-1">النوع</label>
-                      <select
-                        value={patientGender}
-                        onChange={e => setPatientGender(e.target.value as 'male' | 'female')}
-                        className="w-full px-2 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-700 bg-white"
-                      >
-                        <option value="male">ذكر</option>
-                        <option value="female">أنثى</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 font-bold mb-1">الطبيب المحول / العيادة</label>
-                    <input
-                      type="text"
-                      value={referringDoctor}
-                      onChange={e => setReferringDoctor(e.target.value)}
-                      placeholder="د. استشاري الباطنة أو فحص ذاتي"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-700"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Row 2: Test Catalog Multi-Selector */}
-              <div>
-                <h4 className="text-xs font-bold text-slate-900 border-b border-slate-200 pb-1.5 mb-3 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <Tag className="w-4 h-4 text-rose-900" />
-                    <span>اختيار التحاليل والفحوصات المطلوبة:</span>
-                  </span>
-                  <span className="text-slate-500 font-normal">
-                    تم اختيار {selectedTests.length} تحليل
-                  </span>
-                </h4>
-
-                {/* Selected Tests Tags */}
-                <div className="min-h-12 p-2.5 rounded-lg border border-slate-200 bg-slate-50/70 mb-3 flex flex-wrap items-center gap-1.5">
-                  {selectedTests.length === 0 ? (
-                    <span className="text-xs text-slate-400">
-                      اختر التحاليل من القائمة أدناه أو ابحث بالاسم أو الكود...
-                    </span>
-                  ) : (
-                    selectedTests.map(t => (
-                      <span
-                        key={t.id}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-rose-100 text-rose-950 rounded-md text-xs font-bold border border-rose-200"
-                      >
-                        <span>{t.nameAr}</span>
-                        <span className="font-mono text-rose-900">({t.price} ج)</span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveTest(t.id)}
-                          className="text-rose-900 hover:text-rose-600 font-bold mr-1"
-                        >
-                          ✕
-                        </button>
-                      </span>
-                    ))
-                  )}
-                </div>
-
-                {/* Search & Filter in Catalog */}
-                <div className="flex gap-2 mb-2">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      value={customTestSearch}
-                      onChange={e => setCustomTestSearch(e.target.value)}
-                      placeholder="ابحث في التحاليل بالاسم أو الكود (مثل: FBS, CBC, TSH, سكر, كلى)..."
-                      className="w-full text-xs pr-8 pl-3 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-700"
-                    />
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" />
-                  </div>
-                  <select
-                    value={catalogCategory}
-                    onChange={e => setCatalogCategory(e.target.value)}
-                    className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
-                  >
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>
-                        {cat === 'all' ? 'جميع الأقسام' : cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Catalog Quick Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 max-h-48 overflow-y-auto p-1 border border-slate-200 rounded-lg">
-                  {filteredCatalog.map(test => {
-                    const isSelected = selectedTests.some(t => t.id === test.id);
-                    return (
-                      <button
-                        key={test.id}
-                        type="button"
-                        onClick={() => {
-                          if (isSelected) {
-                            handleRemoveTest(test.id);
-                          } else {
-                            handleAddTest(test);
-                          }
-                        }}
-                        className={`p-2 text-right rounded-md border text-xs transition-colors flex items-center justify-between ${
-                          isSelected
-                            ? 'bg-rose-900 text-white border-rose-950'
-                            : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200'
-                        }`}
-                      >
-                        <div className="truncate">
-                          <div className="font-bold truncate">{test.nameAr}</div>
-                          <div className={`text-[10px] font-mono ${isSelected ? 'text-rose-200' : 'text-slate-400'}`}>
-                            {test.code}
-                          </div>
-                        </div>
-                        <div className={`font-mono font-bold mr-1 shrink-0 ${isSelected ? 'text-white' : 'text-rose-950'}`}>
-                          {test.price} ج
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Row 3: Financial Calculations & Payment */}
-              <div>
-                <h4 className="text-xs font-bold text-slate-900 border-b border-slate-200 pb-1.5 mb-3 flex items-center gap-1.5">
-                  <CreditCard className="w-4 h-4 text-rose-900" />
-                  <span>الحساب المالي والتحصيل:</span>
-                </h4>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs bg-slate-50 p-4 rounded-lg border border-slate-200">
-                  <div>
-                    <label className="block text-slate-500 font-bold mb-1">المجموع الكلي:</label>
-                    <div className="text-lg font-black font-mono text-slate-900 py-1">
-                      {subtotalNew.toFixed(2)} ج.م
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 font-bold mb-1">الخصم المطبق (ج.م):</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={subtotalNew}
-                      value={discount}
-                      onChange={e => {
-                        const val = Number(e.target.value) || 0;
-                        setDiscount(val);
-                        setPaidAmount(Math.max(0, subtotalNew - val));
-                      }}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-300 font-mono text-xs focus:ring-2 focus:ring-rose-700"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-500 font-bold mb-1">الصافي المطلوب:</label>
-                    <div className="text-lg font-black font-mono text-rose-950 py-1">
-                      {netAmountNew.toFixed(2)} ج.م
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-emerald-800 font-bold mb-1">المدفوع الآن (ج.م) *:</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={netAmountNew}
-                      value={paidAmount}
-                      onChange={e => setPaidAmount(Number(e.target.value) || 0)}
-                      className="w-full px-3 py-1.5 rounded-lg border border-emerald-400 font-mono text-xs font-bold text-emerald-900 focus:ring-2 focus:ring-emerald-700"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-500 font-bold mb-1">المتبقي الآجل:</label>
-                    <div className={`text-lg font-black font-mono py-1 ${remainingNew > 0 ? 'text-rose-600' : 'text-slate-500'}`}>
-                      {remainingNew.toFixed(2)} ج.م
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3 text-xs">
-                  <div>
-                    <label className="block text-slate-700 font-bold mb-1">طريقة السداد:</label>
-                    <select
-                      value={paymentMethod}
-                      onChange={e => setPaymentMethod(e.target.value as PaymentMethod)}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white"
-                    >
-                      <option value="cash">نقدي (كاش بالخزينة)</option>
-                      <option value="visa">فيزا / ماستركارد (POS)</option>
-                      <option value="bank_transfer">إنستاباي / تحويل بنكي</option>
-                      <option value="deferred">آجل بالكامل</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 font-bold mb-1">الفرع التابع له:</label>
-                    <select
-                      value={branch}
-                      onChange={e => setBranch(e.target.value)}
-                      disabled={isHomeVisit}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800"
-                    >
-                      {facilities.map(f => (
-                        <option key={f.id} value={f.nameAr}>
-                          {f.nameAr} {f.isMainBranch ? '(الرئيسي)' : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Home Visit Options Box */}
-                  <div className="col-span-2 sm:col-span-3 bg-amber-50/70 border border-amber-200 p-3 rounded-xl space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="flex items-center gap-2 cursor-pointer font-bold text-amber-950 text-xs">
-                        <input
-                          type="checkbox"
-                          checked={isHomeVisit}
-                          onChange={e => {
-                            const checked = e.target.checked;
-                            setIsHomeVisit(checked);
-                            const fee = checked ? (Number(visitFee) || 70) : 0;
-                            setPaidAmount(testsNetAmount + fee);
-                          }}
-                          className="w-4 h-4 rounded text-rose-700 focus:ring-rose-600"
-                        />
-                        <span>تفعيل حجز زيارة منزلية خاصة (مع إدراج رسوم زيارة مستقلة)</span>
-                      </label>
-                      {isHomeVisit && (
-                        <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">
-                          الرسوم غير خاضعة للخصم
-                        </span>
-                      )}
-                    </div>
-
-                    {isHomeVisit && (
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-amber-200/60">
-                        <div>
-                          <label className="block text-slate-700 font-bold mb-1 text-[11px]">
-                            رسوم الزيارة (ج.م) [ثابتة]:
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={visitFee}
-                            onChange={e => {
-                              const v = Number(e.target.value) || 0;
-                              setVisitFee(v);
-                              setPaidAmount(testsNetAmount + v);
-                            }}
-                            className="w-full px-2.5 py-1.5 border border-amber-300 bg-white rounded-lg font-bold font-mono text-rose-900 text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-slate-700 font-bold mb-1 text-[11px]">
-                            الكيميائي / الفني المسؤول عن السحب:
-                          </label>
-                          <select
-                            value={visitSpecialist}
-                            onChange={e => setVisitSpecialist(e.target.value)}
-                            className="w-full px-2.5 py-1.5 border border-amber-300 bg-white rounded-lg text-xs font-semibold"
-                          >
-                            {staffMembers.map(s => (
-                              <option key={s.id} value={`${s.name} (${s.title})`}>
-                                {s.name} - {s.title}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-slate-700 font-bold mb-1 text-[11px]">
-                            عنوان الزيارة بالتفصيل:
-                          </label>
-                          <input
-                            type="text"
-                            value={visitAddress}
-                            onChange={e => setVisitAddress(e.target.value)}
-                            placeholder="العنوان، العمارة، الشقة، وأقرب علامة..."
-                            className="w-full px-2.5 py-1.5 border border-amber-300 bg-white rounded-lg text-xs"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 font-bold mb-1">ملاحظات الفاتورة أو العينة:</label>
-                    <input
-                      type="text"
-                      value={notes}
-                      onChange={e => setNotes(e.target.value)}
-                      placeholder="عينة صائم 10 ساعات، كولكشن عاجل..."
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Form Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-colors"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 bg-rose-900 hover:bg-rose-800 text-white font-bold text-xs rounded-lg transition-colors shadow-md flex items-center gap-2"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>حفظ الفاتورة وإصدار الباركود والطباعة</span>
-                </button>
-              </div>
-
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Printable Invoice Modal */}
-      {printInvoice && (
+      {/* Invoice Print Modal */}
+      {selectedInvoiceForPrint && (
         <InvoicePrintModal
-          invoice={printInvoice}
-          onClose={() => setPrintInvoice(null)}
+          invoice={selectedInvoiceForPrint}
+          onClose={() => setSelectedInvoiceForPrint(null)}
         />
       )}
-
-      {/* MODAL: EDIT INVOICE */}
-      {editRecord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 space-y-4">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
-                  <Edit2 className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm">تعديل بيانات الفاتورة</h3>
-                  <p className="text-[11px] text-slate-500 font-mono">{editRecord.invoiceNumber} | {editRecord.labNumber}</p>
-                </div>
-              </div>
-              <button type="button" onClick={() => setEditRecord(null)} className="text-slate-400 hover:text-slate-700 text-sm">✕</button>
-            </div>
-
-            <form onSubmit={handleSaveEdit} className="space-y-3 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">اسم المريض *</label>
-                  <input
-                    type="text"
-                    required
-                    value={editPatientName}
-                    onChange={e => setEditPatientName(e.target.value)}
-                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-semibold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">رقم الهاتف</label>
-                  <input
-                    type="text"
-                    value={editPatientPhone}
-                    onChange={e => setEditPatientPhone(e.target.value)}
-                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">الطبيب المعالج</label>
-                  <input
-                    type="text"
-                    value={editDoctor}
-                    onChange={e => setEditDoctor(e.target.value)}
-                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">الفرع</label>
-                  <input
-                    type="text"
-                    value={editBranch}
-                    onChange={e => setEditBranch(e.target.value)}
-                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg"
-                  />
-                </div>
-              </div>
-
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                <div className="text-[11px] font-bold text-slate-700">الفحوصات المقيدة:</div>
-                <div className="text-slate-600 font-medium truncate">
-                  {editRecord.tests.map(t => t.nameAr).join(' · ')}
-                </div>
-                <div className="text-[11px] text-slate-500 font-mono">
-                  إجمالي قيمة الفحوصات: {editRecord.subtotal || editRecord.netAmount} ج.م
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">قيمة الخصم (ج.م)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={editDiscount}
-                    onChange={e => setEditDiscount(Number(e.target.value))}
-                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-rose-700"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">المسدد نقداً (ج.م) *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    required
-                    value={editPaid}
-                    onChange={e => setEditPaid(Number(e.target.value))}
-                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-emerald-700"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">طريقة الدفع</label>
-                  <select
-                    value={editMethod}
-                    onChange={e => setEditMethod(e.target.value as PaymentMethod)}
-                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-semibold"
-                  >
-                    <option value="cash">خزينة نقدي</option>
-                    <option value="visa">فيزا / بطاقة</option>
-                    <option value="bank">تحويل بنكي</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">ملاحظات إضافية</label>
-                <input
-                  type="text"
-                  value={editNotes}
-                  onChange={e => setEditNotes(e.target.value)}
-                  placeholder="أي ملاحظات على الدفع أو العينة..."
-                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg"
-                />
-              </div>
-
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditRecord(null)}
-                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-100 font-bold transition-all"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-xl font-bold shadow-md transition-all"
-                >
-                  حفظ تعديل الفاتورة
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      <TestCatalogManagerModal isOpen={catalogModalOpen} onClose={() => setCatalogModalOpen(false)} />
-      <BookingAppointmentsModal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} />
     </div>
   );
 };

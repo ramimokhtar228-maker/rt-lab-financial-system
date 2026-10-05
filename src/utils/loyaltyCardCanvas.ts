@@ -1,4 +1,4 @@
-import { BRANCH_MAIN_ADDRESS, LAB_NAME_AR } from './whatsappBooking';
+import { BRANCH_MAIN_ADDRESS, LAB_NAME_AR } from './whatsapp';
 
 export interface CardCustomFields {
   showHeader?: boolean;

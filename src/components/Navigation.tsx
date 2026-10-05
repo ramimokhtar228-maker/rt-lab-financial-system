@@ -2,250 +2,177 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import {
   LayoutDashboard,
-  Receipt,
-  PieChart,
+  UserPlus,
   FlaskConical,
-  Users,
-  Network,
-  BarChart3,
-  GitBranch,
-  ShieldCheck,
-  Settings,
+  Cpu,
+  FileCheck2,
+  FolderArchive,
+  Wallet,
+  Receipt,
   CreditCard,
-  Building2,
-  ChevronDown
+  Network,
+  Package,
+  Users2,
+  BookOpen,
+  ShieldCheck
 } from 'lucide-react';
+
+interface NavItem {
+  id: string;
+  labelAr: string;
+  icon: React.ElementType;
+  badge?: number | string;
+  badgeColor?: string;
+  group: 'core' | 'medical' | 'financial' | 'admin';
+}
 
 export const Navigation: React.FC = () => {
   const {
     activeTab,
     setActiveTab,
-    language,
     hasPermission,
-    inventory,
-    labToLabOrders,
+    reports,
     incomeRecords,
-    loyaltyProfiles
+    inventory,
+    instruments
   } = useApp();
 
-  const [isMoreOpen, setIsMoreOpen] = React.useState(false);
-
+  const pendingReportsCount = reports.filter(r => r.status === 'draft' || r.status === 'in_progress').length;
+  const unpaidInvoicesCount = incomeRecords.filter(i => i.paymentStatus !== 'paid').length;
   const lowStockCount = inventory.filter(i => i.currentQuantity <= i.minThreshold).length;
-  const pendingL2LCount = labToLabOrders.filter(o => o.resultStatus === 'sent' || o.resultStatus === 'processing').length;
-  const pendingBillsCount = incomeRecords.filter(r => r.paymentStatus !== 'paid').length;
 
-  const primaryItems = [
+  const navItems: NavItem[] = [
     {
       id: 'dashboard',
-      labelAr: 'الرئيسية (لوحة القيادة)',
-      labelEn: 'Executive Dashboard',
+      labelAr: 'لوحة التحكم المركزية',
       icon: LayoutDashboard,
-      permission: 'dashboard'
+      group: 'core'
     },
     {
-      id: 'income',
-      labelAr: 'سجل الدخل والفواتير',
-      labelEn: 'Daily Income & Billing',
-      icon: Receipt,
-      badge: pendingBillsCount > 0 ? pendingBillsCount : null,
-      permission: 'income'
+      id: 'admission',
+      labelAr: 'تسجيل المرضى وحجز التحاليل',
+      icon: UserPlus,
+      group: 'core'
     },
     {
-      id: 'expenses',
-      labelAr: 'المصروفات والأرباح',
-      labelEn: 'Expenses & Profit Share',
-      icon: PieChart,
-      permission: 'expenses'
-    },
-    {
-      id: 'reports',
-      labelAr: 'التقارير والتقفيل',
-      labelEn: 'Reports & Closeout',
-      icon: BarChart3,
-      permission: 'reports'
-    }
-  ];
-
-  const secondaryItems = [
-    {
-      id: 'lab_management',
-      labelAr: 'إدارة المعامل والفروع',
-      icon: Building2,
-      permission: 'income'
-    },
-    {
-      id: 'inventory',
-      labelAr: 'المستلزمات والكيماويات',
+      id: 'worklist',
+      labelAr: 'قائمة عمل المعمل',
       icon: FlaskConical,
-      badge: lowStockCount > 0 ? lowStockCount : null,
-      permission: 'inventory'
+      badge: pendingReportsCount > 0 ? pendingReportsCount : undefined,
+      badgeColor: 'bg-rose-600',
+      group: 'medical'
+    },
+    {
+      id: 'instruments',
+      labelAr: 'الربط مع الأجهزة (LIS)',
+      icon: Cpu,
+      badge: instruments.filter(i => i.status === 'online').length + ' متصل',
+      badgeColor: 'bg-emerald-600',
+      group: 'medical'
+    },
+    {
+      id: 'diagnostic_editor',
+      labelAr: 'إدخال النتائج والتشخيص',
+      icon: FileCheck2,
+      group: 'medical'
+    },
+    {
+      id: 'reports_archive',
+      labelAr: 'أرشيف التقارير والطباعة',
+      icon: FolderArchive,
+      badge: reports.length,
+      badgeColor: 'bg-slate-700',
+      group: 'medical'
+    },
+    {
+      id: 'financial_income',
+      labelAr: 'الخزينة والفوترة (Income)',
+      icon: Wallet,
+      badge: unpaidInvoicesCount > 0 ? `${unpaidInvoicesCount} معلق` : undefined,
+      badgeColor: 'bg-amber-600',
+      group: 'financial'
+    },
+    {
+      id: 'expenses_profit',
+      labelAr: 'المصروفات والأرباح (P&L)',
+      icon: Receipt,
+      group: 'financial'
     },
     {
       id: 'loyalty',
       labelAr: 'كروت ونقاط الولاء',
       icon: CreditCard,
-      badge: loyaltyProfiles.length > 0 ? loyaltyProfiles.length : null,
-      permission: 'loyalty'
-    },
-    {
-      id: 'hr',
-      labelAr: 'الموارد البشرية والرواتب',
-      icon: Users,
-      permission: 'hr'
+      group: 'financial'
     },
     {
       id: 'lab_to_lab',
-      labelAr: 'اللاب تو لاب (خارجي)',
+      labelAr: 'معامل الإحالة الخارجية',
       icon: Network,
-      badge: pendingL2LCount > 0 ? pendingL2LCount : null,
-      permission: 'lab_to_lab'
+      group: 'financial'
     },
     {
-      id: 'sync',
-      labelAr: 'ربط منظومة النتائج',
-      icon: GitBranch,
-      permission: 'income'
+      id: 'inventory',
+      labelAr: 'المخزون والمحاليل',
+      icon: Package,
+      badge: lowStockCount > 0 ? `نواقص ${lowStockCount}` : undefined,
+      badgeColor: 'bg-red-600',
+      group: 'admin'
     },
     {
-      id: 'audit',
-      labelAr: 'سجل الحركات والرقابة',
+      id: 'hr',
+      labelAr: 'شؤون الموظفين والورديات',
+      icon: Users2,
+      group: 'admin'
+    },
+    {
+      id: 'catalog',
+      labelAr: 'دليل التحاليل والباقات',
+      icon: BookOpen,
+      group: 'admin'
+    },
+    {
+      id: 'audit_settings',
+      labelAr: 'الأمان والتدقيق والإعدادات',
       icon: ShieldCheck,
-      permission: 'income'
-    },
-    {
-      id: 'settings',
-      labelAr: 'النسخ السحابي والإعدادات',
-      icon: Settings,
-      permission: 'income'
+      group: 'admin'
     }
   ];
 
-  const isSecondaryActive = secondaryItems.some(i => i.id === activeTab);
-
   return (
-    <nav className="bg-slate-950 text-slate-300 border-b border-slate-800 shadow-md">
+    <nav className="bg-white border-b border-slate-200 shadow-sm sticky top-[65px] z-20 print:hidden overflow-x-auto no-scrollbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between gap-2 overflow-x-auto py-2 scrollbar-none">
-          <div className="flex items-center gap-1.5">
-            {primaryItems.map(item => {
-              const allowed = hasPermission(item.permission);
-              const isActive = activeTab === item.id;
-              const Icon = item.icon;
+        <div className="flex items-center gap-1.5 py-2 min-w-max">
+          {navItems.map(item => {
+            const allowed = hasPermission(item.id);
+            if (!allowed) return null;
+            const isActive = activeTab === item.id;
+            const Icon = item.icon;
 
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => allowed && setActiveTab(item.id)}
-                  disabled={!allowed}
-                  className={
-                    'flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all cursor-pointer ' +
-                    (isActive
-                      ? 'bg-gradient-to-r from-rose-900 to-rose-800 text-white shadow-md shadow-rose-950/40 border border-rose-600/50 scale-[1.02]'
-                      : allowed
-                      ? 'text-slate-300 hover:text-white hover:bg-slate-900/90 hover:border-slate-700 border border-transparent'
-                      : 'text-slate-600 cursor-not-allowed opacity-50')
-                  }
-                >
-                  <Icon className={'w-4 h-4 ' + (isActive ? 'text-amber-300' : 'text-slate-400')} />
-                  <span>{language === 'ar' ? item.labelAr : item.labelEn}</span>
-                  {item.badge !== null && item.badge !== undefined && (
-                    <span className="text-[10px] px-1.5 py-0.2 rounded-full font-black font-mono bg-rose-600 text-white">
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-
-            {/* Collapsible secondary dropdown with full click, tap, & hover support */}
-            <div className="relative group inline-block text-right">
+            return (
               <button
-                type="button"
-                onClick={() => setIsMoreOpen(prev => !prev)}
-                className={
-                  'flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all border cursor-pointer select-none ' +
-                  (isSecondaryActive || isMoreOpen
-                    ? 'bg-rose-950/80 border-rose-500 text-rose-200 shadow-md ring-1 ring-rose-500/40'
-                    : 'text-slate-300 hover:text-white bg-slate-900/90 hover:bg-slate-800 border-slate-700')
-                }
-                title="فتح الأقسام الإدارية والعمليات المجمعة"
-                aria-expanded={isMoreOpen}
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`relative px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer select-none ${
+                  isActive
+                    ? 'bg-rose-900 text-white shadow-md shadow-rose-900/20 ring-1 ring-rose-800'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
               >
-                <Settings className="w-3.5 h-3.5 text-rose-400" />
-                <span>الأقسام الإدارية والعمليات (مجمعة)</span>
-                <ChevronDown className={'w-3.5 h-3.5 transition-transform duration-200 text-rose-400 ' + (isMoreOpen ? 'rotate-180' : '')} />
+                <Icon className={`w-4 h-4 ${isActive ? 'text-rose-200' : 'text-slate-500'}`} />
+                <span>{item.labelAr}</span>
+
+                {item.badge !== undefined && (
+                  <span
+                    className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full text-white font-bold leading-none ${
+                      isActive ? 'bg-white/20' : item.badgeColor || 'bg-slate-600'
+                    }`}
+                  >
+                    {item.badge}
+                  </span>
+                )}
               </button>
-
-              {/* Backdrop for click outside */}
-              {isMoreOpen && (
-                <div 
-                  className="fixed inset-0 z-40 cursor-default" 
-                  onClick={() => setIsMoreOpen(false)} 
-                />
-              )}
-
-              {/* Menu (works on click state isMoreOpen OR on group-hover for desktop) */}
-              <div 
-                className={
-                  (isMoreOpen ? 'block' : 'hidden group-hover:block') + 
-                  ' absolute right-0 top-full mt-1.5 z-50 w-64 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl py-2 text-xs divide-y divide-slate-800 animate-in fade-in duration-150'
-                }
-              >
-                <div className="px-3 py-1.5 text-[10px] font-bold text-rose-400 uppercase tracking-wider flex items-center justify-between">
-                  <span>الأقسام الإدارية والعمليات</span>
-                  <span className="text-slate-500 font-mono text-[9px]">RT LAB ERP</span>
-                </div>
-                <div className="py-1">
-                  {secondaryItems.map(item => {
-                    const allowed = hasPermission(item.permission);
-                    const isActive = activeTab === item.id;
-                    const Icon = item.icon;
-
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          if (allowed) {
-                            setActiveTab(item.id);
-                            setIsMoreOpen(false);
-                          }
-                        }}
-                        disabled={!allowed}
-                        className={
-                          'w-full text-right px-3 py-2 flex items-center justify-between hover:bg-slate-800 transition-colors cursor-pointer ' +
-                          (isActive ? 'text-rose-400 font-bold bg-slate-800/60' : 'text-slate-300')
-                        }
-                      >
-                        <div className="flex items-center gap-2">
-                          <Icon className="w-3.5 h-3.5 text-rose-400" />
-                          <span>{item.labelAr}</span>
-                        </div>
-                        {item.badge !== null && item.badge !== undefined && (
-                          <span className="text-[9px] px-1.5 py-0.2 rounded-full font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                            {item.badge}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick link to diagnostic system */}
-          <div className="flex items-center gap-2 shrink-0">
-            <a
-              href="https://ramimokhtar228-maker.github.io/rt-lab-diagnostic-system/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1.5 rounded-lg bg-sky-950/70 border border-sky-700/60 hover:bg-sky-900 text-sky-200 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
-              title="الانتقال لبرنامج النتائج والتشخيص"
-            >
-              <span>برنامج النتائج 🔬</span>
-              <span className="text-[10px] text-sky-400 font-mono">↗</span>
-            </a>
-          </div>
+            );
+          })}
         </div>
       </div>
     </nav>

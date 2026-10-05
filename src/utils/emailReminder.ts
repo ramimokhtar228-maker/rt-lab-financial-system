@@ -1,4 +1,4 @@
-import { BRANCH_MAIN_ADDRESS, LAB_NAME_AR, LAB_PHONE } from './whatsappBooking';
+import { BRANCH_MAIN_ADDRESS, LAB_NAME_AR, LAB_PHONE } from './whatsapp';
 
 export function send24HourEmailReminder(params: {
   patientEmail: string;

@@ -3,13 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RT Lab Financial & ERP | المنظومة المالية لمعامل RT</title>
-    <meta name="description" content="منظومة معامل RT للتحاليل التشخيصية - معامل رامي مختار - أطباء كلية طب قصر العيني: النظام المالي والفوترة ERP، كروت ونقاط الولاء، وإدارة كتالوج الفحوصات." />
+    <title>RT Lab Medical & Financial ERP | منظومة معامل RT الطبية والمالية الموحدة</title>
+    <meta name="description" content="المنظومة الموحدة الشاملة لمعامل RT للتحاليل الطبية والتشخيصية - معامل رامي مختار (أطباء كلية طب قصر العيني): إدارة المرضى والفوترة، الربط مع أجهزة المعمل، التقارير الطبية، كروت ونقاط الولاء، والمحاسبة والمخزون." />
+    <meta property="og:title" content="RT Lab Medical & Financial ERP | منظومة معامل RT الطبية والمالية الموحدة" />
+    <meta property="og:description" content="المنظومة الموحدة الشاملة لمعامل RT للتحاليل الطبية والتشخيصية - معامل رامي مختار (أطباء كلية طب قصر العيني): إدارة المرضى والفوترة، الربط مع أجهزة المعمل، التقارير الطبية، كروت ونقاط الولاء، والمحاسبة والمخزون." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script>
-      // Force kill any old service worker and caches
+      // Clear legacy service worker registrations or stale caches that broke buttons in previous builds
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(regs) {
           for (var r of regs) { r.unregister(); }
@@ -24,6 +28,7 @@
   </head>
   <body class="bg-slate-50 text-slate-900 antialiased font-['Cairo',sans-serif]">
     <div id="root"></div>
-    <script type="module" src="./src/main.tsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
+

@@ -32,7 +32,9 @@ export const AuditLogModule: React.FC = () => {
     SETTINGS: 'الإعدادات والربط',
     SECURITY: 'الأمان والدخول',
     CATALOG: 'الكتالوج والأسعار',
-    LOYALTY: 'كروت الولاء'
+    LOYALTY: 'كروت الولاء',
+    DIAGNOSTIC: 'التقارير الطبية والمخبرية',
+    DEVICE: 'ربط أجهزة المعمل LIS'
   };
 
   return (
