@@ -1,48 +1,51 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { 
-  LayoutDashboard, 
-  Receipt, 
-  PieChart, 
-  BarChart3, 
-  Building2, 
-  FlaskConical, 
-  CreditCard, 
-  Users, 
-  Network, 
-  GitBranch, 
-  ShieldCheck, 
-  Settings 
+import {
+  LayoutDashboard,
+  Receipt,
+  PieChart,
+  FlaskConical,
+  Users,
+  Network,
+  BarChart3,
+  GitBranch,
+  ShieldCheck,
+  Settings,
+  CreditCard,
+  Building2,
+  ChevronDown
 } from 'lucide-react';
 
 export const Navigation: React.FC = () => {
-  const { 
-    activeTab, 
-    setActiveTab, 
-    inventory, 
-    labToLabOrders, 
-    incomeRecords, 
-    loyaltyProfiles,
+  const {
+    activeTab,
+    setActiveTab,
+    language,
     hasPermission,
-    language 
+    inventory,
+    labToLabOrders,
+    incomeRecords,
+    loyaltyProfiles
   } = useApp();
+
+  const [isMoreOpen, setIsMoreOpen] = React.useState(false);
 
   const lowStockCount = inventory.filter(i => i.currentQuantity <= i.minThreshold).length;
   const pendingL2LCount = labToLabOrders.filter(o => o.resultStatus === 'sent' || o.resultStatus === 'processing').length;
   const pendingBillsCount = incomeRecords.filter(r => r.paymentStatus !== 'paid').length;
 
-  const allNavItems = [
+  const primaryItems = [
     {
       id: 'dashboard',
       labelAr: 'الرئيسية (لوحة القيادة)',
-      labelEn: 'Dashboard',
+      labelEn: 'Executive Dashboard',
       icon: LayoutDashboard,
       permission: 'dashboard'
     },
     {
       id: 'income',
       labelAr: 'سجل الدخل والفواتير',
-      labelEn: 'Income & Billing',
+      labelEn: 'Daily Income & Billing',
       icon: Receipt,
       badge: pendingBillsCount > 0 ? pendingBillsCount : null,
       permission: 'income'
@@ -50,28 +53,29 @@ export const Navigation: React.FC = () => {
     {
       id: 'expenses',
       labelAr: 'المصروفات والأرباح',
-      labelEn: 'Expenses',
+      labelEn: 'Expenses & Profit Share',
       icon: PieChart,
       permission: 'expenses'
     },
     {
       id: 'reports',
       labelAr: 'التقارير والتقفيل',
-      labelEn: 'Reports',
+      labelEn: 'Reports & Closeout',
       icon: BarChart3,
       permission: 'reports'
-    },
+    }
+  ];
+
+  const secondaryItems = [
     {
       id: 'lab_management',
       labelAr: 'إدارة المعامل والفروع',
-      labelEn: 'Lab Management',
       icon: Building2,
       permission: 'income'
     },
     {
       id: 'inventory',
       labelAr: 'المستلزمات والكيماويات',
-      labelEn: 'Inventory',
       icon: FlaskConical,
       badge: lowStockCount > 0 ? lowStockCount : null,
       permission: 'inventory'
@@ -79,7 +83,6 @@ export const Navigation: React.FC = () => {
     {
       id: 'loyalty',
       labelAr: 'كروت ونقاط الولاء',
-      labelEn: 'Loyalty Cards',
       icon: CreditCard,
       badge: loyaltyProfiles.length > 0 ? loyaltyProfiles.length : null,
       permission: 'loyalty'
@@ -87,14 +90,12 @@ export const Navigation: React.FC = () => {
     {
       id: 'hr',
       labelAr: 'الموارد البشرية والرواتب',
-      labelEn: 'HR & Payroll',
       icon: Users,
       permission: 'hr'
     },
     {
       id: 'lab_to_lab',
       labelAr: 'اللاب تو لاب (خارجي)',
-      labelEn: 'Lab-to-Lab',
       icon: Network,
       badge: pendingL2LCount > 0 ? pendingL2LCount : null,
       permission: 'lab_to_lab'
@@ -102,32 +103,31 @@ export const Navigation: React.FC = () => {
     {
       id: 'sync',
       labelAr: 'ربط منظومة النتائج',
-      labelEn: 'Results Sync',
       icon: GitBranch,
       permission: 'income'
     },
     {
       id: 'audit',
       labelAr: 'سجل الحركات والرقابة',
-      labelEn: 'Audit Trail',
       icon: ShieldCheck,
       permission: 'income'
     },
     {
       id: 'settings',
       labelAr: 'النسخ السحابي والإعدادات',
-      labelEn: 'Settings & Cloud',
       icon: Settings,
       permission: 'income'
     }
   ];
 
+  const isSecondaryActive = secondaryItems.some(i => i.id === activeTab);
+
   return (
     <nav className="bg-slate-950 text-slate-300 border-b border-slate-800 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between gap-2 overflow-x-auto py-2 scrollbar-thin scrollbar-thumb-rose-900">
-          <div className="flex items-center gap-1.5 flex-nowrap">
-            {allNavItems.map(item => {
+        <div className="flex items-center justify-between gap-2 overflow-x-auto py-2 scrollbar-none">
+          <div className="flex items-center gap-1.5">
+            {primaryItems.map(item => {
               const allowed = hasPermission(item.permission);
               const isActive = activeTab === item.id;
               const Icon = item.icon;
@@ -138,14 +138,13 @@ export const Navigation: React.FC = () => {
                   onClick={() => allowed && setActiveTab(item.id)}
                   disabled={!allowed}
                   className={
-                    'flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all ' +
+                    'flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all cursor-pointer ' +
                     (isActive
                       ? 'bg-gradient-to-r from-rose-900 to-rose-800 text-white shadow-md shadow-rose-950/40 border border-rose-600/50 scale-[1.02]'
                       : allowed
-                      ? 'text-slate-300 hover:text-white hover:bg-slate-900/90 hover:border-slate-700 border border-transparent cursor-pointer'
+                      ? 'text-slate-300 hover:text-white hover:bg-slate-900/90 hover:border-slate-700 border border-transparent'
                       : 'text-slate-600 cursor-not-allowed opacity-50')
                   }
-                  title={!allowed ? 'غير مسموح لهذه الصلاحية' : undefined}
                 >
                   <Icon className={'w-4 h-4 ' + (isActive ? 'text-amber-300' : 'text-slate-400')} />
                   <span>{language === 'ar' ? item.labelAr : item.labelEn}</span>
@@ -157,6 +156,81 @@ export const Navigation: React.FC = () => {
                 </button>
               );
             })}
+
+            {/* Collapsible secondary dropdown with full click, tap, & hover support */}
+            <div className="relative group inline-block text-right">
+              <button
+                type="button"
+                onClick={() => setIsMoreOpen(prev => !prev)}
+                className={
+                  'flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all border cursor-pointer select-none ' +
+                  (isSecondaryActive || isMoreOpen
+                    ? 'bg-rose-950/80 border-rose-500 text-rose-200 shadow-md ring-1 ring-rose-500/40'
+                    : 'text-slate-300 hover:text-white bg-slate-900/90 hover:bg-slate-800 border-slate-700')
+                }
+                title="فتح الأقسام الإدارية والعمليات المجمعة"
+                aria-expanded={isMoreOpen}
+              >
+                <Settings className="w-3.5 h-3.5 text-rose-400" />
+                <span>الأقسام الإدارية والعمليات (مجمعة)</span>
+                <ChevronDown className={'w-3.5 h-3.5 transition-transform duration-200 text-rose-400 ' + (isMoreOpen ? 'rotate-180' : '')} />
+              </button>
+
+              {/* Backdrop for click outside */}
+              {isMoreOpen && (
+                <div 
+                  className="fixed inset-0 z-40 cursor-default" 
+                  onClick={() => setIsMoreOpen(false)} 
+                />
+              )}
+
+              {/* Menu (works on click state isMoreOpen OR on group-hover for desktop) */}
+              <div 
+                className={
+                  (isMoreOpen ? 'block' : 'hidden group-hover:block') + 
+                  ' absolute right-0 top-full mt-1.5 z-50 w-64 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl py-2 text-xs divide-y divide-slate-800 animate-in fade-in duration-150'
+                }
+              >
+                <div className="px-3 py-1.5 text-[10px] font-bold text-rose-400 uppercase tracking-wider flex items-center justify-between">
+                  <span>الأقسام الإدارية والعمليات</span>
+                  <span className="text-slate-500 font-mono text-[9px]">RT LAB ERP</span>
+                </div>
+                <div className="py-1">
+                  {secondaryItems.map(item => {
+                    const allowed = hasPermission(item.permission);
+                    const isActive = activeTab === item.id;
+                    const Icon = item.icon;
+
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          if (allowed) {
+                            setActiveTab(item.id);
+                            setIsMoreOpen(false);
+                          }
+                        }}
+                        disabled={!allowed}
+                        className={
+                          'w-full text-right px-3 py-2 flex items-center justify-between hover:bg-slate-800 transition-colors cursor-pointer ' +
+                          (isActive ? 'text-rose-400 font-bold bg-slate-800/60' : 'text-slate-300')
+                        }
+                      >
+                        <div className="flex items-center gap-2">
+                          <Icon className="w-3.5 h-3.5 text-rose-400" />
+                          <span>{item.labelAr}</span>
+                        </div>
+                        {item.badge !== null && item.badge !== undefined && (
+                          <span className="text-[9px] px-1.5 py-0.2 rounded-full font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            {item.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Quick link to diagnostic system */}
